@@ -1,0 +1,81 @@
+basePath: /
+definitions:
+  users.RegisterUserRequest:
+    properties:
+      birth_date:
+        type: string
+      country_id:
+        type: integer
+      email:
+        type: string
+      first_name:
+        type: string
+      last_name:
+        type: string
+      nickname:
+        type: string
+      password:
+        type: string
+    required:
+    - birth_date
+    - country_id
+    - email
+    - first_name
+    - last_name
+    - nickname
+    - password
+    type: object
+  users.UserResponse:
+    properties:
+      country_id:
+        type: integer
+      email:
+        type: string
+      first_name:
+        type: string
+      id:
+        type: integer
+      last_name:
+        type: string
+      nickname:
+        type: string
+      profile_photo:
+        type: string
+    type: object
+info:
+  contact: {}
+  description: Backend API for Arena Platform
+  title: Arena API
+  version: "1.0"
+paths:
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new user in the system
+      parameters:
+      - description: User info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/users.RegisterUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/users.UserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Register a new user
+      tags:
+      - Auth
+schemes:
+- http
+swagger: "2.0"
