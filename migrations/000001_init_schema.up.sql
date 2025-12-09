@@ -51,3 +51,5 @@ CREATE TABLE al_user_global_role (
     CONSTRAINT fk_ugr_role FOREIGN KEY (role_id) REFERENCES al_global_role(id),
     CONSTRAINT fk_ugr_created_by FOREIGN KEY (created_by) REFERENCES al_user(id)
 );
+
+-- 6. 
