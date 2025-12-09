@@ -25,8 +25,8 @@ func (s *Service) Register(u User) error {
 	return s.repo.CreateUser(context.Background(), u)
 }
 
-func (s *Service) Login(email, password string) (string, error) {
-	u, err := s.repo.GetUserByEmail(context.Background(), email)
+func (s *Service) Login(EmailOrNickname, password string) (string, error) {
+	u, err := s.repo.GetUserByEmailOrNickname(context.Background(), EmailOrNickname)
 	if err != nil {
 		return "", errors.New("invalid credentials")
 	}

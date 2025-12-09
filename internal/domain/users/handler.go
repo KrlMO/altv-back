@@ -63,7 +63,7 @@ func (m *Module) Login(c *gin.Context) {
 		return
 	}
 
-	token, err := m.service.Login(req.Email, req.Password)
+	token, err := m.service.Login(req.EmailOrNickname, req.Password)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
 		return

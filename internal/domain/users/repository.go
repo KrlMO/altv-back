@@ -33,10 +33,10 @@ func (r *Repository) CreateUser(ctx context.Context, u User) error {
 	return err
 }
 
-func (r *Repository) GetUserByEmail(ctx context.Context, email string) (*User, error) {
+func (r *Repository) GetUserByEmailOrNickname(ctx context.Context, EmailOrNickname string) (*User, error) {
 	u := User{}
-	str := `select id, first_name, last_name, nickname, email, password_hash from al_user where email = $1`
-	err := r.db.QueryRow(ctx, str, email).Scan(&u.ID, &u.FirstName, &u.LastName, &u.NickName, &u.Email, &u.PasswordHash)
+	str := `select id, first_name, last_name, nickname, email, password_hash from al_user where email = $1 or nickname = $1`
+	err := r.db.QueryRow(ctx, str, EmailOrNickname).Scan(&u.ID, &u.FirstName, &u.LastName, &u.NickName, &u.Email, &u.PasswordHash)
 	if err != nil {
 		return nil, err
 	}

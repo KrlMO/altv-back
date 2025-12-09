@@ -1,7 +1,6 @@
 package router
 
 import (
-	_ "arena/docs"
 	"arena/internal/config"
 	"arena/internal/domain/users"
 
@@ -13,6 +12,7 @@ import (
 
 func SetupRouter(db *pgxpool.Pool, cfg *config.Config) *gin.Engine {
 	r := gin.Default()
+
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	usersModule := users.NewModule(db, cfg.JWTSecret)
