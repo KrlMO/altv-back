@@ -1,0 +1,5 @@
+DELETE FROM al_global_role 
+WHERE name IN ('ILUVATAR','AINUR','MAIAR','ELF','HUMAN','ORC');
+
+DELETE FROM al_team_role 
+WHERE name IN ('TEAM_OWNER','TEAM_MANAGER','TEAM_STAFF');

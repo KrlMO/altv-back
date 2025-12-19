@@ -1,8 +1,13 @@
 // @title Arena API
 // @version 1.0
-// @description Backend API for Arena Platform
+// @description API principal de Arena Latam
 // @BasePath /
 // @schemes http
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+
 package main
 
 import (

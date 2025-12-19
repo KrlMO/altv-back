@@ -1,5 +1,58 @@
 basePath: /
 definitions:
+  auth.LoginRequest:
+    properties:
+      email_or_nickname:
+        type: string
+      password:
+        type: string
+    required:
+    - email_or_nickname
+    - password
+    type: object
+  auth.LoginResponse:
+    properties:
+      token:
+        type: string
+      user:
+        $ref: '#/definitions/auth.UserResponse'
+    type: object
+  auth.UserResponse:
+    properties:
+      email:
+        type: string
+      id:
+        type: integer
+      nickname:
+        type: string
+      profile_photo:
+        type: string
+    type: object
+  users.CountryReponse:
+    properties:
+      flag_path:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  users.FastRegisterUserRequest:
+    properties:
+      country_id:
+        type: integer
+      email:
+        type: string
+      nickname:
+        type: string
+      password:
+        type: string
+    required:
+    - country_id
+    - email
+    - nickname
+    - password
+    type: object
   users.RegisterUserRequest:
     properties:
       birth_date:
@@ -25,10 +78,14 @@ definitions:
     - nickname
     - password
     type: object
-  users.UserResponse:
+  users.UserProfileResponse:
     properties:
-      country_id:
-        type: integer
+      banner_photo:
+        type: string
+      birth_date:
+        type: string
+      country:
+        $ref: '#/definitions/users.CountryReponse'
       email:
         type: string
       first_name:
@@ -44,11 +101,90 @@ definitions:
     type: object
 info:
   contact: {}
-  description: Backend API for Arena Platform
+  description: API principal de Arena Latam
   title: Arena API
   version: "1.0"
 paths:
-  /auth/register:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Logs in a user
+      parameters:
+      - description: User info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/auth.LoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Login a user
+      tags:
+      - Auth
+  /users/fast-register:
+    post:
+      consumes:
+      - application/json
+      description: Quickly creates a new user in the system with minimal info
+      parameters:
+      - description: User info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/users.FastRegisterUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Fast register a new user
+      tags:
+      - Users
+  /users/me:
+    get:
+      description: Retrieves the profile of the currently authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/users.UserProfileResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get current user profile
+      tags:
+      - Users
+  /users/register:
     post:
       consumes:
       - application/json
@@ -66,7 +202,9 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/users.UserResponse'
+            additionalProperties:
+              type: string
+            type: object
         "400":
           description: Bad Request
           schema:
@@ -75,7 +213,12 @@ paths:
             type: object
       summary: Register a new user
       tags:
-      - Auth
+      - Users
 schemes:
 - http
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

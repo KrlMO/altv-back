@@ -1,37 +1,36 @@
 package users
 
 import (
+	"arena/pkg/middleware"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type Module struct {
-	service *Service
-}
+func (m *Module) RegisterRoutes(r *gin.Engine, jwtSecret string) {
 
-func NewModule(db *pgxpool.Pool, jwtSecret string) *Module {
-	repo := NewRepository(db)
-	service := NewService(repo, jwtSecret)
-	return &Module{service}
-}
+	users := r.Group("/users")
+	{
+		users.POST("/register", m.Register)
+		users.POST("/fast-register", m.FastRegister)
 
-func (m *Module) RegisterRoutes(r *gin.Engine) {
-	r.POST("/auth/register", m.Register)
-
+		auth := users.Group("/", middleware.Auth(jwtSecret))
+		{
+			auth.GET("/me", m.GetMe)
+		}
+	}
 }
 
 // RegisterUser godoc
 // @Summary Register a new user
 // @Description Creates a new user in the system
-// @Tags Auth
+// @Tags Users
 // @Accept json
 // @Produce json
-// @Param request body users.RegisterUserRequest true "User info"
-// @Success 201 {object} users.UserResponse
+// @Param request body RegisterUserRequest true "User info"
+// @Success 201 {object} map[string]string
 // @Failure 400 {object} map[string]string
-// @Router /auth/register [post]
+// @Router /users/register [post]
 func (m *Module) Register(c *gin.Context) {
 	req := RegisterUserRequest{}
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -39,16 +38,7 @@ func (m *Module) Register(c *gin.Context) {
 		return
 	}
 
-	user := User{
-		FirstName:    req.FirstName,
-		LastName:     req.LastName,
-		NickName:     req.NickName,
-		PasswordHash: req.Password,
-		CountryId:    req.CountryId,
-		BirthDate:    req.BirthDate,
-	}
-
-	if err := m.service.Register(user); err != nil {
+	if err := m.service.Register(c, req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -56,18 +46,48 @@ func (m *Module) Register(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"message": "user created"})
 }
 
-func (m *Module) Login(c *gin.Context) {
-	req := LoginRequest{}
-	if err := c.ShouldBindBodyWithJSON(&req); err != nil {
+// FaastRegisterUser godoc
+// @Summary Fast register a new user
+// @Description Quickly creates a new user in the system with minimal info
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Param request body FastRegisterUserRequest true "User info"
+// @Success 201 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Router /users/fast-register [post]
+func (m *Module) FastRegister(c *gin.Context) {
+	req := FastRegisterUserRequest{}
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	token, err := m.service.Login(req.EmailOrNickname, req.Password)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
+	if err := m.service.FastRegister(c, req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"token": token})
+	c.JSON(http.StatusCreated, gin.H{"message": "user created"})
+}
+
+// GetMe godoc
+// @Summary Get current user profile
+// @Description Retrieves the profile of the currently authenticated user
+// @Tags Users
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} UserProfileResponse
+// @Failure 401 {object} map[string]string
+// @Router /users/me [get]
+func (m *Module) GetMe(c *gin.Context) {
+	userID := c.MustGet(middleware.ContextUserID).(int64)
+
+	user, err := m.service.GetProfileByID(c, userID)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, user)
 }

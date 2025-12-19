@@ -169,10 +169,10 @@ CREATE TABLE al_user (
 CREATE TABLE al_user_global_role (
 	user_id int4 NOT NULL,
 	role_id int4 NOT NULL,
-	created_at timestamp DEFAULT now() NULL,
-	created_by int4 NULL,
+	assigned_at timestamp DEFAULT now() NULL,
+	assigned_by int4 NULL,
 	CONSTRAINT al_user_global_role_pkey PRIMARY KEY (user_id, role_id),
-	CONSTRAINT fk_ugr_created_by FOREIGN KEY (created_by) REFERENCES al_user(id),
+	CONSTRAINT fk_ugr_created_by FOREIGN KEY (assigned_by) REFERENCES al_user(id),
 	CONSTRAINT fk_ugr_role FOREIGN KEY (role_id) REFERENCES al_global_role(id),
 	CONSTRAINT fk_ugr_user FOREIGN KEY (user_id) REFERENCES al_user(id)
 );
