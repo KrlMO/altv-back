@@ -2,6 +2,7 @@ package router
 
 import (
 	"arena/internal/config"
+	"arena/internal/domain/auth"
 	"arena/internal/domain/users"
 
 	"github.com/gin-gonic/gin"
@@ -15,8 +16,15 @@ func SetupRouter(db *pgxpool.Pool, cfg *config.Config) *gin.Engine {
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-	usersModule := users.NewModule(db, cfg.JWTSecret)
-	usersModule.RegisterRoutes(r)
+	// USERS
+	usersRepo := users.NewRepository(db)
+	usersService := users.NewService(usersRepo)
+	usersModule := users.NewModule(usersService)
+	usersModule.RegisterRoutes(r, cfg.JWTSecret)
+
+	// AUTH
+	authModule := auth.NewModule(usersService, cfg.JWTSecret)
+	authModule.RegisterRoutes(r)
 
 	return r
 }

@@ -10,11 +10,11 @@ CREATE TABLE al_team_game_role (
 -- Roles oficiales
 INSERT INTO al_team_game_role (name) VALUES
 ('PLAYER'),
-('SUBSTITUTE'),
 ('COACH'),
 ('ANALYST'),
 ('MANAGER'),
-('STAFF');
+('STAFF'),
+('TEAM_CAPTAIN');
 
 -- ============================================
 -- ASIGNACIÓN: USER → TEAM_GAME → ROLE

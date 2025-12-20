@@ -44,12 +44,12 @@ CREATE TABLE al_user (
 CREATE TABLE al_user_global_role (
     user_id INT NOT NULL,
     role_id INT NOT NULL,
-    created_at TIMESTAMP DEFAULT NOW(),
-    created_by INT,
+    assigned_at TIMESTAMP DEFAULT NOW(),
+    assigned_by INT,
     PRIMARY KEY (user_id, role_id),
     CONSTRAINT fk_ugr_user FOREIGN KEY (user_id) REFERENCES al_user(id),
     CONSTRAINT fk_ugr_role FOREIGN KEY (role_id) REFERENCES al_global_role(id),
-    CONSTRAINT fk_ugr_created_by FOREIGN KEY (created_by) REFERENCES al_user(id)
+    CONSTRAINT fk_ugr_assigned_by FOREIGN KEY (assigned_by) REFERENCES al_user(id)
 );
 
 -- 6. 
