@@ -2,6 +2,9 @@ package users
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"strings"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -125,4 +128,119 @@ func (r *Repository) GetUserProfileByID(ctx context.Context, userID int32) (*Use
 		return nil, err
 	}
 	return &up, nil
+}
+
+func (r *Repository) CountryExists(ctx context.Context, countryID int32) (bool, error) {
+	var exists bool
+	err := r.db.QueryRow(ctx, `
+		select exists(
+			select 1 from al_country where id = $1
+		)
+	`, countryID).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+	return exists, nil
+}
+
+func (r *Repository) UpdateUser(ctx context.Context, u User) error {
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	_, err = tx.Exec(ctx, `
+		update al_user set
+			first_name = $1,
+			last_name = $2,
+			nickname = $3,
+			profile_photo = $4,
+			banner_photo = $5,
+			birth_date = $6,
+			country_id = $7,
+			updated_at = now()
+		where id = $8
+	`, u.FirstName, u.LastName, u.NickName, u.ProfilePhoto, u.BannerPhoto, u.BirthDate, u.CountryId, u.ID)
+
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit(ctx)
+}
+
+func (r *Repository) PatchUser(ctx context.Context, u User) error {
+
+	set := []string{}
+	args := []interface{}{}
+	i := 1
+
+	if u.FirstName != "" {
+		set = append(set, fmt.Sprintf("first_name = $%d", i))
+		args = append(args, u.FirstName)
+		i++
+	}
+
+	if u.LastName != "" {
+		set = append(set, fmt.Sprintf("last_name = $%d", i))
+		args = append(args, u.LastName)
+		i++
+	}
+
+	if u.NickName != "" {
+		set = append(set, fmt.Sprintf("nickname = $%d", i))
+		args = append(args, u.NickName)
+		i++
+	}
+
+	if u.ProfilePhoto != "" {
+		set = append(set, fmt.Sprintf("profile_photo = $%d", i))
+		args = append(args, u.ProfilePhoto)
+		i++
+	}
+
+	if u.BannerPhoto != "" {
+		set = append(set, fmt.Sprintf("banner_photo = $%d", i))
+		args = append(args, u.BannerPhoto)
+		i++
+	}
+
+	if u.CountryId > 0 {
+		set = append(set, fmt.Sprintf("country_id = $%d", i))
+		args = append(args, u.CountryId)
+		i++
+	}
+
+	if u.BirthDate.Valid {
+		set = append(set, fmt.Sprintf("birth_date = $%d", i))
+		args = append(args, u.BirthDate.Time)
+		i++
+	}
+
+	if len(set) == 0 {
+		return errors.New("nothing to update")
+	}
+
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	query := fmt.Sprintf(`
+		UPDATE al_user
+		SET %s, updated_at = NOW()
+		WHERE id = $%d
+	`, strings.Join(set, ", "), i)
+
+	args = append(args, u.ID)
+
+	_, err = tx.Exec(ctx, query, args...)
+
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit(ctx)
 }

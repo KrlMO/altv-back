@@ -53,6 +53,23 @@ definitions:
     - nickname
     - password
     type: object
+  users.PatchUserProfileRequest:
+    properties:
+      banner_photo:
+        type: string
+      birth_date:
+        type: string
+      country_id:
+        type: integer
+      first_name:
+        type: string
+      last_name:
+        type: string
+      nickname:
+        type: string
+      profile_photo:
+        type: string
+    type: object
   users.RegisterUserRequest:
     properties:
       birth_date:
@@ -77,6 +94,23 @@ definitions:
     - last_name
     - nickname
     - password
+    type: object
+  users.UpdateUserProfileRequest:
+    properties:
+      banner_photo:
+        type: string
+      birth_date:
+        type: string
+      country_id:
+        type: integer
+      first_name:
+        type: string
+      last_name:
+        type: string
+      nickname:
+        type: string
+      profile_photo:
+        type: string
     type: object
   users.UserProfileResponse:
     properties:
@@ -182,6 +216,80 @@ paths:
       security:
       - BearerAuth: []
       summary: Get current user profile
+      tags:
+      - Users
+    patch:
+      consumes:
+      - application/json
+      description: Partially updates the profile of the currently authenticated user
+      parameters:
+      - description: Partially updated user info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/users.PatchUserProfileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Partially update current user profile
+      tags:
+      - Users
+    put:
+      consumes:
+      - application/json
+      description: Updates the profile of the currently authenticated user
+      parameters:
+      - description: Updated user info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/users.UpdateUserProfileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update current user profile
       tags:
       - Users
   /users/register:

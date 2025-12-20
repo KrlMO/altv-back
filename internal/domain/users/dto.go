@@ -34,3 +34,23 @@ type CountryReponse struct {
 	Name     string `json:"name"`
 	FlagPath string `json:"flag_path"`
 }
+
+type UpdateUserProfileRequest struct {
+	FirstName    string `json:"first_name" binding:"omitempty"`
+	LastName     string `json:"last_name" binding:"omitempty"`
+	NickName     string `json:"nickname" binding:"omitempty"`
+	ProfilePhoto string `json:"profile_photo" binding:"omitempty"`
+	BannerPhoto  string `json:"banner_photo" binding:"omitempty"`
+	BirthDate    string `json:"birth_date" binding:"omitempty"`
+	CountryId    int32  `json:"country_id" binding:"omitempty"`
+}
+
+type PatchUserProfileRequest struct {
+	FirstName    *string `json:"first_name"`
+	LastName     *string `json:"last_name"`
+	NickName     *string `json:"nickname"`
+	BirthDate    *string `json:"birth_date"`
+	CountryId    *int32  `json:"country_id"`
+	ProfilePhoto *string `json:"profile_photo"`
+	BannerPhoto  *string `json:"banner_photo"`
+}
