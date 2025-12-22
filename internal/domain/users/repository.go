@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -24,7 +25,7 @@ func (r *Repository) CreateUser(ctx context.Context, u User) error {
 	}
 	defer tx.Rollback(ctx)
 
-	var userID int
+	var userID int32
 
 	err = tx.QueryRow(ctx, `
 		insert into al_user (
@@ -50,23 +51,55 @@ func (r *Repository) CreateUser(ctx context.Context, u User) error {
 		return err
 	}
 
-	const humanRoleID = 5
-	const iluvatarRoleID = 1
+	const humanRole = "HUMAN"
 
-	_, err = tx.Exec(ctx, `
-		insert into al_user_global_role (
-			user_id,
-			role_id,
-			assigned_at,
-			assigned_by
-		) values ($1, $2, now(), $3)
-	`, userID, humanRoleID, iluvatarRoleID)
+	iluvatarId, err := r.FindIluvatarId(ctx, tx)
+
+	if err != nil {
+		return err
+	}
+
+	err = r.InsertUserGlobalRole(ctx, tx, userID, iluvatarId, humanRole)
 
 	if err != nil {
 		return err
 	}
 
 	return tx.Commit(ctx)
+}
+
+func (r *Repository) FindIluvatarId(ctx context.Context, tx pgx.Tx) (int32, error) {
+	var iluvatarId int32
+
+	err := tx.QueryRow(ctx, `
+		SELECT id FROM al_global_role WHERE name = $1
+	`, "ILUVATAR").Scan(&iluvatarId)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return iluvatarId, nil
+}
+
+func (r *Repository) InsertUserGlobalRole(
+	ctx context.Context,
+	tx pgx.Tx,
+	userID, assignedBy int32,
+	globalRole string,
+) error {
+	_, err := tx.Exec(ctx, `
+		INSERT INTO al_user_global_role
+		(user_id, role_id, assigned_at, assigned_by)
+		SELECT
+			$1,
+			r.id,
+			NOW(),
+			$2
+		FROM al_global_role r
+		WHERE r.name = $3
+	`, userID, assignedBy, globalRole)
+	return err
 }
 
 func (r *Repository) GetUserByEmailOrNickname(ctx context.Context, EmailOrNickname string) (*User, error) {
