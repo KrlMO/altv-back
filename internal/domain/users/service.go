@@ -109,6 +109,10 @@ func (s *Service) GetByEmailOrNickname(ctx context.Context, value string) (*User
 		return nil, nil, err
 	}
 
+	if u.Active == false {
+		return nil, nil, errors.New("user does not exist")
+	}
+
 	roles, err := s.repo.GetGlobalRolesByUserID(ctx, u.ID)
 	if err != nil {
 		return nil, nil, err
@@ -118,7 +122,7 @@ func (s *Service) GetByEmailOrNickname(ctx context.Context, value string) (*User
 }
 
 func (s *Service) GetProfile(ctx context.Context, userID int64) (*UserProfileResponse, error) {
-	up, err := s.repo.GetUserProfileByID(ctx, int32(userID))
+	up, err := s.repo.GetUserProfileByID(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -172,7 +176,7 @@ func (s *Service) UpdateProfile(ctx context.Context, userID int64, dto UpdateUse
 	}
 
 	u := User{
-		ID:           int32(userID),
+		ID:           userID,
 		FirstName:    dto.FirstName,
 		LastName:     dto.LastName,
 		NickName:     dto.NickName,
@@ -189,7 +193,7 @@ func (s *Service) UpdateProfile(ctx context.Context, userID int64, dto UpdateUse
 }
 
 func (s *Service) PatchProfile(ctx context.Context, userID int64, dto PatchUserProfileRequest) error {
-	u := User{ID: int32(userID)}
+	u := User{ID: userID}
 	if dto.BirthDate != nil {
 		t, err := ValidateBirthDate(*dto.BirthDate)
 		if err != nil {

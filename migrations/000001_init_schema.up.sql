@@ -13,18 +13,18 @@ CREATE TABLE al_country (
 -- 2. Global Role
 CREATE TABLE al_global_role (
     id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    name VARCHAR(50) NOT NULL
+    name VARCHAR(50) UNIQUE NOT NULL
 );
 
 -- 3. Team Role
 CREATE TABLE al_team_role (
     id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    name VARCHAR(50) NOT NULL
+    name VARCHAR(50) UNIQUE NOT NULL
 );
 
 -- 4. User
 CREATE TABLE al_user (
-    id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     first_name VARCHAR(50) NOT NULL,
     last_name VARCHAR(50) NOT NULL,
     nickname VARCHAR(50) NOT NULL UNIQUE,
@@ -42,14 +42,13 @@ CREATE TABLE al_user (
 
 -- 5. User Global Role (pivot)
 CREATE TABLE al_user_global_role (
-    user_id INT NOT NULL,
+    user_id BIGINT NOT NULL,
     role_id INT NOT NULL,
     assigned_at TIMESTAMP DEFAULT NOW(),
-    assigned_by INT,
+    assigned_by BIGINT,
     PRIMARY KEY (user_id, role_id),
     CONSTRAINT fk_ugr_user FOREIGN KEY (user_id) REFERENCES al_user(id),
     CONSTRAINT fk_ugr_role FOREIGN KEY (role_id) REFERENCES al_global_role(id),
     CONSTRAINT fk_ugr_assigned_by FOREIGN KEY (assigned_by) REFERENCES al_user(id)
 );
 
--- 6. 

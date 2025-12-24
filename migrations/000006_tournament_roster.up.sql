@@ -4,12 +4,12 @@
 -- ============================================
 
 CREATE TABLE al_tournament_roster (
-    user_id INT NOT NULL,
-    tournament_id INT NOT NULL,
-    team_game_id INT NOT NULL,
+    user_id BIGINT NOT NULL,
+    tournament_id BIGINT NOT NULL,
+    team_game_id BIGINT NOT NULL,
     is_starter BOOLEAN NOT NULL DEFAULT TRUE,
     added_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    added_by INT NOT NULL,
+    added_by BIGINT NOT NULL,
 
     PRIMARY KEY (user_id, tournament_id),
 

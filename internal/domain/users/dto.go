@@ -18,7 +18,7 @@ type FastRegisterUserRequest struct {
 }
 
 type UserProfileResponse struct {
-	ID           int32          `json:"id"`
+	ID           int64          `json:"id"`
 	FirstName    string         `json:"first_name"`
 	LastName     string         `json:"last_name"`
 	NickName     string         `json:"nickname"`

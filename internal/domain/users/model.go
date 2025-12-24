@@ -6,7 +6,7 @@ import (
 )
 
 type User struct {
-	ID           int32        `db:"id"`
+	ID           int64        `db:"id"`
 	FirstName    string       `db:"first_name"`
 	LastName     string       `db:"last_name"`
 	NickName     string       `db:"nick_name"`

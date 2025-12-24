@@ -25,7 +25,7 @@ func (r *Repository) CreateUser(ctx context.Context, u User) error {
 	}
 	defer tx.Rollback(ctx)
 
-	var userID int32
+	var userID int64
 
 	err = tx.QueryRow(ctx, `
 		insert into al_user (
@@ -68,8 +68,8 @@ func (r *Repository) CreateUser(ctx context.Context, u User) error {
 	return tx.Commit(ctx)
 }
 
-func (r *Repository) FindIluvatarId(ctx context.Context, tx pgx.Tx) (int32, error) {
-	var iluvatarId int32
+func (r *Repository) FindIluvatarId(ctx context.Context, tx pgx.Tx) (int64, error) {
+	var iluvatarId int64
 
 	err := tx.QueryRow(ctx, `
 		SELECT id FROM al_global_role WHERE name = $1
@@ -85,7 +85,7 @@ func (r *Repository) FindIluvatarId(ctx context.Context, tx pgx.Tx) (int32, erro
 func (r *Repository) InsertUserGlobalRole(
 	ctx context.Context,
 	tx pgx.Tx,
-	userID, assignedBy int32,
+	userID, assignedBy int64,
 	globalRole string,
 ) error {
 	_, err := tx.Exec(ctx, `
@@ -104,15 +104,15 @@ func (r *Repository) InsertUserGlobalRole(
 
 func (r *Repository) GetUserByEmailOrNickname(ctx context.Context, EmailOrNickname string) (*User, error) {
 	u := User{}
-	str := `select id, first_name, last_name, nickname, email, password_hash, profile_photo from al_user where email = $1 or nickname = $1`
-	err := r.db.QueryRow(ctx, str, EmailOrNickname).Scan(&u.ID, &u.FirstName, &u.LastName, &u.NickName, &u.Email, &u.PasswordHash, &u.ProfilePhoto)
+	str := `select id, first_name, last_name, nickname, email, password_hash, profile_photo, active from al_user where email = $1 or nickname = $1`
+	err := r.db.QueryRow(ctx, str, EmailOrNickname).Scan(&u.ID, &u.FirstName, &u.LastName, &u.NickName, &u.Email, &u.PasswordHash, &u.ProfilePhoto, &u.Active)
 	if err != nil {
 		return nil, err
 	}
 	return &u, nil
 }
 
-func (r *Repository) GetGlobalRolesByUserID(ctx context.Context, userID int32) ([]string, error) {
+func (r *Repository) GetGlobalRolesByUserID(ctx context.Context, userID int64) ([]string, error) {
 	roles := []string{}
 	rows, err := r.db.Query(ctx, `
 		select agr.name
@@ -135,7 +135,7 @@ func (r *Repository) GetGlobalRolesByUserID(ctx context.Context, userID int32) (
 	return roles, nil
 }
 
-func (r *Repository) GetUserProfileByID(ctx context.Context, userID int32) (*UserProfile, error) {
+func (r *Repository) GetUserProfileByID(ctx context.Context, userID int64) (*UserProfile, error) {
 	up := UserProfile{}
 	str := `
 		select

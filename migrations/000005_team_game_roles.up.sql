@@ -21,12 +21,11 @@ INSERT INTO al_team_game_role (name) VALUES
 -- ============================================
 
 CREATE TABLE al_user_team_game_role (
-    user_id INT NOT NULL,
-    team_game_id INT NOT NULL,
+    user_id BIGINT NOT NULL,
+    team_game_id BIGINT NOT NULL,
     role_id INT NOT NULL,
     assigned_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    assigned_by INT NOT NULL,
-
+    assigned_by BIGINT NOT NULL,
     PRIMARY KEY (user_id, team_game_id, role_id),
 
     FOREIGN KEY (user_id) REFERENCES al_user(id),

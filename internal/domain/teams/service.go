@@ -1,8 +1,11 @@
 package teams
 
 import (
+	"arena/internal/domain/users"
 	"arena/pkg/middleware"
 	"errors"
+
+	"arena/pkg/dto"
 
 	"github.com/gin-gonic/gin"
 )
@@ -42,8 +45,76 @@ func (s *Service) RegisterTeam(c *gin.Context, userID int64, dto RegisterTeamReq
 		CountryId:   dto.CountryId,
 		IsVirtual:   dto.IsVirtual,
 		Active:      true,
-		CreatedBy:   int32(userID),
-		UpdatedBy:   int32(userID),
+		CreatedBy:   userID,
+		UpdatedBy:   userID,
 	}
 	return s.repo.CreateTeam(c, t)
+}
+
+func (s *Service) GetTeamByID(c *gin.Context, teamID string) (*TeamResponse, error) {
+	t, err := s.repo.GetTeamByID(c, teamID)
+	if err != nil {
+		return nil, err
+	}
+	flag := ""
+	if t.Country.FlagPath.Valid {
+		flag = t.Country.FlagPath.String
+	}
+	team := &TeamResponse{
+		ID:          t.Team.ID,
+		Name:        t.Team.Name,
+		Tag:         t.Team.Tag,
+		Description: t.Team.Description,
+		LogoPath:    t.Team.LogoPath,
+		BannerPath:  t.Team.BannerPath,
+		Country: users.CountryReponse{
+			ID:       t.Country.ID,
+			Name:     t.Country.Name,
+			FlagPath: flag,
+		},
+		IsVirtual: t.Team.IsVirtual,
+		Active:    t.Team.Active,
+	}
+	return team, nil
+}
+
+func (s *Service) GetTeams(c *gin.Context, filter TeamFilter) (dto.PaginatedResponse[TeamResponse], error) {
+	teams, total, err := s.repo.GetTeams(c, filter)
+	if err != nil {
+		return dto.PaginatedResponse[TeamResponse]{}, err
+	}
+
+	var result []TeamResponse
+	for _, t := range teams {
+		flag := ""
+		if t.Country.FlagPath.Valid {
+			flag = t.Country.FlagPath.String
+		}
+		team := TeamResponse{
+			ID:          t.Team.ID,
+			Name:        t.Team.Name,
+			Tag:         t.Team.Tag,
+			Description: t.Team.Description,
+			LogoPath:    t.Team.LogoPath,
+			BannerPath:  t.Team.BannerPath,
+			Country: users.CountryReponse{
+				ID:       t.Country.ID,
+				Name:     t.Country.Name,
+				FlagPath: flag,
+			},
+			IsVirtual: t.Team.IsVirtual,
+			Active:    t.Team.Active,
+		}
+		result = append(result, team)
+	}
+	response := dto.PaginatedResponse[TeamResponse]{
+		Data: result,
+		Meta: dto.PaginationMeta{
+			Total:  total,
+			Limit:  filter.Limit,
+			Offset: filter.Offset,
+		},
+	}
+
+	return response, nil
 }
