@@ -276,5 +276,6 @@ func (r *Repository) UpdateTeam(ctx context.Context, t Team) error {
 	if err != nil {
 		return err
 	}
+
 	return tx.Commit(ctx)
 }

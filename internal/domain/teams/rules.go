@@ -6,6 +6,7 @@ func IsOrcMember(roles []string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
