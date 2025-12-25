@@ -561,9 +561,6 @@ const docTemplate = `{
         "teams.PatchUpdateTeamRequest": {
             "type": "object",
             "properties": {
-                "active": {
-                    "type": "boolean"
-                },
                 "banner_path": {
                     "type": "string"
                 },

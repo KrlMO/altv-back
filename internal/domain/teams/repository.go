@@ -259,10 +259,6 @@ func (r *Repository) UpdateTeam(ctx context.Context, t Team) error {
 	args = append(args, t.UpdatedBy)
 	i++
 
-	set = append(set, "active = $"+strconv.Itoa(i))
-	args = append(args, t.Active)
-	i++
-
 	if len(set) == 0 {
 		return errors.New("nothing to update")
 	}

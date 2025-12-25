@@ -191,10 +191,6 @@ func (s *Service) PatchUpdateTeam(ctx *gin.Context, userId int64, teamId string,
 		t.IsVirtual = *dto.IsVirtual
 	}
 
-	if dto.Active != nil {
-		t.Active = *dto.Active
-	}
-
 	t.UpdatedBy = userId
 
 	return s.repo.UpdateTeam(ctx, t)

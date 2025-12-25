@@ -42,5 +42,4 @@ type PatchUpdateTeamRequest struct {
 	BannerPath  *string `json:"banner_path"`
 	CountryId   *int32  `json:"country_id"`
 	IsVirtual   *bool   `json:"is_virtual"`
-	Active      *bool   `json:"active"`
 }

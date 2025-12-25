@@ -30,8 +30,6 @@ definitions:
     type: object
   teams.PatchUpdateTeamRequest:
     properties:
-      active:
-        type: boolean
       banner_path:
         type: string
       country_id:
