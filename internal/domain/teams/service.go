@@ -3,7 +3,10 @@ package teams
 import (
 	"arena/internal/domain/users"
 	"arena/pkg/middleware"
+	"context"
 	"errors"
+	"regexp"
+	"strconv"
 
 	"arena/pkg/dto"
 
@@ -20,8 +23,8 @@ func NewService(repo *Repository) *Service {
 
 func (s *Service) RegisterTeam(c *gin.Context, userID int64, dto RegisterTeamRequest) error {
 	roles := c.MustGet(middleware.ContextRoles).([]string)
-	if !CanCreateTeam(roles) {
-		return errors.New("User cannot create a team")
+	if !IsOrcMember(roles) {
+		return errors.New("User cannot create a team, user is banned from creating teams")
 	}
 
 	err := ValidateTeamCreateOrUpdate(dto.Name, dto.Tag, dto.Description, dto.LogoPath, dto.BannerPath)
@@ -78,13 +81,13 @@ func (s *Service) GetTeamByID(c *gin.Context, teamID string) (*TeamResponse, err
 	return team, nil
 }
 
-func (s *Service) GetTeams(c *gin.Context, filter TeamFilter) (dto.PaginatedResponse[TeamResponse], error) {
-	teams, total, err := s.repo.GetTeams(c, filter)
+func (s *Service) GetTeams(ctx context.Context, filter TeamFilter) (dto.PaginatedResponse[TeamResponse], error) {
+	teams, total, err := s.repo.GetTeams(ctx, filter)
 	if err != nil {
 		return dto.PaginatedResponse[TeamResponse]{}, err
 	}
 
-	var result []TeamResponse
+	result := make([]TeamResponse, 0, len(teams))
 	for _, t := range teams {
 		flag := ""
 		if t.Country.FlagPath.Valid {
@@ -117,4 +120,82 @@ func (s *Service) GetTeams(c *gin.Context, filter TeamFilter) (dto.PaginatedResp
 	}
 
 	return response, nil
+}
+
+func (s *Service) PatchUpdateTeam(ctx *gin.Context, userId int64, teamId string, dto PatchUpdateTeamRequest) error {
+	globalRoles := ctx.MustGet(middleware.ContextRoles).([]string)
+	if IsOrcMember(globalRoles) {
+		return errors.New("User cannot update a team, user is banned from updating teams")
+	}
+	parsedID, err := strconv.ParseInt(teamId, 10, 64)
+	if err != nil {
+		return errors.New("invalid team ID")
+	}
+
+	teamRoles, err := s.repo.GetUserTeamRoles(ctx, userId, parsedID)
+	t := Team{ID: parsedID}
+	if err != nil {
+		return errors.New("Error fetching user team roles: " + err.Error())
+	}
+	if !IsTeamOwnerOrManager(teamRoles) && !IsIluvatarOrAinur(globalRoles) {
+		return errors.New("user does not have permission to update this team or is not an administrator")
+	}
+
+	if dto.Name != nil {
+		if len(*dto.Name) < 3 || len(*dto.Name) > 50 {
+			return errors.New("Name must be between 3 and 50 characters")
+		}
+		t.Name = *dto.Name
+	}
+
+	if dto.Tag != nil {
+		if len(*dto.Tag) < 2 || len(*dto.Tag) > 15 {
+			return errors.New("Tag must be between 2 and 15 characters")
+		}
+		t.Tag = *dto.Tag
+	}
+
+	if dto.Description != nil {
+		if len(*dto.Description) > 500 {
+			return errors.New("Description must be less than 500 characters")
+		}
+		t.Description = *dto.Description
+	}
+
+	if dto.LogoPath != nil {
+		_, err := regexp.MatchString(`^https?://`, *dto.LogoPath)
+		if err != nil {
+			return errors.New("invalid logo_path URL")
+		}
+		t.LogoPath = *dto.LogoPath
+	}
+	if dto.BannerPath != nil {
+		_, err := regexp.MatchString(`^https?://`, *dto.BannerPath)
+		if err != nil {
+			return errors.New("invalid banner_path URL")
+		}
+		t.BannerPath = *dto.BannerPath
+	}
+	if dto.CountryId != nil {
+		exists, err := s.repo.CountryExists(ctx, *dto.CountryId)
+		if err != nil {
+			return err
+		}
+		if !exists {
+			return errors.New("invalid country")
+		}
+		t.CountryId = *dto.CountryId
+	}
+
+	if dto.IsVirtual != nil {
+		t.IsVirtual = *dto.IsVirtual
+	}
+
+	if dto.Active != nil {
+		t.Active = *dto.Active
+	}
+
+	t.UpdatedBy = userId
+
+	return s.repo.UpdateTeam(ctx, t)
 }

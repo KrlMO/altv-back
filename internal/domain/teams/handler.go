@@ -17,6 +17,7 @@ func (m *Module) RegisterRoutes(r *gin.Engine, jwtSecret string) {
 		auth := teams.Group("/", middleware.Auth(jwtSecret))
 		{
 			auth.POST("/", m.Register)
+			auth.PATCH("/:id", m.PatchUpdateTeam)
 		}
 	}
 }
@@ -36,12 +37,18 @@ func (m *Module) Register(c *gin.Context) {
 	userID := c.MustGet(middleware.ContextUserID).(int64)
 	req := RegisterTeamRequest{}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
+		c.JSON(400, response.ResponseError{
+			Error: "invalid request: " + err.Error(),
+			Ok:    false,
+		})
 		return
 	}
 
 	if err := m.service.RegisterTeam(c, userID, req); err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
+		c.JSON(400, response.ResponseError{
+			Error: "Internal error: " + err.Error(),
+			Ok:    false,
+		})
 		return
 	}
 
@@ -55,17 +62,23 @@ func (m *Module) Register(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id path string true "Team ID"
-// @Success 200 {object} TeamResponse
 // @Failure 404 {object} map[string]string
 // @Router /teams/{id} [get]
 func (m *Module) GetTeamByID(c *gin.Context) {
 	teamID := c.Param("id")
 	team, err := m.service.GetTeamByID(c, teamID)
 	if err != nil {
-		c.JSON(404, gin.H{"error": "team not found"})
+		c.JSON(404, response.ResponseError{
+			Error: "Team not found: " + err.Error(),
+			Ok:    false,
+		})
 		return
 	}
-	c.JSON(200, team)
+	response := response.ResponseOk[TeamResponse]{
+		Data: *team,
+		Ok:   true,
+	}
+	c.JSON(200, response)
 }
 
 // GetTeams godoc
@@ -81,7 +94,6 @@ func (m *Module) GetTeamByID(c *gin.Context) {
 // @Param tag_like query string false "Filter by tag substring"
 // @Param limit query int false "Limit number of results" default(10)
 // @Param offset query int false "Offset for pagination" default(0)
-// @Success 200 {array} TeamResponse
 // @Failure 400 {object} map[string]string
 // @Router /teams [get]
 func (m *Module) GetTeams(c *gin.Context) {
@@ -90,7 +102,10 @@ func (m *Module) GetTeams(c *gin.Context) {
 	if v := c.Query("country_id"); v != "" {
 		id, err := strconv.ParseInt(v, 10, 32)
 		if err != nil {
-			c.JSON(400, gin.H{"error": "invalid country_id"})
+			c.JSON(400, response.ResponseError{
+				Error: "invalid country_id",
+				Ok:    false,
+			})
 			return
 		}
 		id32 := int32(id)
@@ -100,7 +115,10 @@ func (m *Module) GetTeams(c *gin.Context) {
 	if v := c.Query("owner_id"); v != "" {
 		id, err := strconv.ParseInt(v, 10, 64)
 		if err != nil {
-			c.JSON(400, gin.H{"error": "invalid owner_id"})
+			c.JSON(400, response.ResponseError{
+				Error: "invalid owner_id",
+				Ok:    false,
+			})
 			return
 		}
 		filter.OwnerID = &id
@@ -109,7 +127,10 @@ func (m *Module) GetTeams(c *gin.Context) {
 	if v := c.Query("active"); v != "" {
 		val, err := strconv.ParseBool(v)
 		if err != nil {
-			c.JSON(400, gin.H{"error": "invalid active"})
+			c.JSON(400, response.ResponseError{
+				Error: "invalid active",
+				Ok:    false,
+			})
 			return
 		}
 		filter.Active = &val
@@ -135,9 +156,12 @@ func (m *Module) GetTeams(c *gin.Context) {
 	}
 	filter.Offset = offset
 
-	paginatedTeams, err := m.service.GetTeams(c, filter)
+	paginatedTeams, err := m.service.GetTeams(c.Request.Context(), filter)
 	if err != nil {
-		c.JSON(500, gin.H{"error": "internal error"})
+		c.JSON(500, response.ResponseError{
+			Error: "Internal error: " + err.Error(),
+			Ok:    false,
+		})
 		return
 	}
 
@@ -146,4 +170,39 @@ func (m *Module) GetTeams(c *gin.Context) {
 		Ok:   true,
 	}
 	c.JSON(200, response)
+}
+
+// PatchUpdateTeam godoc
+// @Summary Update team details
+// @Description Updates the details of an existing team
+// @Tags Teams
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Team ID"
+// @Param request body PatchUpdateTeamRequest true "Updated team info"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Router /teams/{id} [patch]
+func (m *Module) PatchUpdateTeam(c *gin.Context) {
+	userID := c.MustGet(middleware.ContextUserID).(int64)
+	teamID := c.Param("id")
+	req := PatchUpdateTeamRequest{}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(400, response.ResponseError{
+			Error: "invalid request: " + err.Error(),
+			Ok:    false,
+		})
+		return
+	}
+
+	if err := m.service.PatchUpdateTeam(c, userID, teamID, req); err != nil {
+		c.JSON(400, response.ResponseError{
+			Error: "Internal error: " + err.Error(),
+			Ok:    false,
+		})
+		return
+	}
+
+	c.JSON(200, gin.H{"message": "team updated"})
 }

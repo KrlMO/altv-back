@@ -33,3 +33,14 @@ type TeamFilter struct {
 	Limit     int
 	Offset    int
 }
+
+type PatchUpdateTeamRequest struct {
+	Name        *string `json:"name"`
+	Tag         *string `json:"tag"`
+	Description *string `json:"description"`
+	LogoPath    *string `json:"logo_path"`
+	BannerPath  *string `json:"banner_path"`
+	CountryId   *int32  `json:"country_id"`
+	IsVirtual   *bool   `json:"is_virtual"`
+	Active      *bool   `json:"active"`
+}
