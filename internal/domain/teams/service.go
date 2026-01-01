@@ -1,6 +1,8 @@
 package teams
 
 import (
+	"arena/internal/domain/identity"
+	"arena/internal/domain/teams/rules"
 	"arena/internal/domain/users"
 	"arena/pkg/middleware"
 	"context"
@@ -23,7 +25,7 @@ func NewService(repo *Repository) *Service {
 
 func (s *Service) RegisterTeam(c *gin.Context, userID int64, dto RegisterTeamRequest) error {
 	roles := c.MustGet(middleware.ContextRoles).([]string)
-	if !IsOrcMember(roles) {
+	if identity.IsOrc(roles) {
 		return errors.New("User cannot create a team, user is banned from creating teams")
 	}
 
@@ -124,7 +126,7 @@ func (s *Service) GetTeams(ctx context.Context, filter TeamFilter) (dto.Paginate
 
 func (s *Service) PatchUpdateTeam(ctx *gin.Context, userId int64, teamId string, dto PatchUpdateTeamRequest) error {
 	globalRoles := ctx.MustGet(middleware.ContextRoles).([]string)
-	if IsOrcMember(globalRoles) {
+	if identity.IsOrc(globalRoles) {
 		return errors.New("User cannot update a team, user is banned from updating teams")
 	}
 	parsedID, err := strconv.ParseInt(teamId, 10, 64)
@@ -137,7 +139,7 @@ func (s *Service) PatchUpdateTeam(ctx *gin.Context, userId int64, teamId string,
 	if err != nil {
 		return errors.New("Error fetching user team roles: " + err.Error())
 	}
-	if !IsTeamOwnerOrManager(teamRoles) && !IsIluvatarOrAinur(globalRoles) {
+	if !rules.IsTeamOwnerOrManager(teamRoles) && !identity.IsIluvatarOrAinur(globalRoles) {
 		return errors.New("user does not have permission to update this team or is not an administrator")
 	}
 
@@ -194,4 +196,82 @@ func (s *Service) PatchUpdateTeam(ctx *gin.Context, userId int64, teamId string,
 	t.UpdatedBy = userId
 
 	return s.repo.UpdateTeam(ctx, t)
+}
+
+func (s *Service) AddMemberToTeam(
+	ctx context.Context,
+	userID int64,
+	teamID string,
+	globalRole []string,
+	dto AddMemberRequest) error {
+	if err := rules.ValidateTeamRole(dto.Role); err != nil {
+		return err
+	}
+	if err := identity.CanInteractWithTeams(globalRole); err != nil {
+		return err
+	}
+	parsedTeamID, err := strconv.ParseInt(teamID, 10, 64)
+	if err != nil {
+		return errors.New("invalid team ID")
+	}
+	teamRoles, err := s.repo.GetUserTeamRoles(ctx, userID, parsedTeamID)
+	if err != nil {
+		return errors.New("Error fetching user team roles: " + err.Error())
+	}
+
+	tac := rules.TeamActionContext{
+		ActorID:          userID,
+		ActorGlobalRoles: globalRole,
+		ActorTeamRoles:   teamRoles,
+		TargetUserID:     dto.UserID,
+		TargetRole:       dto.Role,
+	}
+
+	if err := rules.CanAddMember(tac); err != nil {
+		return err
+	}
+
+	return s.repo.AddMemberToTeam(ctx, dto.UserID, parsedTeamID, userID, dto.Role)
+}
+
+func (s *Service) UpdateUserTeamRole(
+	ctx context.Context,
+	currentUserId int64,
+	curretUserGlobalRole []string,
+	teamId, userId string,
+	dto UpdateTeamMemberRoleRequest) error {
+	if err := rules.ValidateTeamRole(*dto.Role); err != nil {
+		return err
+	}
+	if err := identity.CanInteractWithTeams(curretUserGlobalRole); err != nil {
+		return err
+	}
+
+	parsedTeamID, err := strconv.ParseInt(teamId, 10, 64)
+	if err != nil {
+		return errors.New("invalid team ID")
+	}
+	parsedUserID, err := strconv.ParseInt(userId, 10, 64)
+	if err != nil {
+		return errors.New("invalid user ID")
+	}
+
+	teamRoles, err := s.repo.GetUserTeamRoles(ctx, currentUserId, parsedTeamID)
+	if err != nil {
+		return errors.New("Error fetching user team roles: " + err.Error())
+	}
+
+	tac := rules.TeamActionContext{
+		ActorID:          currentUserId,
+		ActorGlobalRoles: curretUserGlobalRole,
+		ActorTeamRoles:   teamRoles,
+		TargetUserID:     parsedUserID,
+		TargetRole:       *dto.Role,
+	}
+
+	if err := rules.CanUpdateMemberRole(tac); err != nil {
+		return err
+	}
+
+	return s.repo.UpdateUserTeamRole(ctx, parsedUserID, parsedTeamID, currentUserId, *dto.Role)
 }

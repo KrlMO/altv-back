@@ -43,3 +43,12 @@ type PatchUpdateTeamRequest struct {
 	CountryId   *int32  `json:"country_id"`
 	IsVirtual   *bool   `json:"is_virtual"`
 }
+
+type AddMemberRequest struct {
+	UserID int64  `json:"user_id" binding:"required"`
+	Role   string `json:"role" binding:"required"`
+}
+
+type UpdateTeamMemberRoleRequest struct {
+	Role *string `json:"role" binding:"required"`
+}

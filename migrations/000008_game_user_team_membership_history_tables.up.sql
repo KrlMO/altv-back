@@ -12,7 +12,7 @@ CREATE TABLE al_user_team_role (
     assigned_at TIMESTAMP NOT NULL DEFAULT NOW(),
     assigned_by BIGINT NOT NULL,
 
-    PRIMARY KEY (user_id, team_id, role_id),
+    PRIMARY KEY (user_id, team_id),
 
     FOREIGN KEY (user_id) REFERENCES al_user(id),
     FOREIGN KEY (team_id) REFERENCES al_team(id),

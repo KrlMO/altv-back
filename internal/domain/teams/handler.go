@@ -4,6 +4,7 @@ import (
 	"arena/pkg/dto"
 	"arena/pkg/middleware"
 	"arena/pkg/response"
+	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -18,13 +19,15 @@ func (m *Module) RegisterRoutes(r *gin.Engine, jwtSecret string) {
 		{
 			auth.POST("/", m.Register)
 			auth.PATCH("/:id", m.PatchUpdateTeam)
+			auth.POST("/:id/members", m.AddMemberToTeam)
+			auth.PATCH("/:id/members/:userId", m.UpdateTeamMemberRole)
 		}
 	}
 }
 
-// RegisterTeam godoc
-// @Summary Register a new team
-// @Description Creates a new team in the system
+// AddMemberToTeam godoc
+// @Summary Add a member to a team
+// @Description Adds a member to a team
 // @Tags Teams
 // @Accept json
 // @Produce json
@@ -205,4 +208,79 @@ func (m *Module) PatchUpdateTeam(c *gin.Context) {
 	}
 
 	c.JSON(200, gin.H{"message": "team updated"})
+}
+
+// AddMemberToTeam godoc
+// @Summary Add a member to a team
+// @Description Adds a member to a team
+// @Tags Teams
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Team ID"
+// @Param request body AddMemberRequest true "Member info"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Router /teams/{id}/members [post]
+func (m *Module) AddMemberToTeam(c *gin.Context) {
+	userID := c.MustGet(middleware.ContextUserID).(int64)
+	globalRole := c.MustGet(middleware.ContextRoles).([]string)
+	teamID := c.Param("id")
+	req := AddMemberRequest{}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(400, response.ResponseError{
+			Error: "invalid request: " + err.Error(),
+			Ok:    false,
+		})
+		return
+	}
+
+	if err := m.service.AddMemberToTeam(c, userID, teamID, globalRole, req); err != nil {
+		c.JSON(400, response.ResponseError{
+			Error: "Internal error: " + err.Error(),
+			Ok:    false,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "member added to team"})
+}
+
+// UpdateTeamMemberRole godoc
+// @Summary Updates team member role role
+// @Description Updates team member role role
+// @Tags Teams
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Team ID"
+// @Param userId path string true "User ID"
+// @Param request body UpdateTeamMemberRoleRequest true "Role"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Router /teams/{id}/members/{userId} [patch]
+func (m *Module) UpdateTeamMemberRole(c *gin.Context) {
+	userID := c.MustGet(middleware.ContextUserID).(int64)
+	globalRole := c.MustGet(middleware.ContextRoles).([]string)
+	paramTeamId := c.Param("id")
+	paramUserUd := c.Param("userId")
+
+	req := UpdateTeamMemberRoleRequest{}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(400, response.ResponseError{
+			Error: "invalid request: " + err.Error(),
+			Ok:    false,
+		})
+		return
+	}
+
+	if err := m.service.UpdateUserTeamRole(c, userID, globalRole, paramTeamId, paramUserUd, req); err != nil {
+		c.JSON(400, response.ResponseError{
+			Error: "Internal error: " + err.Error(),
+			Ok:    false,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "updated team member role"})
 }
