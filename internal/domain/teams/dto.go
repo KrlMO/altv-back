@@ -1,6 +1,6 @@
 package teams
 
-import "arena/internal/domain/users"
+import "arena/pkg/dto"
 
 type RegisterTeamRequest struct {
 	Name        string `json:"name" binding:"required,min=3,max=50"`
@@ -13,15 +13,15 @@ type RegisterTeamRequest struct {
 }
 
 type TeamResponse struct {
-	ID          int64                `json:"id"`
-	Name        string               `json:"name"`
-	Tag         string               `json:"tag"`
-	Description string               `json:"description"`
-	LogoPath    string               `json:"logo_path"`
-	BannerPath  string               `json:"banner_path"`
-	Country     users.CountryReponse `json:"country"`
-	IsVirtual   bool                 `json:"is_virtual"`
-	Active      bool                 `json:"active"`
+	ID          int64              `json:"id"`
+	Name        string             `json:"name"`
+	Tag         string             `json:"tag"`
+	Description string             `json:"description"`
+	LogoPath    string             `json:"logo_path"`
+	BannerPath  string             `json:"banner_path"`
+	Country     dto.CountryReponse `json:"country"`
+	IsVirtual   bool               `json:"is_virtual"`
+	Active      bool               `json:"active"`
 }
 
 type TeamFilter struct {
@@ -51,4 +51,12 @@ type AddMemberRequest struct {
 
 type UpdateTeamMemberRoleRequest struct {
 	Role *string `json:"role" binding:"required"`
+}
+
+type CreateTeamGameRequest struct {
+	GameSlug   string  `json:"game_slug" binding:"required"`
+	Name       string  `json:"name" binding:"required,min=3,max=150"`
+	LogoPath   *string `json:"logo_path" binding:"omitempty"`
+	BannerPath *string `json:"banner_path" binding:"omitempty"`
+	Active     bool    `json:"active" binding:"omitempty"`
 }

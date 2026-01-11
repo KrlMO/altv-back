@@ -3,7 +3,6 @@ package teams
 import (
 	"arena/internal/domain/identity"
 	"arena/internal/domain/teams/rules"
-	"arena/internal/domain/users"
 	"arena/pkg/middleware"
 	"context"
 	"errors"
@@ -72,7 +71,7 @@ func (s *Service) GetTeamByID(c *gin.Context, teamID string) (*TeamResponse, err
 		Description: t.Team.Description,
 		LogoPath:    t.Team.LogoPath,
 		BannerPath:  t.Team.BannerPath,
-		Country: users.CountryReponse{
+		Country: dto.CountryReponse{
 			ID:       t.Country.ID,
 			Name:     t.Country.Name,
 			FlagPath: flag,
@@ -102,7 +101,7 @@ func (s *Service) GetTeams(ctx context.Context, filter TeamFilter) (dto.Paginate
 			Description: t.Team.Description,
 			LogoPath:    t.Team.LogoPath,
 			BannerPath:  t.Team.BannerPath,
-			Country: users.CountryReponse{
+			Country: dto.CountryReponse{
 				ID:       t.Country.ID,
 				Name:     t.Country.Name,
 				FlagPath: flag,
@@ -220,11 +219,13 @@ func (s *Service) AddMemberToTeam(
 	}
 
 	tac := rules.TeamActionContext{
-		ActorID:          userID,
-		ActorGlobalRoles: globalRole,
-		ActorTeamRoles:   teamRoles,
-		TargetUserID:     dto.UserID,
-		TargetRole:       dto.Role,
+		Actor: rules.ActorContext{
+			ActorID:          userID,
+			ActorGlobalRoles: globalRole,
+			ActorTeamRoles:   teamRoles,
+		},
+		TargetUserID: dto.UserID,
+		TargetRole:   dto.Role,
 	}
 
 	if err := rules.CanAddMember(tac); err != nil {
@@ -262,11 +263,13 @@ func (s *Service) UpdateUserTeamRole(
 	}
 
 	tac := rules.TeamActionContext{
-		ActorID:          currentUserId,
-		ActorGlobalRoles: curretUserGlobalRole,
-		ActorTeamRoles:   teamRoles,
-		TargetUserID:     parsedUserID,
-		TargetRole:       *dto.Role,
+		Actor: rules.ActorContext{
+			ActorID:          currentUserId,
+			ActorGlobalRoles: curretUserGlobalRole,
+			ActorTeamRoles:   teamRoles,
+		},
+		TargetUserID: parsedUserID,
+		TargetRole:   *dto.Role,
 	}
 
 	if err := rules.CanUpdateMemberRole(tac); err != nil {
@@ -274,4 +277,86 @@ func (s *Service) UpdateUserTeamRole(
 	}
 
 	return s.repo.UpdateUserTeamRole(ctx, parsedUserID, parsedTeamID, currentUserId, *dto.Role)
+}
+
+func (s *Service) DeleteUserFromTeam(
+	ctx context.Context,
+	currentUserId int64,
+	curretUserGlobalRoles []string,
+	teamId, userId string,
+) error {
+	if err := identity.CanInteractWithTeams(curretUserGlobalRoles); err != nil {
+		return err
+	}
+	parsedTeamID, err := strconv.ParseInt(teamId, 10, 64)
+	if err != nil {
+		return errors.New("invalid team ID")
+	}
+	parsedUserID, err := strconv.ParseInt(userId, 10, 64)
+	if err != nil {
+		return errors.New("invalid user ID")
+	}
+
+	teamRoles, err := s.repo.GetUserTeamRoles(ctx, currentUserId, parsedTeamID)
+	if err != nil {
+		return errors.New("Error fetching user team roles: " + err.Error())
+	}
+	actualRole, err := s.repo.GetUserTeamRole(ctx, parsedUserID, parsedTeamID)
+	if errors.Is(err, rules.ErrUserNotMember) {
+		return errors.New("user is not a member of this team")
+	}
+
+	tac := rules.TeamActionContext{
+		Actor: rules.ActorContext{
+			ActorID:          currentUserId,
+			ActorGlobalRoles: curretUserGlobalRoles,
+			ActorTeamRoles:   teamRoles,
+		},
+		TargetUserID: parsedUserID,
+		TargetRole:   actualRole,
+	}
+
+	if err := rules.CanDeleteMemberFromTeam(tac); err != nil {
+		return errors.New("Error deleting user from team: " + err.Error())
+	}
+	return s.repo.DeleteUserFromTeam(ctx, tac.TargetUserID, parsedTeamID, tac.Actor.ActorID)
+}
+
+func (s *Service) AddTeamGame(
+	ctx context.Context,
+	teamId string,
+	currentUserId int64,
+	currentUserGlobalRoles []string,
+	dto CreateTeamGameRequest,
+) error {
+	if err := identity.CanInteractWithTeams(currentUserGlobalRoles); err != nil {
+		return err
+	}
+	parsedTeamID, err := strconv.ParseInt(teamId, 10, 64)
+	if err != nil {
+		return errors.New("invalid team ID")
+	}
+	teamRoles, err := s.repo.GetUserTeamRoles(ctx, currentUserId, parsedTeamID)
+	if err != nil {
+		return errors.New("Error fetching user team roles: " + err.Error())
+	}
+
+	gameId, err := s.repo.GetGameBySlug(ctx, dto.GameSlug)
+	if err != nil {
+		return errors.New("Error, game does not exist: " + err.Error())
+	}
+
+	tgc := rules.TeamGameContext{
+		Actor: rules.ActorContext{
+			ActorID:          currentUserId,
+			ActorGlobalRoles: currentUserGlobalRoles,
+			ActorTeamRoles:   teamRoles,
+		},
+		GameId: gameId,
+	}
+
+	if err := rules.CanCreateTeamGame(tgc); err != nil {
+		return errors.New("Error creating Team Game: " + err.Error())
+	}
+	return s.repo.CreateTeamGame(ctx, parsedTeamID, tgc.Actor.ActorID, tgc.GameId, dto.Name, *dto.LogoPath, *dto.BannerPath)
 }

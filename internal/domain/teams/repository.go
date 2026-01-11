@@ -1,6 +1,7 @@
 package teams
 
 import (
+	"arena/internal/domain/teams/rules"
 	"context"
 	"errors"
 	"strconv"
@@ -398,7 +399,7 @@ func (r *Repository) InsertUserTeamRoleHistory(
 func (r *Repository) DeleteUserFromTeam(
 	ctx context.Context,
 	userId, teamId, assigned_by int64,
-	roleName string) error {
+) error {
 	tx, err := r.db.Begin(ctx)
 	if err != nil {
 		return err
@@ -419,6 +420,26 @@ func (r *Repository) DeleteUserFromTeam(
 	return tx.Commit(ctx)
 }
 
+func (r *Repository) GetUserTeamRole(
+	ctx context.Context,
+	userId, teamId int64,
+) (string, error) {
+	var actualRole string
+	err := r.db.QueryRow(ctx, `
+		SELECT atr.name FROM al_user_team_role autr
+		JOIN al_team_role atr ON autr.role_id = atr.id
+		WHERE autr.user_id = $1 AND autr.team_id = $2
+	`, userId, teamId).Scan(&actualRole)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return "", rules.ErrUserNotMember
+		}
+		return "", err
+	}
+
+	return actualRole, err
+}
+
 func (r *Repository) CloseUserTeamRoleAsRemoved(
 	ctx context.Context,
 	tx pgx.Tx,
@@ -435,4 +456,40 @@ func (r *Repository) CloseUserTeamRoleAsRemoved(
 		  AND assigned_to IS NULL
 	`, userId, teamId, assignedBy)
 	return err
+}
+
+func (r *Repository) GetGameBySlug(
+	ctx context.Context,
+	gameSlug string,
+) (int32, error) {
+	var gameId int32
+	err := r.db.QueryRow(ctx, `
+			SELECT ag.id FROM al_game ag
+			WHERE ag.slug = $1
+		`, gameSlug).Scan(&gameId)
+	if err != nil {
+		return -1, err
+	}
+	return gameId, nil
+}
+
+func (r *Repository) CreateTeamGame(
+	ctx context.Context,
+	teamId, createdBy int64,
+	gameId int32,
+	nameTeamGame, logoPath, bannerPath string,
+) error {
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+	query := `
+		INSERT INTO al_team_game(team_id, game_id, name, logo_path, banner_path, created_by, updated_by)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+	`
+	if _, err := tx.Exec(ctx, query, teamId, gameId, nameTeamGame, logoPath, bannerPath, createdBy, createdBy); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
 }

@@ -1,6 +1,7 @@
 package users
 
 import (
+	"arena/pkg/dto"
 	"arena/pkg/utils"
 	"context"
 	"database/sql"
@@ -146,7 +147,7 @@ func (s *Service) GetProfile(ctx context.Context, userID int64) (*UserProfileRes
 		ProfilePhoto: up.User.ProfilePhoto,
 		BannerPhoto:  up.User.BannerPhoto,
 		BirthDate:    birth,
-		Country: CountryReponse{
+		Country: dto.CountryReponse{
 			ID:       up.Country.ID,
 			Name:     up.Country.Name,
 			FlagPath: flag,

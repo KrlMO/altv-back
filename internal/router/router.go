@@ -3,6 +3,7 @@ package router
 import (
 	"arena/internal/config"
 	"arena/internal/domain/auth"
+	teamgames "arena/internal/domain/team_games"
 	"arena/internal/domain/teams"
 	"arena/internal/domain/users"
 
@@ -28,6 +29,12 @@ func SetupRouter(db *pgxpool.Pool, cfg *config.Config) *gin.Engine {
 	teamsService := teams.NewService(teamsRepo)
 	teamsModule := teams.NewModule(teamsService)
 	teamsModule.RegisterRoutes(r, cfg.JWTSecret)
+
+	//TEAM GAMES
+	teamGamesRepo := teamgames.NewRepository(db)
+	teamGamesService := teamgames.NewService(teamGamesRepo)
+	teamGamesModule := teamgames.NewModule(teamGamesService)
+	teamGamesModule.RegisterRoutes(r, cfg.JWTSecret)
 
 	// AUTH
 	authModule := auth.NewModule(usersService, cfg.JWTSecret)

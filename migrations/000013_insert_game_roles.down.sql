@@ -1,0 +1,1 @@
+delete from al_game_role;
