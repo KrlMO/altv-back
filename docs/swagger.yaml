@@ -34,8 +34,17 @@ definitions:
         type: string
       id:
         type: integer
+      iso_code:
+        type: string
       name:
         type: string
+    type: object
+  response.ResponseError:
+    properties:
+      error:
+        type: string
+      ok:
+        type: boolean
     type: object
   teams.AddMemberRequest:
     properties:
@@ -245,6 +254,41 @@ paths:
       summary: Login a user
       tags:
       - Auth
+  /team-games/{id}/members:
+    get:
+      consumes:
+      - application/json
+      description: Get public members of a team game by team game ID
+      parameters:
+      - description: Team Game ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ResponseError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.ResponseError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ResponseError'
+      summary: List Team Game Members
+      tags:
+      - Team Games
   /teams:
     get:
       consumes:

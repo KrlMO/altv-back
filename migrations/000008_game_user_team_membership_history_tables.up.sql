@@ -57,9 +57,9 @@ CREATE TABLE al_team_membership_history (
     FOREIGN KEY (removed_by) REFERENCES al_user(id),
     CONSTRAINT prevent_overlapping_teams_per_game 
     EXCLUDE USING GIST (
-        user_id WITH =,       -- Si es el mismo usuario...
-        game_id WITH =,       -- Y es el mismo juego...
-        daterange(joined_at, left_at, '[]') WITH && -- ¡Las fechas NO se pueden tocar!
+        user_id WITH =,       
+        game_id WITH =,       
+        daterange(joined_at, left_at, '[]') WITH &&
     )
 );
 

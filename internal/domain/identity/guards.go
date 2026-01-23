@@ -8,3 +8,10 @@ func CanInteractWithTeams(roles []string) error {
 	}
 	return nil
 }
+
+func CanInteractWithTeamGames(roles []string) error {
+	if IsOrc(roles) {
+		return errors.New("user is banned from team game interactions")
+	}
+	return nil
+}

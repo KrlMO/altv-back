@@ -26,3 +26,12 @@ func IsTeamOwner(roles []string) bool {
 	}
 	return false
 }
+
+func IsTeamOwnerOrManagerOrStaff(roles []string) bool {
+	for _, r := range roles {
+		if r == "TEAM_MANAGER" || r == "TEAM_OWNER" || r == "TEAM_STAFF" {
+			return true
+		}
+	}
+	return false
+}

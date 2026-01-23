@@ -12,7 +12,6 @@ INSERT INTO al_team_game_role (name) VALUES
 ('PLAYER'),
 ('COACH'),
 ('ANALYST'),
-('MANAGER'),
 ('STAFF'),
 ('TEAM_CAPTAIN');
 

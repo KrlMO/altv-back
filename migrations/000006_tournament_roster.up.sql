@@ -7,6 +7,7 @@ CREATE TABLE al_tournament_roster (
     user_id BIGINT NOT NULL,
     tournament_id BIGINT NOT NULL,
     team_game_id BIGINT NOT NULL,
+    player_image_id BIGINT NOT NULL,
     is_starter BOOLEAN NOT NULL DEFAULT TRUE,
     added_at TIMESTAMP NOT NULL DEFAULT NOW(),
     added_by BIGINT NOT NULL,
@@ -16,5 +17,9 @@ CREATE TABLE al_tournament_roster (
     FOREIGN KEY (user_id) REFERENCES al_user(id),
     FOREIGN KEY (tournament_id) REFERENCES al_tournament(id),
     FOREIGN KEY (team_game_id) REFERENCES al_team_game(id),
+    FOREIGN KEY (player_image_id) REFERENCES al_team_game_player_image(id),
     FOREIGN KEY (added_by) REFERENCES al_user(id)
 );
+
+alter table al_tournament_roster add column player_image_id BIGINT NOT NULL;
+alter table al_tournament_roster add foreign key (player_image_id) references al_team_game_player_image(id);

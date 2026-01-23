@@ -3,13 +3,13 @@ package teams
 import (
 	"arena/internal/domain/identity"
 	"arena/internal/domain/teams/rules"
+	"arena/pkg/dto"
+	grules "arena/pkg/global_rules"
 	"arena/pkg/middleware"
 	"context"
 	"errors"
 	"regexp"
 	"strconv"
-
-	"arena/pkg/dto"
 
 	"github.com/gin-gonic/gin"
 )
@@ -219,7 +219,7 @@ func (s *Service) AddMemberToTeam(
 	}
 
 	tac := rules.TeamActionContext{
-		Actor: rules.ActorContext{
+		Actor: grules.ActorContext{
 			ActorID:          userID,
 			ActorGlobalRoles: globalRole,
 			ActorTeamRoles:   teamRoles,
@@ -263,7 +263,7 @@ func (s *Service) UpdateUserTeamRole(
 	}
 
 	tac := rules.TeamActionContext{
-		Actor: rules.ActorContext{
+		Actor: grules.ActorContext{
 			ActorID:          currentUserId,
 			ActorGlobalRoles: curretUserGlobalRole,
 			ActorTeamRoles:   teamRoles,
@@ -307,7 +307,7 @@ func (s *Service) DeleteUserFromTeam(
 	}
 
 	tac := rules.TeamActionContext{
-		Actor: rules.ActorContext{
+		Actor: grules.ActorContext{
 			ActorID:          currentUserId,
 			ActorGlobalRoles: curretUserGlobalRoles,
 			ActorTeamRoles:   teamRoles,
@@ -347,7 +347,7 @@ func (s *Service) AddTeamGame(
 	}
 
 	tgc := rules.TeamGameContext{
-		Actor: rules.ActorContext{
+		Actor: grules.ActorContext{
 			ActorID:          currentUserId,
 			ActorGlobalRoles: currentUserGlobalRoles,
 			ActorTeamRoles:   teamRoles,

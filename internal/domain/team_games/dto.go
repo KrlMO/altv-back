@@ -14,8 +14,14 @@ type TeamGameMemberResponse struct {
 	LastName  string             `json:"last_name"`
 	Country   dto.CountryReponse `json:"country"`
 	Role      string             `json:"role"`
-	Status    string             `json:"status"`
 }
 
-type TeamGameFilter struct {
+type AddTeamGameMemberRequest struct {
+	Members []NewTeamGameMember `json:"members" binding:"required,min=1,max=50"`
+	GameId  int32               `json:"game_id" binding:"required"`
+}
+
+type NewTeamGameMember struct {
+	UserID         int64
+	TeamGameRoleID int32
 }

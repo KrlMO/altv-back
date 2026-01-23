@@ -1,18 +1,14 @@
 package rules
 
+import grules "arena/pkg/global_rules"
+
 type TeamActionContext struct {
-	Actor        ActorContext
+	Actor        grules.ActorContext
 	TargetUserID int64
 	TargetRole   string
 }
 
 type TeamGameContext struct {
-	Actor  ActorContext
+	Actor  grules.ActorContext
 	GameId int32
-}
-
-type ActorContext struct {
-	ActorID          int64
-	ActorGlobalRoles []string
-	ActorTeamRoles   []string
 }

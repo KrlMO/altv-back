@@ -20,10 +20,3 @@ type User struct {
 	Active       bool         `db:"active"`
 	UpdatedAt    time.Time    `db:"updated_at"`
 }
-
-type Country struct {
-	ID       int32          `db:"id"`
-	Name     string         `db:"name"`
-	FlagPath sql.NullString `db:"flag_path"`
-	IsoCode  string         `db:"iso_code"`
-}

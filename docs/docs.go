@@ -59,6 +59,59 @@ const docTemplate = `{
                 }
             }
         },
+        "/team-games/{id}/members": {
+            "get": {
+                "description": "Get public members of a team game by team game ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Team Games"
+                ],
+                "summary": "List Team Game Members",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Team Game ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.ResponseError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.ResponseError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.ResponseError"
+                        }
+                    }
+                }
+            }
+        },
         "/teams": {
             "get": {
                 "description": "Retrieves a list of teams with optional filters",
@@ -802,8 +855,22 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
+                "iso_code": {
+                    "type": "string"
+                },
                 "name": {
                     "type": "string"
+                }
+            }
+        },
+        "response.ResponseError": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                },
+                "ok": {
+                    "type": "boolean"
                 }
             }
         },
