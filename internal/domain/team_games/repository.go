@@ -231,7 +231,7 @@ func (r *Repository) AddMembershipHistory(
 	for i, m := range members {
 		base := i * 5
 		historyValues = append(historyValues,
-			fmt.Sprintf("($%d,$%d,$%d,NOW(),$%d,$%s,NOW(),NOW())", base+1, base+2, base+3, base+4, base+5),
+			fmt.Sprintf("($%d,$%d,$%d,NOW(),$%d,$%d,NOW(),NOW())", base+1, base+2, base+3, base+4, base+5),
 		)
 		historyArgs = append(historyArgs,
 			m.UserID,
