@@ -44,3 +44,7 @@ func IsPlayer(roles []string) bool {
 	}
 	return false
 }
+
+func IsTeamGameMember(belongsToTeam bool) bool {
+	return belongsToTeam
+}

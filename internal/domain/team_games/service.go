@@ -68,26 +68,22 @@ func (s *Service) GetTeamGameMembers(
 	return teamGameMembersResponse, nil
 }
 
-func (s *Service) AddMembersToTeamGame(
+func (s *Service) GetTeamGameActionContext(
 	ctx context.Context,
 	currentUserId int64,
 	currentUserGlobalRoles []string,
 	teamGameId string,
-	dto AddTeamGameMemberRequest,
-) error {
-	if err := identity.CanInteractWithTeamGames(currentUserGlobalRoles); err != nil {
-		return err
-	}
-	if len(dto.Members) == 0 {
-		return rules.ErrEmptyMembers
-	}
+) (rules.TeamGameActionContext, string, int64, error) {
 	parsedTeamGameID, err := strconv.ParseInt(teamGameId, 10, 64)
 	if err != nil {
-		return rules.ErrBadIdTeamGame
+		return rules.TeamGameActionContext{}, "", 0, rules.ErrBadIdTeamGame
 	}
-	teamRoles, teamGameRoles, err := s.repo.GetUserTeamAndTeamGameRoles(ctx, currentUserId, parsedTeamGameID)
+	if err := identity.CanInteractWithTeamGames(currentUserGlobalRoles); err != nil {
+		return rules.TeamGameActionContext{}, "", 0, err
+	}
+	teamGameName, teamRoles, teamGameRoles, err := s.repo.GetUserTeamAndTeamGameRoles(ctx, currentUserId, parsedTeamGameID)
 	if err != nil {
-		return err
+		return rules.TeamGameActionContext{}, "", 0, err
 	}
 	tgc := rules.TeamGameActionContext{
 		Actor: grules.ActorContext{
@@ -97,13 +93,72 @@ func (s *Service) AddMembersToTeamGame(
 		},
 		ActorTeamGameRoles: teamGameRoles,
 		TeamGameID:         parsedTeamGameID,
+		BelongsToTeam:      teamGameName != "" && len(teamRoles) > 0 && len(teamGameRoles) > 0,
+	}
+	return tgc, teamGameName, parsedTeamGameID, nil
+}
+
+func (s *Service) AddMembersToTeamGame(
+	ctx context.Context,
+	currentUserId int64,
+	currentUserGlobalRoles []string,
+	teamGameId string,
+	dto AddTeamGameMembersRequest,
+) (string, error) {
+	tgc, teamGameName, parsedTeamGameID, err := s.GetTeamGameActionContext(ctx, currentUserId, currentUserGlobalRoles, teamGameId)
+	if err != nil {
+		return "err", err
 	}
 	if err := rules.CanAddMembersToTeamGame(tgc); err != nil {
-		return err
+		return "", err
 	}
 	err = s.repo.AddMembersToTeamGame(ctx, currentUserId, parsedTeamGameID, dto.Members, dto.GameId)
 	if err != nil {
-		return err
+		return "", err
 	}
-	return nil
+	return teamGameName, nil
+}
+
+func (s *Service) LeaveTeamGame(
+	ctx context.Context,
+	currentUserId int64,
+	currentUserGlobalRoles []string,
+	teamGameId string,
+) (string, error) {
+
+	tgc, teamGameName, parsedTeamGameID, err := s.GetTeamGameActionContext(ctx, currentUserId, currentUserGlobalRoles, teamGameId)
+	if err != nil {
+		return "err", err
+	}
+	if err := rules.CanLeaveTeamGame(tgc); err != nil {
+		return "err", err
+	}
+	err = s.repo.LeaveTeamGame(ctx, currentUserId, parsedTeamGameID)
+	if err != nil {
+		return "err", err
+	}
+	return teamGameName, nil
+}
+
+func (s *Service) RemoveMembersFromTeamGame(
+	ctx context.Context,
+	currentUserId int64,
+	currentUserGlobalRoles []string,
+	teamGameId string,
+	dto RemoveTeamGameMembersRequest,
+) (string, error) {
+
+	tgc, teamGameName, parsedTeamGameID, err := s.GetTeamGameActionContext(ctx, currentUserId, currentUserGlobalRoles, teamGameId)
+	if err != nil {
+		return "err", err
+	}
+
+	if err := rules.CanRemoveMembersFromTeamGame(tgc); err != nil {
+		return "err", err
+	}
+	err = s.repo.RemoveMembersFromTeamGame(ctx, currentUserId, parsedTeamGameID, dto.Members)
+	if err != nil {
+		return "err", err
+	}
+	return teamGameName, nil
 }

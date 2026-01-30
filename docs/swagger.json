@@ -105,6 +105,65 @@
                         }
                     }
                 }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Add members to a team game",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Team Games"
+                ],
+                "summary": "Add Members to Team Game",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Team Game ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Add Team Game Members Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/teamgames.AddTeamGameMemberRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.ResponseError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.ResponseError"
+                        }
+                    }
+                }
             }
         },
         "/teams": {
@@ -866,6 +925,37 @@
                 },
                 "ok": {
                     "type": "boolean"
+                }
+            }
+        },
+        "teamgames.AddTeamGameMemberRequest": {
+            "type": "object",
+            "required": [
+                "game_id",
+                "members"
+            ],
+            "properties": {
+                "game_id": {
+                    "type": "integer"
+                },
+                "members": {
+                    "type": "array",
+                    "maxItems": 50,
+                    "minItems": 1,
+                    "items": {
+                        "$ref": "#/definitions/teamgames.NewTeamGameMember"
+                    }
+                }
+            }
+        },
+        "teamgames.NewTeamGameMember": {
+            "type": "object",
+            "properties": {
+                "teamGameRoleID": {
+                    "type": "integer"
+                },
+                "userID": {
+                    "type": "integer"
                 }
             }
         },

@@ -16,12 +16,20 @@ type TeamGameMemberResponse struct {
 	Role      string             `json:"role"`
 }
 
-type AddTeamGameMemberRequest struct {
-	Members []NewTeamGameMember `json:"members" binding:"required,min=1,max=50"`
+type AddTeamGameMembersRequest struct {
+	Members []ReqTeamGameMember `json:"members" binding:"required,min=1,max=50"`
 	GameId  int32               `json:"game_id" binding:"required"`
 }
 
-type NewTeamGameMember struct {
+type ReqTeamGameMember struct {
 	UserID         int64
 	TeamGameRoleID int32
+}
+
+type RemoveTeamGameMembersRequest struct {
+	Members []int64 `json:"members" binding:"required,min=1,max=50"`
+}
+
+type TeamGameMembersRoleUpdate struct {
+	MembersToUpdate []ReqTeamGameMember `json:"members_to_update" binding:"required,min=1,max=50"`
 }

@@ -6,4 +6,5 @@ type TeamGameActionContext struct {
 	Actor              grules.ActorContext
 	ActorTeamGameRoles []string
 	TeamGameID         int64
+	BelongsToTeam      bool
 }

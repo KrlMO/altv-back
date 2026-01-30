@@ -46,6 +46,27 @@ definitions:
       ok:
         type: boolean
     type: object
+  teamgames.AddTeamGameMemberRequest:
+    properties:
+      game_id:
+        type: integer
+      members:
+        items:
+          $ref: '#/definitions/teamgames.NewTeamGameMember'
+        maxItems: 50
+        minItems: 1
+        type: array
+    required:
+    - game_id
+    - members
+    type: object
+  teamgames.NewTeamGameMember:
+    properties:
+      teamGameRoleID:
+        type: integer
+      userID:
+        type: integer
+    type: object
   teams.AddMemberRequest:
     properties:
       role:
@@ -287,6 +308,44 @@ paths:
           schema:
             $ref: '#/definitions/response.ResponseError'
       summary: List Team Game Members
+      tags:
+      - Team Games
+    post:
+      consumes:
+      - application/json
+      description: Add members to a team game
+      parameters:
+      - description: Team Game ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Add Team Game Members Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/teamgames.AddTeamGameMemberRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.ResponseError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ResponseError'
+      security:
+      - BearerAuth: []
+      summary: Add Members to Team Game
       tags:
       - Team Games
   /teams:
