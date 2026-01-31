@@ -480,3 +480,103 @@ func (r *Repository) RemoveMembersFromTeamGame(
 	}
 	return tx.Commit(ctx)
 }
+
+func (r *Repository) RemoveTeamGameRoleFromMember(
+	ctx context.Context,
+	userId, teamId int64,
+	members []TeamGameMemberDto,
+) error {
+	if len(members) == 0 {
+		return rules.ErrEmptyMembers
+	}
+
+	var (
+		roleValues []string
+		roleArgs   []any
+		argIndex   = 1
+	)
+
+	for _, m := range members {
+		for _, role := range m.Roles {
+			roleValues = append(roleValues,
+				fmt.Sprintf("($%d,$%d,$%d)", argIndex, argIndex+1, argIndex+2),
+			)
+
+			roleArgs = append(roleArgs,
+				m.UserID,
+				teamId,
+				role.ID,
+			)
+
+			argIndex += 3
+		}
+	}
+
+	query := `
+		DELETE FROM al_user_team_game_role
+		WHERE (user_id, team_game_id, role_id) IN (` + strings.Join(roleValues, ",") + `)
+	`
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	_, err = tx.Exec(ctx, query, roleArgs...)
+
+	if err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
+}
+
+func (r *Repository) AddTeamGameRoleToMember(
+	ctx context.Context,
+	userId, teamId int64,
+	members []TeamGameMemberDto,
+) error {
+	if len(members) == 0 {
+		return rules.ErrEmptyMembers
+	}
+
+	var (
+		roleValues []string
+		roleArgs   []any
+		argIndex   = 1
+	)
+
+	for _, m := range members {
+		for _, role := range m.Roles {
+			roleValues = append(roleValues,
+				fmt.Sprintf("($%d,$%d,$%d,NOW(),$%d)", argIndex, argIndex+1, argIndex+2, argIndex+3),
+			)
+
+			roleArgs = append(roleArgs,
+				m.UserID,
+				teamId,
+				role.ID,
+				userId,
+			)
+
+			argIndex += 4
+		}
+	}
+
+	query := `
+		INSERT INTO al_user_team_game_role
+			(user_id, team_game_id, role_id, assigned_at, assigned_by)
+		VALUES ` + strings.Join(roleValues, ",")
+
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	_, err = tx.Exec(ctx, query, roleArgs...)
+
+	if err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
+}

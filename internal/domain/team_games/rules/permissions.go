@@ -54,3 +54,35 @@ func CanUpdateTeamGameMemberRole(ctx TeamGameActionContext) error {
 
 	return nil
 }
+
+func CanRemoveTeamGameRoleFromMember(ctx TeamGameActionContext) error {
+	if identity.IsIluvatarOrAinur(ctx.Actor.ActorGlobalRoles) {
+		return nil
+	}
+
+	if !IsTeamGameMember(ctx.BelongsToTeam) {
+		return ErrUserDoesNotBelongToTeamGame
+	}
+
+	if !trules.IsTeamOwnerOrManagerOrStaff(ctx.Actor.ActorTeamRoles) {
+		return errors.New("user does not have permission to remove roles from members in this team game")
+	}
+
+	return nil
+}
+
+func CanAddTeamGameRoleToMember(ctx TeamGameActionContext) error {
+	if identity.IsIluvatarOrAinur(ctx.Actor.ActorGlobalRoles) {
+		return nil
+	}
+
+	if !IsTeamGameMember(ctx.BelongsToTeam) {
+		return ErrUserDoesNotBelongToTeamGame
+	}
+
+	if !trules.IsTeamOwnerOrManagerOrStaff(ctx.Actor.ActorTeamRoles) {
+		return errors.New("user does not have permission to add roles to members in this team game")
+	}
+
+	return nil
+}

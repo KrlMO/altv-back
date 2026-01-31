@@ -162,3 +162,49 @@ func (s *Service) RemoveMembersFromTeamGame(
 	}
 	return teamGameName, nil
 }
+
+func (s *Service) RemoveTeamGameRoleFromMember(
+	ctx context.Context,
+	currentUserId int64,
+	currentUserGlobalRoles []string,
+	teamGameId string,
+	dto RemoveTeamGameRoleFromUserRequest,
+) (string, error) {
+	tgc, teamGameName, parsedTeamGameID, err := s.GetTeamGameActionContext(ctx, currentUserId, currentUserGlobalRoles, teamGameId)
+	if err != nil {
+		return "err", err
+	}
+
+	if err := rules.CanRemoveTeamGameRoleFromMember(tgc); err != nil {
+		return "err", err
+	}
+
+	err = s.repo.RemoveTeamGameRoleFromMember(ctx, currentUserId, parsedTeamGameID, dto.Users)
+	if err != nil {
+		return "err", err
+	}
+	return teamGameName, nil
+}
+
+func (s *Service) AddTeamGameRoleToMember(
+	ctx context.Context,
+	currentUserId int64,
+	currentUserGlobalRoles []string,
+	teamGameId string,
+	dto AddTeamGameRoleToMemberRequest,
+) (string, error) {
+	tgc, teamGameName, parsedTeamGameID, err := s.GetTeamGameActionContext(ctx, currentUserId, currentUserGlobalRoles, teamGameId)
+	if err != nil {
+		return "err", err
+	}
+
+	if err := rules.CanAddTeamGameRoleToMember(tgc); err != nil {
+		return "err", err
+	}
+
+	err = s.repo.AddTeamGameRoleToMember(ctx, currentUserId, parsedTeamGameID, dto.Users)
+	if err != nil {
+		return "err", err
+	}
+	return teamGameName, nil
+}

@@ -33,3 +33,21 @@ type RemoveTeamGameMembersRequest struct {
 type TeamGameMembersRoleUpdate struct {
 	MembersToUpdate []ReqTeamGameMember `json:"members_to_update" binding:"required,min=1,max=50"`
 }
+
+type TeamGameRoleDto struct {
+	ID   int32
+	Name string
+}
+
+type RemoveTeamGameRoleFromUserRequest struct {
+	Users []TeamGameMemberDto `json:"users" binding:"required,min=1,max=50"`
+}
+
+type TeamGameMemberDto struct {
+	UserID int64
+	Roles  []TeamGameRoleDto
+}
+
+type AddTeamGameRoleToMemberRequest struct {
+	Users []TeamGameMemberDto `json:"users" binding:"required,min=1,max=50"`
+}

@@ -46,13 +46,13 @@ definitions:
       ok:
         type: boolean
     type: object
-  teamgames.AddTeamGameMemberRequest:
+  teamgames.AddTeamGameMembersRequest:
     properties:
       game_id:
         type: integer
       members:
         items:
-          $ref: '#/definitions/teamgames.NewTeamGameMember'
+          $ref: '#/definitions/teamgames.ReqTeamGameMember'
         maxItems: 50
         minItems: 1
         type: array
@@ -60,12 +60,61 @@ definitions:
     - game_id
     - members
     type: object
-  teamgames.NewTeamGameMember:
+  teamgames.AddTeamGameRoleToMemberRequest:
+    properties:
+      users:
+        items:
+          $ref: '#/definitions/teamgames.TeamGameMemberDto'
+        maxItems: 50
+        minItems: 1
+        type: array
+    required:
+    - users
+    type: object
+  teamgames.RemoveTeamGameMembersRequest:
+    properties:
+      members:
+        items:
+          type: integer
+        maxItems: 50
+        minItems: 1
+        type: array
+    required:
+    - members
+    type: object
+  teamgames.RemoveTeamGameRoleFromUserRequest:
+    properties:
+      users:
+        items:
+          $ref: '#/definitions/teamgames.TeamGameMemberDto'
+        maxItems: 50
+        minItems: 1
+        type: array
+    required:
+    - users
+    type: object
+  teamgames.ReqTeamGameMember:
     properties:
       teamGameRoleID:
         type: integer
       userID:
         type: integer
+    type: object
+  teamgames.TeamGameMemberDto:
+    properties:
+      roles:
+        items:
+          $ref: '#/definitions/teamgames.TeamGameRoleDto'
+        type: array
+      userID:
+        type: integer
+    type: object
+  teamgames.TeamGameRoleDto:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
     type: object
   teams.AddMemberRequest:
     properties:
@@ -275,7 +324,82 @@ paths:
       summary: Login a user
       tags:
       - Auth
+  /team-games/{id}/leave:
+    post:
+      consumes:
+      - application/json
+      description: Allows the current user to leave a team game
+      parameters:
+      - description: Team Game ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ResponseError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.ResponseError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ResponseError'
+      security:
+      - BearerAuth: []
+      summary: Leave Team Game
+      tags:
+      - Team Games
   /team-games/{id}/members:
+    delete:
+      consumes:
+      - application/json
+      description: Remove members from a team game
+      parameters:
+      - description: Team Game ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Remove Team Game Members Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/teamgames.RemoveTeamGameMembersRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.ResponseError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ResponseError'
+      security:
+      - BearerAuth: []
+      summary: Remove Members from Team Game
+      tags:
+      - Team Games
     get:
       consumes:
       - application/json
@@ -325,7 +449,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/teamgames.AddTeamGameMemberRequest'
+          $ref: '#/definitions/teamgames.AddTeamGameMembersRequest'
       produces:
       - application/json
       responses:
@@ -346,6 +470,83 @@ paths:
       security:
       - BearerAuth: []
       summary: Add Members to Team Game
+      tags:
+      - Team Games
+  /team-games/{id}/members/roles:
+    delete:
+      consumes:
+      - application/json
+      description: Remove a specific role from members in a team game
+      parameters:
+      - description: Team Game ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Remove Team Game Role From User Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/teamgames.RemoveTeamGameRoleFromUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.ResponseError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ResponseError'
+      security:
+      - BearerAuth: []
+      summary: Remove Team Game Role from Member
+      tags:
+      - Team Games
+    post:
+      consumes:
+      - application/json
+      description: Add a specific role to members in a team game
+      parameters:
+      - description: Team Game ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Add Team Game Role To Member Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/teamgames.AddTeamGameRoleToMemberRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.ResponseError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ResponseError'
+      security:
+      - BearerAuth: []
+      summary: Add Team Game Role to Member
       tags:
       - Team Games
   /teams:
