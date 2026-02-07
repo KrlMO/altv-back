@@ -18,7 +18,7 @@ func NewRepository(db *pgxpool.Pool) *Repository {
 	return &Repository{db}
 }
 
-func (r *Repository) CreateUser(ctx context.Context, u User) error {
+func (r *Repository) CreateUser(ctx context.Context, u User, providerName string) error {
 	tx, err := r.db.Begin(ctx)
 	if err != nil {
 		return err
@@ -32,19 +32,17 @@ func (r *Repository) CreateUser(ctx context.Context, u User) error {
 			first_name,
 			last_name,
 			nickname,
-			password_hash,
 			birth_date,
 			country_id,
-			email,
 			profile_photo,
 			banner_photo,
 			active
 		) values (
-			$1,$2,$3,$4,$5,$6,$7,$8,$9,$10
+			$1,$2,$3,$4,$5,$6,$7,$8
 		)
 		returning id
-	`, u.FirstName, u.LastName, u.NickName, u.PasswordHash, u.BirthDate,
-		u.CountryId, u.Email, u.ProfilePhoto, u.BannerPhoto, u.Active).
+	`, u.FirstName, u.LastName, u.NickName, u.BirthDate,
+		u.CountryId, u.ProfilePhoto, u.BannerPhoto, u.Active).
 		Scan(&userID)
 
 	if err != nil {
@@ -65,7 +63,31 @@ func (r *Repository) CreateUser(ctx context.Context, u User) error {
 		return err
 	}
 
+	err = r.InsertUserAuth(ctx, tx, userID, userID, userID, providerName, u.Auth.ProviderUID, u.Auth.PasswordHash)
+
+	if err != nil {
+		return err
+	}
+
 	return tx.Commit(ctx)
+}
+
+func (r *Repository) InsertUserAuth(
+	ctx context.Context,
+	tx pgx.Tx,
+	userID, createdBy, updatedBy int64,
+	providerName, providerUID, passwordHash string) error {
+	_, err := tx.Exec(ctx, `
+		insert into al_user_auth (
+			user_id,
+			provider,
+			provider_uid,
+			password_hash,
+			created_by,
+			updated_by
+		) values ($1,$2,$3,$4,$5,$6)
+	`, userID, providerName, providerUID, passwordHash, createdBy, updatedBy)
+	return err
 }
 
 func (r *Repository) FindIluvatarId(ctx context.Context, tx pgx.Tx) (int64, error) {
@@ -102,10 +124,22 @@ func (r *Repository) InsertUserGlobalRole(
 	return err
 }
 
-func (r *Repository) GetUserByEmailOrNickname(ctx context.Context, EmailOrNickname string) (*User, error) {
+func (r *Repository) GetUserByProviderUID(ctx context.Context, providerUID, provider string) (*User, error) {
 	u := User{}
-	str := `select id, first_name, last_name, nickname, email, password_hash, profile_photo, active from al_user where email = $1 or nickname = $1`
-	err := r.db.QueryRow(ctx, str, EmailOrNickname).Scan(&u.ID, &u.FirstName, &u.LastName, &u.NickName, &u.Email, &u.PasswordHash, &u.ProfilePhoto, &u.Active)
+	str := `
+		select 
+			au.id,
+			au.first_name,
+			au.last_name,
+			au.nickname,
+			aua.provider_uid,
+			aua.password_hash,
+			au.profile_photo,
+			au.active 
+		from al_user au 
+		join al_user_auth aua on au.id = aua.user_id
+		where aua.provider_uid = $1 and aua.provider = $2`
+	err := r.db.QueryRow(ctx, str, providerUID, provider).Scan(&u.ID, &u.FirstName, &u.LastName, &u.NickName, &u.Auth.ProviderUID, &u.Auth.PasswordHash, &u.ProfilePhoto, &u.Active)
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +188,7 @@ func (r *Repository) GetUserProfileByID(ctx context.Context, userID int64) (*Use
 		join al_country ac on au.country_id = ac.id
 		where au.id = $1
 	`
-	err := r.db.QueryRow(ctx, str, userID).Scan(&up.User.ID, &up.User.FirstName, &up.User.LastName, &up.User.NickName, &up.User.Email,
+	err := r.db.QueryRow(ctx, str, userID).Scan(&up.User.ID, &up.User.FirstName, &up.User.LastName, &up.User.NickName, &up.User.Auth.ProviderUID,
 		&up.User.ProfilePhoto, &up.User.BannerPhoto, &up.User.BirthDate,
 		&up.Country.ID, &up.Country.Name, &up.Country.FlagPath)
 	if err != nil {

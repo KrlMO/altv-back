@@ -17,13 +17,13 @@ func NewService(usersService *users.Service, jwtSecret string) *Service {
 	return &Service{usersService, jwtSecret}
 }
 
-func (s *Service) Login(ctx context.Context, EmailOrNickname, password string) (LoginResponse, error) {
-	u, roles, err := s.usersService.GetByEmailOrNickname(ctx, EmailOrNickname)
+func (s *Service) LocalLogin(ctx context.Context, email, password string) (LoginResponse, error) {
+	u, roles, err := s.usersService.GetUser(ctx, email, "local")
 	if err != nil {
 		return LoginResponse{}, errors.New("invalid credentials")
 	}
 
-	if !utils.CheckPasswordHash(password, u.PasswordHash) {
+	if !utils.CheckPasswordHash(password, u.Auth.PasswordHash) {
 		return LoginResponse{}, errors.New("invalid credentials")
 	}
 
@@ -39,7 +39,7 @@ func (s *Service) Login(ctx context.Context, EmailOrNickname, password string) (
 		User: UserResponse{
 			ID:           u.ID,
 			Nickname:     u.NickName,
-			Email:        u.Email,
+			ProviderUID:  u.Auth.ProviderUID,
 			ProfilePhoto: u.ProfilePhoto,
 		},
 	}, nil

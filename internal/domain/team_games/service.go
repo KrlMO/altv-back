@@ -41,7 +41,7 @@ func (s *Service) GetTeamGameMembers(
 				Nickname:  teamGameMembers[i].Nickname,
 				FirstName: teamGameMembers[i].FirstName,
 				LastName:  teamGameMembers[i].LastName,
-				Country: dto.CountryReponse{
+				Country: dto.CountryResponse{
 					ID:       teamGameMembers[i].Country.ID,
 					Name:     teamGameMembers[i].Country.Name,
 					FlagPath: teamGameMembers[i].Country.FlagPath.String,
@@ -56,7 +56,7 @@ func (s *Service) GetTeamGameMembers(
 			Nickname:  teamGameMembers[i].Nickname,
 			FirstName: teamGameMembers[i].FirstName,
 			LastName:  teamGameMembers[i].LastName,
-			Country: dto.CountryReponse{
+			Country: dto.CountryResponse{
 				ID:       teamGameMembers[i].Country.ID,
 				Name:     teamGameMembers[i].Country.Name,
 				FlagPath: teamGameMembers[i].Country.FlagPath.String,

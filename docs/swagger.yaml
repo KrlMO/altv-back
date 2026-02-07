@@ -2,12 +2,12 @@ basePath: /
 definitions:
   auth.LoginRequest:
     properties:
-      email_or_nickname:
+      email:
         type: string
       password:
         type: string
     required:
-    - email_or_nickname
+    - email
     - password
     type: object
   auth.LoginResponse:
@@ -19,16 +19,16 @@ definitions:
     type: object
   auth.UserResponse:
     properties:
-      email:
-        type: string
       id:
         type: integer
       nickname:
         type: string
       profile_photo:
         type: string
+      provider_uid:
+        type: string
     type: object
-  dto.CountryReponse:
+  dto.CountryResponse:
     properties:
       flag_path:
         type: string
@@ -276,7 +276,7 @@ definitions:
       birth_date:
         type: string
       country:
-        $ref: '#/definitions/dto.CountryReponse'
+        $ref: '#/definitions/dto.CountryResponse'
       email:
         type: string
       first_name:
@@ -296,7 +296,7 @@ info:
   title: Arena API
   version: "1.0"
 paths:
-  /auth/login:
+  /auth/login/local:
     post:
       consumes:
       - application/json

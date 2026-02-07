@@ -16,7 +16,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/auth/login": {
+        "/auth/login/local": {
             "post": {
                 "description": "Logs in a user",
                 "consumes": [
@@ -1102,11 +1102,11 @@ const docTemplate = `{
         "auth.LoginRequest": {
             "type": "object",
             "required": [
-                "email_or_nickname",
+                "email",
                 "password"
             ],
             "properties": {
-                "email_or_nickname": {
+                "email": {
                     "type": "string"
                 },
                 "password": {
@@ -1128,9 +1128,6 @@ const docTemplate = `{
         "auth.UserResponse": {
             "type": "object",
             "properties": {
-                "email": {
-                    "type": "string"
-                },
                 "id": {
                     "type": "integer"
                 },
@@ -1139,10 +1136,13 @@ const docTemplate = `{
                 },
                 "profile_photo": {
                     "type": "string"
+                },
+                "provider_uid": {
+                    "type": "string"
                 }
             }
         },
-        "dto.CountryReponse": {
+        "dto.CountryResponse": {
             "type": "object",
             "properties": {
                 "flag_path": {
@@ -1508,7 +1508,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "country": {
-                    "$ref": "#/definitions/dto.CountryReponse"
+                    "$ref": "#/definitions/dto.CountryResponse"
                 },
                 "email": {
                     "type": "string"

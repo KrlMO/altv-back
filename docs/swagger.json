@@ -11,7 +11,7 @@
     },
     "basePath": "/",
     "paths": {
-        "/auth/login": {
+        "/auth/login/local": {
             "post": {
                 "description": "Logs in a user",
                 "consumes": [
@@ -1097,11 +1097,11 @@
         "auth.LoginRequest": {
             "type": "object",
             "required": [
-                "email_or_nickname",
+                "email",
                 "password"
             ],
             "properties": {
-                "email_or_nickname": {
+                "email": {
                     "type": "string"
                 },
                 "password": {
@@ -1123,9 +1123,6 @@
         "auth.UserResponse": {
             "type": "object",
             "properties": {
-                "email": {
-                    "type": "string"
-                },
                 "id": {
                     "type": "integer"
                 },
@@ -1134,10 +1131,13 @@
                 },
                 "profile_photo": {
                     "type": "string"
+                },
+                "provider_uid": {
+                    "type": "string"
                 }
             }
         },
-        "dto.CountryReponse": {
+        "dto.CountryResponse": {
             "type": "object",
             "properties": {
                 "flag_path": {
@@ -1503,7 +1503,7 @@
                     "type": "string"
                 },
                 "country": {
-                    "$ref": "#/definitions/dto.CountryReponse"
+                    "$ref": "#/definitions/dto.CountryResponse"
                 },
                 "email": {
                     "type": "string"

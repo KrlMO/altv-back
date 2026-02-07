@@ -20,15 +20,15 @@ type FastRegisterUserRequest struct {
 }
 
 type UserProfileResponse struct {
-	ID           int64              `json:"id"`
-	FirstName    string             `json:"first_name"`
-	LastName     string             `json:"last_name"`
-	NickName     string             `json:"nickname"`
-	Email        string             `json:"email"`
-	ProfilePhoto string             `json:"profile_photo"`
-	BannerPhoto  string             `json:"banner_photo"`
-	BirthDate    string             `json:"birth_date"`
-	Country      dto.CountryReponse `json:"country"`
+	ID           int64               `json:"id"`
+	FirstName    string              `json:"first_name"`
+	LastName     string              `json:"last_name"`
+	NickName     string              `json:"nickname"`
+	Email        string              `json:"email"`
+	ProfilePhoto string              `json:"profile_photo"`
+	BannerPhoto  string              `json:"banner_photo"`
+	BirthDate    string              `json:"birth_date"`
+	Country      dto.CountryResponse `json:"country"`
 }
 
 type UpdateUserProfileRequest struct {

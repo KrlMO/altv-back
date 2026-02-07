@@ -13,15 +13,15 @@ type RegisterTeamRequest struct {
 }
 
 type TeamResponse struct {
-	ID          int64              `json:"id"`
-	Name        string             `json:"name"`
-	Tag         string             `json:"tag"`
-	Description string             `json:"description"`
-	LogoPath    string             `json:"logo_path"`
-	BannerPath  string             `json:"banner_path"`
-	Country     dto.CountryReponse `json:"country"`
-	IsVirtual   bool               `json:"is_virtual"`
-	Active      bool               `json:"active"`
+	ID          int64               `json:"id"`
+	Name        string              `json:"name"`
+	Tag         string              `json:"tag"`
+	Description string              `json:"description"`
+	LogoPath    string              `json:"logo_path"`
+	BannerPath  string              `json:"banner_path"`
+	Country     dto.CountryResponse `json:"country"`
+	IsVirtual   bool                `json:"is_virtual"`
+	Active      bool                `json:"active"`
 }
 
 type TeamFilter struct {

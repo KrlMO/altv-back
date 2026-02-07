@@ -1,1 +1,0 @@
-DROP TABLE IF EXISTS al_team_game_player_image;

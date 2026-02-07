@@ -43,20 +43,22 @@ func (s *Service) Register(ctx context.Context, dto RegisterUserRequest) error {
 	}
 
 	u := User{
-		FirstName:    dto.FirstName,
-		LastName:     dto.LastName,
-		NickName:     dto.NickName,
-		PasswordHash: hash,
+		FirstName: dto.FirstName,
+		LastName:  dto.LastName,
+		NickName:  dto.NickName,
 		BirthDate: sql.NullTime{
 			Time:  t,
 			Valid: true,
 		},
 		CountryId: dto.CountryId,
-		Email:     dto.Email,
-		Active:    true,
+		Auth: UserAuth{
+			PasswordHash: hash,
+			ProviderUID:  dto.Email,
+		},
+		Active: true,
 	}
 
-	return s.repo.CreateUser(ctx, u)
+	return s.repo.CreateUser(ctx, u, "local")
 }
 
 func (s *Service) FastRegister(ctx context.Context, dto FastRegisterUserRequest) error {
@@ -88,24 +90,26 @@ func (s *Service) FastRegister(ctx context.Context, dto FastRegisterUserRequest)
 	}
 
 	u := User{
-		FirstName:    "Balrog",
-		LastName:     "Newbie-" + strconv.Itoa(int(dto.CountryId)),
-		NickName:     dto.NickName,
-		PasswordHash: hash,
+		FirstName: "Balrog",
+		LastName:  "Newbie-" + strconv.Itoa(int(dto.CountryId)),
+		NickName:  dto.NickName,
 		BirthDate: sql.NullTime{
 			Time:  t,
 			Valid: true,
 		},
 		CountryId: dto.CountryId,
-		Email:     dto.Email,
 		Active:    true,
+		Auth: UserAuth{
+			ProviderUID:  dto.Email,
+			PasswordHash: hash,
+		},
 	}
 
-	return s.repo.CreateUser(ctx, u)
+	return s.repo.CreateUser(ctx, u, "local")
 }
 
-func (s *Service) GetByEmailOrNickname(ctx context.Context, value string) (*User, []string, error) {
-	u, err := s.repo.GetUserByEmailOrNickname(ctx, value)
+func (s *Service) GetUser(ctx context.Context, providerUID, provider string) (*User, []string, error) {
+	u, err := s.repo.GetUserByProviderUID(ctx, providerUID, provider)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -143,11 +147,11 @@ func (s *Service) GetProfile(ctx context.Context, userID int64) (*UserProfileRes
 		FirstName:    up.User.FirstName,
 		LastName:     up.User.LastName,
 		NickName:     up.User.NickName,
-		Email:        up.User.Email,
+		Email:        up.User.Auth.ProviderUID,
 		ProfilePhoto: up.User.ProfilePhoto,
 		BannerPhoto:  up.User.BannerPhoto,
 		BirthDate:    birth,
-		Country: dto.CountryReponse{
+		Country: dto.CountryResponse{
 			ID:       up.Country.ID,
 			Name:     up.Country.Name,
 			FlagPath: flag,

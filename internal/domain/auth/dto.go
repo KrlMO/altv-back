@@ -1,8 +1,8 @@
 package auth
 
 type LoginRequest struct {
-	EmailOrNickname string `json:"email_or_nickname" binding:"required"`
-	Password        string `json:"password" binding:"required"`
+	Email    string `json:"email" binding:"required"`
+	Password string `json:"password" binding:"required"`
 }
 
 type LoginResponse struct {
@@ -13,6 +13,6 @@ type LoginResponse struct {
 type UserResponse struct {
 	ID           int64  `json:"id"`
 	Nickname     string `json:"nickname"`
-	Email        string `json:"email"`
+	ProviderUID  string `json:"provider_uid"`
 	ProfilePhoto string `json:"profile_photo"`
 }

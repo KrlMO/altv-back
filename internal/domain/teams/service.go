@@ -71,7 +71,7 @@ func (s *Service) GetTeamByID(c *gin.Context, teamID string) (*TeamResponse, err
 		Description: t.Team.Description,
 		LogoPath:    t.Team.LogoPath,
 		BannerPath:  t.Team.BannerPath,
-		Country: dto.CountryReponse{
+		Country: dto.CountryResponse{
 			ID:       t.Country.ID,
 			Name:     t.Country.Name,
 			FlagPath: flag,
@@ -101,7 +101,7 @@ func (s *Service) GetTeams(ctx context.Context, filter TeamFilter) (dto.Paginate
 			Description: t.Team.Description,
 			LogoPath:    t.Team.LogoPath,
 			BannerPath:  t.Team.BannerPath,
-			Country: dto.CountryReponse{
+			Country: dto.CountryResponse{
 				ID:       t.Country.ID,
 				Name:     t.Country.Name,
 				FlagPath: flag,
