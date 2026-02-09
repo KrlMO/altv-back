@@ -6,7 +6,9 @@ import (
 	teamgames "arena/internal/domain/team_games"
 	"arena/internal/domain/teams"
 	"arena/internal/domain/users"
+	"arena/pkg/middleware"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 	swaggerFiles "github.com/swaggo/files"
@@ -15,6 +17,8 @@ import (
 
 func SetupRouter(db *pgxpool.Pool, cfg *config.Config) *gin.Engine {
 	r := gin.Default()
+
+	r.Use(cors.New(middleware.CorsConfig()))
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
