@@ -28,6 +28,17 @@ definitions:
       provider_uid:
         type: string
     type: object
+  countries.CountryResponse:
+    properties:
+      flag_path:
+        type: string
+      id:
+        type: integer
+      iso_code:
+        type: string
+      name:
+        type: string
+    type: object
   dto.CountryResponse:
     properties:
       flag_path:
@@ -324,6 +335,190 @@ paths:
       summary: Login a user
       tags:
       - Auth
+  /api/v1/countries/:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a list of all countries
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/countries.CountryResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get all countries
+      tags:
+      - Countries
+  /api/v1/users/fast-register:
+    post:
+      consumes:
+      - application/json
+      description: Quickly creates a new user in the system with minimal info
+      parameters:
+      - description: User info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/users.FastRegisterUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Fast register a new user
+      tags:
+      - Users
+  /api/v1/users/me:
+    get:
+      description: Retrieves the profile of the currently authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/users.UserProfileResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get current user profile
+      tags:
+      - Users
+    patch:
+      consumes:
+      - application/json
+      description: Partially updates the profile of the currently authenticated user
+      parameters:
+      - description: Partially updated user info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/users.PatchUserProfileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Partially update current user profile
+      tags:
+      - Users
+    put:
+      consumes:
+      - application/json
+      description: Updates the profile of the currently authenticated user
+      parameters:
+      - description: Updated user info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/users.UpdateUserProfileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update current user profile
+      tags:
+      - Users
+  /api/v1/users/register/local:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new user in the system
+      parameters:
+      - description: User info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/users.RegisterUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Register a new user
+      tags:
+      - Users
   /team-games/{id}/leave:
     post:
       consumes:
@@ -838,161 +1033,6 @@ paths:
       summary: Updates team member role role
       tags:
       - Teams
-  /users/fast-register:
-    post:
-      consumes:
-      - application/json
-      description: Quickly creates a new user in the system with minimal info
-      parameters:
-      - description: User info
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/users.FastRegisterUserRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Fast register a new user
-      tags:
-      - Users
-  /users/me:
-    get:
-      description: Retrieves the profile of the currently authenticated user
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/users.UserProfileResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Get current user profile
-      tags:
-      - Users
-    patch:
-      consumes:
-      - application/json
-      description: Partially updates the profile of the currently authenticated user
-      parameters:
-      - description: Partially updated user info
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/users.PatchUserProfileRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "401":
-          description: Unauthorized
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Partially update current user profile
-      tags:
-      - Users
-    put:
-      consumes:
-      - application/json
-      description: Updates the profile of the currently authenticated user
-      parameters:
-      - description: Updated user info
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/users.UpdateUserProfileRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "401":
-          description: Unauthorized
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Update current user profile
-      tags:
-      - Users
-  /users/register:
-    post:
-      consumes:
-      - application/json
-      description: Creates a new user in the system
-      parameters:
-      - description: User info
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/users.RegisterUserRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Register a new user
-      tags:
-      - Users
 schemes:
 - http
 securityDefinitions:

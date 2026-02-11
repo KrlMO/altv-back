@@ -10,7 +10,7 @@ func (m *Module) RegisterRoutes(r *gin.Engine) {
 	v1 := r.Group("/api/v1")
 	auth := v1.Group("/auth")
 	{
-		auth.POST("/login/local", m.Login)
+		auth.POST("/login/local", m.LoginLocal)
 	}
 }
 
@@ -24,7 +24,7 @@ func (m *Module) RegisterRoutes(r *gin.Engine) {
 // @Success 200 {object} LoginResponse
 // @Failure 400 {object} map[string]string
 // @Router /api/v1/auth/login/local [post]
-func (m *Module) Login(c *gin.Context) {
+func (m *Module) LoginLocal(c *gin.Context) {
 	req := LoginRequest{}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
