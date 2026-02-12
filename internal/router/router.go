@@ -8,6 +8,7 @@ import (
 	"arena/internal/domain/teams"
 	"arena/internal/domain/users"
 	"arena/pkg/middleware"
+	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -48,7 +49,14 @@ func SetupRouter(db *pgxpool.Pool, cfg *config.Config) *gin.Engine {
 	countriesModule.RegisterRoutes(r)
 
 	// AUTH
-	authModule := auth.NewModule(usersService, cfg.JWTSecret)
+	authRepo := auth.NewRepository(db)
+	authModule := auth.NewModule(
+		usersService,
+		authRepo,
+		cfg.JWTSecret,
+		15*time.Minute,
+		7*24*time.Hour,
+	)
 	authModule.RegisterRoutes(r)
 
 	return r

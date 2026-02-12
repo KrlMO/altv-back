@@ -126,6 +126,18 @@ func (s *Service) GetUser(ctx context.Context, providerUID, provider string) (*U
 	return u, roles, nil
 }
 
+func (s *Service) GetUserByID(ctx context.Context, userId int64) (*User, []string, error) {
+	u, err := s.repo.GetUserByID(ctx, userId)
+	if err != nil {
+		return nil, nil, err
+	}
+	roles, err := s.repo.GetGlobalRolesByUserID(ctx, u.ID)
+	if err != nil {
+		return nil, nil, err
+	}
+	return u, roles, nil
+}
+
 func (s *Service) GetProfile(ctx context.Context, userID int64) (*UserProfileResponse, error) {
 	up, err := s.repo.GetUserProfileByID(ctx, userID)
 	if err != nil {

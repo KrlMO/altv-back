@@ -311,3 +311,34 @@ func (r *Repository) PatchUser(ctx context.Context, u User) error {
 
 	return tx.Commit(ctx)
 }
+
+func (r *Repository) GetUserByID(
+	ctx context.Context,
+	userId int64,
+) (*User, error) {
+	var u User
+
+	err := r.db.QueryRow(ctx, `
+		SELECT
+			au.id,
+			au.first_time,
+			au.last_name,
+			au.nickname,
+			au.birth_date,
+			au.active
+		FROM al_user au
+		WHERE au.id = $1
+	`, userId).Scan(
+		&u.ID,
+		&u.FirstName,
+		&u.LastName,
+		&u.NickName,
+		&u.BirthDate,
+		&u.Active)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &u, nil
+}

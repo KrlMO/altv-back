@@ -5,42 +5,162 @@ import (
 	"arena/pkg/utils"
 	"context"
 	"errors"
+	"fmt"
 	"time"
 )
 
 type Service struct {
-	usersService *users.Service
-	jwtSecret    string
+	usersService         *users.Service
+	jwtSecret            string
+	repo                 *Repository
+	accessTokenDuration  time.Duration
+	refreshTokenDuration time.Duration
 }
 
-func NewService(usersService *users.Service, jwtSecret string) *Service {
-	return &Service{usersService, jwtSecret}
+func NewService(
+	usersService *users.Service,
+	jwtSecret string,
+	repo *Repository,
+	accessDuration time.Duration,
+	refreshDuration time.Duration,
+) *Service {
+	return &Service{
+		usersService:         usersService,
+		jwtSecret:            jwtSecret,
+		repo:                 repo,
+		accessTokenDuration:  accessDuration,
+		refreshTokenDuration: refreshDuration,
+	}
 }
 
-func (s *Service) LocalLogin(ctx context.Context, email, password string) (LoginResponse, error) {
+func (s *Service) LocalLogin(
+	ctx context.Context,
+	email, password, userIP, deviceInfo string,
+) (LoginResponse, string, error) {
+
 	u, roles, err := s.usersService.GetUser(ctx, email, "local")
 	if err != nil {
-		return LoginResponse{}, errors.New("invalid credentials")
+		return LoginResponse{}, "", errors.New("invalid credentials")
 	}
 
 	if !utils.CheckPasswordHash(password, u.Auth.PasswordHash) {
-		return LoginResponse{}, errors.New("invalid credentials")
+		return LoginResponse{}, "", errors.New("invalid credentials")
 	}
 
-	token, err := utils.GenerateJWT(
-		u.ID, roles, s.jwtSecret, 30*time.Minute,
+	accessToken, err := utils.GenerateJWT(
+		u.ID,
+		roles,
+		s.jwtSecret,
+		s.accessTokenDuration,
 	)
 	if err != nil {
-		return LoginResponse{}, err
+		return LoginResponse{}, "", err
+	}
+
+	rawRefreshToken, err := generateRefreshToken()
+	if err != nil {
+		return LoginResponse{}, "", err
+	}
+
+	hash := hashRefreshToken(rawRefreshToken)
+
+	refresh := &RefreshToken{
+		UserID:     u.ID,
+		TokenHash:  hash,
+		DeviceInfo: &deviceInfo,
+		IPAddress:  &userIP,
+		CreatedAt:  time.Now(),
+		ExpiresAt:  time.Now().Add(s.refreshTokenDuration),
+		Revoked:    false,
+	}
+
+	err = s.repo.CreateRefreshToken(ctx, refresh)
+	if err != nil {
+		return LoginResponse{}, "", err
 	}
 
 	return LoginResponse{
-		Token: token,
+		AccessToken: accessToken,
 		User: UserResponse{
 			ID:           u.ID,
 			Nickname:     u.NickName,
 			ProviderUID:  u.Auth.ProviderUID,
 			ProfilePhoto: u.ProfilePhoto,
 		},
-	}, nil
+	}, rawRefreshToken, nil
+}
+
+func (s *Service) Refresh(ctx context.Context, rawRefreshToken string, userIP string, deviceInfo string) (LoginResponse, string, error) {
+
+	tokenHash := hashRefreshToken(rawRefreshToken)
+
+	storedToken, err := s.repo.GetByTokenHash(ctx, tokenHash)
+	if err != nil || storedToken == nil {
+		return LoginResponse{}, "", fmt.Errorf("invalid refresh token")
+	}
+
+	if storedToken.Revoked {
+		_ = s.repo.RevokeAllByUser(ctx, storedToken.UserID)
+
+		return LoginResponse{}, "", fmt.Errorf("refresh token reuse detected")
+	}
+
+	if time.Now().After(storedToken.ExpiresAt) {
+		return LoginResponse{}, "", fmt.Errorf("refresh token expired")
+	}
+
+	err = s.repo.RevokeToken(ctx, storedToken.ID)
+	if err != nil {
+		return LoginResponse{}, "", err
+	}
+
+	newRawRefreshToken, err := generateRefreshToken()
+	if err != nil {
+		return LoginResponse{}, "", err
+	}
+
+	newHash := hashRefreshToken(newRawRefreshToken)
+
+	newRefresh := &RefreshToken{
+		UserID:     storedToken.UserID,
+		TokenHash:  newHash,
+		DeviceInfo: utils.StringPtrOrNil(deviceInfo),
+		IPAddress:  utils.StringPtrOrNil(userIP),
+		CreatedAt:  time.Now(),
+		ExpiresAt:  time.Now().Add(s.refreshTokenDuration),
+		Revoked:    false,
+	}
+
+	err = s.repo.CreateRefreshToken(ctx, newRefresh)
+	if err != nil {
+		return LoginResponse{}, "", err
+	}
+
+	u, roles, err := s.usersService.GetUserByID(ctx, storedToken.UserID)
+	if err != nil {
+		return LoginResponse{}, "", err
+	}
+
+	newAccessToken, err := utils.GenerateJWT(
+		u.ID,
+		roles,
+		s.jwtSecret,
+		s.accessTokenDuration,
+	)
+
+	if err != nil {
+		return LoginResponse{}, "", err
+	}
+
+	reponse := LoginResponse{
+		AccessToken: newAccessToken,
+		User: UserResponse{
+			ID:           u.ID,
+			Nickname:     u.NickName,
+			ProviderUID:  u.Auth.ProviderUID,
+			ProfilePhoto: u.ProfilePhoto,
+		},
+	}
+
+	return reponse, newRawRefreshToken, nil
 }
