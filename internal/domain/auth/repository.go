@@ -28,7 +28,7 @@ func (r *Repository) CreateRefreshToken(
 ) error {
 
 	_, err := r.db.Exec(ctx, `
-		INSERT INTO al_refresh_token
+		INSERT INTO al_refresh_tokens
 			(user_id, token_hash, device_info, ip_address, expires_at, created_at, revoked)
 		VALUES ($1, $2, $3, $4, $5, NOW(), $6)
 	`,

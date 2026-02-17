@@ -1,10 +1,10 @@
 package auth
 
 import (
+	"arena/internal/domain/auth/rules"
 	"arena/internal/domain/users"
 	"arena/pkg/utils"
 	"context"
-	"errors"
 	"fmt"
 	"time"
 )
@@ -40,11 +40,11 @@ func (s *Service) LocalLogin(
 
 	u, roles, err := s.usersService.GetUser(ctx, email, "local")
 	if err != nil {
-		return LoginResponse{}, "", errors.New("invalid credentials")
+		return LoginResponse{}, "", rules.ErrUserNotFound
 	}
 
 	if !utils.CheckPasswordHash(password, u.Auth.PasswordHash) {
-		return LoginResponse{}, "", errors.New("invalid credentials")
+		return LoginResponse{}, "", rules.ErrInvalidCredentials
 	}
 
 	accessToken, err := utils.GenerateJWT(
@@ -54,12 +54,12 @@ func (s *Service) LocalLogin(
 		s.accessTokenDuration,
 	)
 	if err != nil {
-		return LoginResponse{}, "", err
+		return LoginResponse{}, "", rules.ErrFailedToGenerateAccessToken
 	}
 
 	rawRefreshToken, err := generateRefreshToken()
 	if err != nil {
-		return LoginResponse{}, "", err
+		return LoginResponse{}, "", rules.ErrFailedToGenerateRefreshToken
 	}
 
 	hash := hashRefreshToken(rawRefreshToken)
@@ -76,7 +76,7 @@ func (s *Service) LocalLogin(
 
 	err = s.repo.CreateRefreshToken(ctx, refresh)
 	if err != nil {
-		return LoginResponse{}, "", err
+		return LoginResponse{}, "", rules.ErrFailedToStoreRefreshToken
 	}
 
 	return LoginResponse{

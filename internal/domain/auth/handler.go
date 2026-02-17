@@ -1,6 +1,9 @@
 package auth
 
 import (
+	"arena/internal/domain/auth/rules"
+	"arena/pkg/response"
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -33,7 +36,7 @@ func (m *Module) LoginLocal(c *gin.Context) {
 		return
 	}
 
-	response, refreshToken, err := m.service.LocalLogin(
+	responseData, refreshToken, err := m.service.LocalLogin(
 		c,
 		req.Email,
 		req.Password,
@@ -42,7 +45,31 @@ func (m *Module) LoginLocal(c *gin.Context) {
 	)
 
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"message": "invalid credentials"})
+		if errors.Is(err, rules.ErrUserNotFound) || errors.Is(err, rules.ErrInvalidCredentials) {
+			c.JSON(http.StatusUnauthorized, response.ResponseError{
+				Error: "invalid credentials",
+				Ok:    false,
+			})
+			return
+		}
+		if errors.Is(err, rules.ErrFailedToGenerateAccessToken) || errors.Is(err, rules.ErrFailedToGenerateRefreshToken) {
+			c.JSON(http.StatusInternalServerError, response.ResponseError{
+				Error: "failed to generate tokens",
+				Ok:    false,
+			})
+			return
+		}
+		if errors.Is(err, rules.ErrFailedToStoreRefreshToken) {
+			c.JSON(http.StatusInternalServerError, response.ResponseError{
+				Error: "failed to store refresh token",
+				Ok:    false,
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, response.ResponseError{
+			Error: "internal server error",
+			Ok:    false,
+		})
 		return
 	}
 
@@ -55,7 +82,10 @@ func (m *Module) LoginLocal(c *gin.Context) {
 		Path:     "/api/v1/auth/refresh",
 	})
 
-	c.JSON(http.StatusOK, response)
+	c.JSON(http.StatusOK, response.ResponseOk[LoginResponse]{
+		Ok:   true,
+		Data: responseData,
+	})
 }
 
 // Refresh godoc
