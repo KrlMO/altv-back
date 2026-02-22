@@ -115,8 +115,20 @@ func (m *Module) Refresh(c *gin.Context) {
 	)
 
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"message": "invalid refresh token",
+		if errors.Is(err, rules.ErrInvalidRefreshToken) || errors.Is(err, rules.ErrRefreshTokenReuseDetected) || errors.Is(err, rules.ErrRefreshTokenExpired) {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"message": err.Error(),
+			})
+			return
+		}
+		if errors.Is(err, rules.ErrFailedToGenerateAccessToken) || errors.Is(err, rules.ErrFailedToGenerateRefreshToken) || errors.Is(err, rules.ErrFailedToStoreRefreshToken) {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"message": "failed to refresh tokens",
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "internal server error",
 		})
 		return
 	}

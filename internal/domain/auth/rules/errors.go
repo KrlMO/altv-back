@@ -11,4 +11,5 @@ var (
 	ErrFailedToGenerateAccessToken  = errors.New("failed to generate access token")
 	ErrFailedToGenerateRefreshToken = errors.New("failed to generate refresh token")
 	ErrFailedToStoreRefreshToken    = errors.New("failed to store refresh token")
+	ErrRefreshTokenReuseDetected    = errors.New("refresh token reuse detected")
 )

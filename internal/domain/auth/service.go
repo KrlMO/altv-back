@@ -5,7 +5,6 @@ import (
 	"arena/internal/domain/users"
 	"arena/pkg/utils"
 	"context"
-	"fmt"
 	"time"
 )
 
@@ -96,27 +95,27 @@ func (s *Service) Refresh(ctx context.Context, rawRefreshToken string, userIP st
 
 	storedToken, err := s.repo.GetByTokenHash(ctx, tokenHash)
 	if err != nil || storedToken == nil {
-		return LoginResponse{}, "", fmt.Errorf("invalid refresh token")
+		return LoginResponse{}, "", rules.ErrInvalidRefreshToken
 	}
 
 	if storedToken.Revoked {
 		_ = s.repo.RevokeAllByUser(ctx, storedToken.UserID)
 
-		return LoginResponse{}, "", fmt.Errorf("refresh token reuse detected")
+		return LoginResponse{}, "", rules.ErrRefreshTokenReuseDetected
 	}
 
 	if time.Now().After(storedToken.ExpiresAt) {
-		return LoginResponse{}, "", fmt.Errorf("refresh token expired")
+		return LoginResponse{}, "", rules.ErrRefreshTokenExpired
 	}
 
 	err = s.repo.RevokeToken(ctx, storedToken.ID)
 	if err != nil {
-		return LoginResponse{}, "", err
+		return LoginResponse{}, "", rules.ErrFailedToStoreRefreshToken
 	}
 
 	newRawRefreshToken, err := generateRefreshToken()
 	if err != nil {
-		return LoginResponse{}, "", err
+		return LoginResponse{}, "", rules.ErrFailedToGenerateRefreshToken
 	}
 
 	newHash := hashRefreshToken(newRawRefreshToken)
@@ -133,7 +132,7 @@ func (s *Service) Refresh(ctx context.Context, rawRefreshToken string, userIP st
 
 	err = s.repo.CreateRefreshToken(ctx, newRefresh)
 	if err != nil {
-		return LoginResponse{}, "", err
+		return LoginResponse{}, "", rules.ErrFailedToStoreRefreshToken
 	}
 
 	u, roles, err := s.usersService.GetUserByID(ctx, storedToken.UserID)

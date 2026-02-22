@@ -321,7 +321,7 @@ func (r *Repository) GetUserByID(
 	err := r.db.QueryRow(ctx, `
 		SELECT
 			au.id,
-			au.first_time,
+			au.first_name,
 			au.last_name,
 			au.nickname,
 			au.birth_date,
