@@ -89,28 +89,41 @@ func (s *Service) LocalLogin(
 	}, rawRefreshToken, nil
 }
 
-func (s *Service) Refresh(ctx context.Context, rawRefreshToken string, userIP string, deviceInfo string) (LoginResponse, string, error) {
+func (s *Service) Refresh(
+	ctx context.Context,
+	rawRefreshToken string,
+	userIP string,
+	deviceInfo string,
+) (LoginResponse, string, error) {
 
 	tokenHash := hashRefreshToken(rawRefreshToken)
 
-	storedToken, err := s.repo.GetByTokenHash(ctx, tokenHash)
-	if err != nil || storedToken == nil {
-		return LoginResponse{}, "", rules.ErrInvalidRefreshToken
+	tx, err := s.repo.BeginTx(ctx)
+	if err != nil {
+		return LoginResponse{}, "", err
 	}
+	defer tx.Rollback(ctx)
 
-	if storedToken.Revoked {
-		_ = s.repo.RevokeAllByUser(ctx, storedToken.UserID)
-
-		return LoginResponse{}, "", rules.ErrRefreshTokenReuseDetected
+	storedToken, err := s.repo.GetByHashForUpdate(ctx, tx, tokenHash)
+	if err != nil {
+		return LoginResponse{}, "", err
+	}
+	if storedToken == nil {
+		return LoginResponse{}, "", rules.ErrInvalidRefreshToken
 	}
 
 	if time.Now().After(storedToken.ExpiresAt) {
 		return LoginResponse{}, "", rules.ErrRefreshTokenExpired
 	}
 
-	err = s.repo.RevokeToken(ctx, storedToken.ID)
+	if storedToken.Revoked {
+		_ = s.repo.RevokeAllByUserTx(ctx, tx, storedToken.UserID)
+		return LoginResponse{}, "", rules.ErrRefreshTokenReuseDetected
+	}
+
+	err = s.repo.RevokeTokenTx(ctx, tx, storedToken.ID)
 	if err != nil {
-		return LoginResponse{}, "", rules.ErrFailedToStoreRefreshToken
+		return LoginResponse{}, "", err
 	}
 
 	newRawRefreshToken, err := generateRefreshToken()
@@ -130,9 +143,13 @@ func (s *Service) Refresh(ctx context.Context, rawRefreshToken string, userIP st
 		Revoked:    false,
 	}
 
-	err = s.repo.CreateRefreshToken(ctx, newRefresh)
+	err = s.repo.CreateRefreshTokenTx(ctx, tx, newRefresh)
 	if err != nil {
-		return LoginResponse{}, "", rules.ErrFailedToStoreRefreshToken
+		return LoginResponse{}, "", err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return LoginResponse{}, "", err
 	}
 
 	u, roles, err := s.usersService.GetUserByID(ctx, storedToken.UserID)
@@ -146,12 +163,11 @@ func (s *Service) Refresh(ctx context.Context, rawRefreshToken string, userIP st
 		s.jwtSecret,
 		s.accessTokenDuration,
 	)
-
 	if err != nil {
 		return LoginResponse{}, "", err
 	}
 
-	reponse := LoginResponse{
+	response := LoginResponse{
 		AccessToken: newAccessToken,
 		User: UserResponse{
 			ID:           u.ID,
@@ -161,5 +177,15 @@ func (s *Service) Refresh(ctx context.Context, rawRefreshToken string, userIP st
 		},
 	}
 
-	return reponse, newRawRefreshToken, nil
+	return response, newRawRefreshToken, nil
+}
+
+func (s *Service) Logout(ctx context.Context, token string) error {
+	if token == "" {
+		return nil
+	}
+
+	tokenHash := hashRefreshToken(token)
+
+	return s.repo.RevokeByHash(ctx, tokenHash)
 }

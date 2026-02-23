@@ -15,6 +15,7 @@ func (m *Module) RegisterRoutes(r *gin.Engine) {
 	{
 		auth.POST("/login/local", m.LoginLocal)
 		auth.POST("/refresh", m.Refresh)
+		auth.POST("/logout", m.Logout)
 	}
 }
 
@@ -78,8 +79,8 @@ func (m *Module) LoginLocal(c *gin.Context) {
 		Value:    refreshToken,
 		HttpOnly: true,
 		Secure:   false,
-		SameSite: http.SameSiteStrictMode,
-		Path:     "/api/v1/auth/refresh",
+		SameSite: http.SameSiteLaxMode,
+		Path:     "/",
 	})
 
 	c.JSON(http.StatusOK, response.ResponseOk[LoginResponse]{
@@ -138,9 +139,41 @@ func (m *Module) Refresh(c *gin.Context) {
 		Value:    newRefreshToken,
 		HttpOnly: true,
 		Secure:   false, // true en producción
-		SameSite: http.SameSiteStrictMode,
-		Path:     "/api/v1/auth/refresh",
+		SameSite: http.SameSiteLaxMode,
+		Path:     "/",
 	})
 
 	c.JSON(http.StatusOK, reponse)
+}
+
+// Logout godoc
+// @Summary Logout a user
+// @Description Logs out a user by revoking their refresh token
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Router /api/v1/auth/logout [post]
+func (m *Module) Logout(c *gin.Context) {
+
+	cookie, err := c.Cookie("refresh_token")
+	if err == nil {
+		_ = m.service.Logout(c, cookie)
+	}
+
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     "refresh_token",
+		Value:    "",
+		Path:     "/",
+		HttpOnly: true,
+		MaxAge:   -1,
+		Secure:   false,
+		SameSite: http.SameSiteLaxMode,
+	})
+
+	c.JSON(http.StatusOK, response.ResponseOk[any]{
+		Ok:  true,
+		Msg: "logged out successfully",
+	})
 }
