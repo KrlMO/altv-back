@@ -1,0 +1,13 @@
+curl -X 'POST' \
+  'http://localhost:8080/users/register' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "birth_date": "2003-02-12",
+  "country_id": 173,
+  "email": "camonge@pucp.edu.pe",
+  "first_name": "Carlos",
+  "last_name": "Monge",
+  "nickname": "sysadmin",
+  "password": "sysadmin"
+}'

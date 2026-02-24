@@ -42,8 +42,8 @@ CREATE TABLE al_genre_e_sports (
 -- ============================================
 
 CREATE TABLE al_tournament (
-    id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    organization_id INT NOT NULL,
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    organization_id BIGINT NOT NULL,
     game_id INT NOT NULL,
     platform_id INT NULL,
     genre_id INT NULL,
@@ -54,7 +54,7 @@ CREATE TABLE al_tournament (
     status VARCHAR(20) DEFAULT 'DRAFT',
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    created_by INT NOT NULL,
+    created_by BIGINT NOT NULL,
     color_hex VARCHAR(7) NULL,
     banner_path TEXT NULL,
     logo_path TEXT NULL,
@@ -88,8 +88,8 @@ INSERT INTO al_tournament_role (name) VALUES
 -- ============================================
 
 CREATE TABLE al_user_tournament_role (
-    user_id INT NOT NULL,
-    tournament_id INT NOT NULL,
+    user_id BIGINT NOT NULL,
+    tournament_id BIGINT NOT NULL,
     role_id INT NOT NULL,
     assigned_at TIMESTAMP NOT NULL DEFAULT NOW(),
     active BOOLEAN NULL DEFAULT true,

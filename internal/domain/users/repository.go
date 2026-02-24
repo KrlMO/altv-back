@@ -2,10 +2,12 @@ package users
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"strings"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -17,50 +19,52 @@ func NewRepository(db *pgxpool.Pool) *Repository {
 	return &Repository{db}
 }
 
-func (r *Repository) CreateUser(ctx context.Context, u User) error {
+func (r *Repository) CreateUser(ctx context.Context, u User, provider string) error {
 	tx, err := r.db.Begin(ctx)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback(ctx)
 
-	var userID int
+	var userID int64
 
 	err = tx.QueryRow(ctx, `
 		insert into al_user (
 			first_name,
 			last_name,
 			nickname,
-			password_hash,
 			birth_date,
 			country_id,
-			email,
 			profile_photo,
 			banner_photo,
 			active
 		) values (
-			$1,$2,$3,$4,$5,$6,$7,$8,$9,$10
+			$1,$2,$3,$4,$5,$6,$7,$8
 		)
 		returning id
-	`, u.FirstName, u.LastName, u.NickName, u.PasswordHash, u.BirthDate,
-		u.CountryId, u.Email, u.ProfilePhoto, u.BannerPhoto, u.Active).
+	`, u.FirstName, u.LastName, u.NickName, u.BirthDate,
+		u.CountryId, u.ProfilePhoto, u.BannerPhoto, u.Active).
 		Scan(&userID)
 
 	if err != nil {
 		return err
 	}
 
-	const humanRoleID = 5
-	const iluvatarRoleID = 1
+	const humanRole = "HUMAN"
 
-	_, err = tx.Exec(ctx, `
-		insert into al_user_global_role (
-			user_id,
-			role_id,
-			assigned_at,
-			assigned_by
-		) values ($1, $2, now(), $3)
-	`, userID, humanRoleID, iluvatarRoleID)
+	iluvatarId, err := r.FindIluvatarId(ctx, tx)
+
+	if err != nil {
+		return err
+	}
+
+	err = r.InsertUserGlobalRole(ctx, tx, userID, iluvatarId, humanRole)
+
+	if err != nil {
+		return err
+	}
+
+	err = r.InsertUserAuth(ctx, tx, userID, userID, userID, *u.Auth[0].ProviderName, *u.Auth[0].ProviderUID, u.Auth[0].PasswordHash)
 
 	if err != nil {
 		return err
@@ -69,17 +73,110 @@ func (r *Repository) CreateUser(ctx context.Context, u User) error {
 	return tx.Commit(ctx)
 }
 
-func (r *Repository) GetUserByEmailOrNickname(ctx context.Context, EmailOrNickname string) (*User, error) {
-	u := User{}
-	str := `select id, first_name, last_name, nickname, email, password_hash, profile_photo from al_user where email = $1 or nickname = $1`
-	err := r.db.QueryRow(ctx, str, EmailOrNickname).Scan(&u.ID, &u.FirstName, &u.LastName, &u.NickName, &u.Email, &u.PasswordHash, &u.ProfilePhoto)
+func (r *Repository) InsertUserAuth(
+	ctx context.Context,
+	tx pgx.Tx,
+	userID, createdBy, updatedBy int64,
+	providerName, providerUID, passwordHash string) error {
+	_, err := tx.Exec(ctx, `
+		insert into al_user_auth (
+			user_id,
+			provider,
+			provider_uid,
+			password_hash,
+			created_by,
+			updated_by
+		) values ($1,$2,$3,$4,$5,$6)
+	`, userID, providerName, providerUID, passwordHash, createdBy, updatedBy)
+	return err
+}
+
+func (r *Repository) FindIluvatarId(ctx context.Context, tx pgx.Tx) (int64, error) {
+	var iluvatarId int64
+
+	err := tx.QueryRow(ctx, `
+		SELECT id FROM al_global_role WHERE name = $1
+	`, "ILUVATAR").Scan(&iluvatarId)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return iluvatarId, nil
+}
+
+func (r *Repository) InsertUserGlobalRole(
+	ctx context.Context,
+	tx pgx.Tx,
+	userID, assignedBy int64,
+	globalRole string,
+) error {
+	_, err := tx.Exec(ctx, `
+		INSERT INTO al_user_global_role
+		(user_id, role_id, assigned_at, assigned_by)
+		SELECT
+			$1,
+			r.id,
+			NOW(),
+			$2
+		FROM al_global_role r
+		WHERE r.name = $3
+	`, userID, assignedBy, globalRole)
+	return err
+}
+
+func (r *Repository) GetUserByProviderUID(
+	ctx context.Context,
+	providerUID string,
+	provider string,
+) (*User, error) {
+
+	var u User
+	var auth UserAuth
+	var passwordHash sql.NullString
+
+	err := r.db.QueryRow(ctx, `
+	SELECT
+		au.id,
+		au.first_name,
+		au.last_name,
+		au.nickname,
+		au.birth_date,
+		au.active,
+		aua.id,
+		aua.provider,
+		aua.provider_uid,
+		aua.password_hash
+	FROM al_user_auth aua
+	JOIN al_user au ON au.id = aua.user_id
+	WHERE aua.provider = $1
+	  AND aua.provider_uid = $2
+`, provider, providerUID).Scan(
+		&u.ID,
+		&u.FirstName,
+		&u.LastName,
+		&u.NickName,
+		&u.BirthDate,
+		&u.Active,
+		&auth.ID,
+		&auth.ProviderName,
+		&auth.ProviderUID,
+		&passwordHash,
+	)
+
+	if passwordHash.Valid {
+		auth.PasswordHash = passwordHash.String
+	}
+
 	if err != nil {
 		return nil, err
 	}
+
+	u.Auth = []UserAuth{auth}
 	return &u, nil
 }
 
-func (r *Repository) GetGlobalRolesByUserID(ctx context.Context, userID int32) ([]string, error) {
+func (r *Repository) GetGlobalRolesByUserID(ctx context.Context, userID int64) ([]string, error) {
 	roles := []string{}
 	rows, err := r.db.Query(ctx, `
 		select agr.name
@@ -102,32 +199,97 @@ func (r *Repository) GetGlobalRolesByUserID(ctx context.Context, userID int32) (
 	return roles, nil
 }
 
-func (r *Repository) GetUserProfileByID(ctx context.Context, userID int32) (*UserProfile, error) {
+func (r *Repository) getBaseProfile(ctx context.Context, userID int64) (*UserProfile, error) {
 	up := UserProfile{}
-	str := `
-		select
+
+	err := r.db.QueryRow(ctx, `
+		SELECT
 			au.id,
 			au.first_name,
 			au.last_name,
 			au.nickname,
-			au.email,
 			au.profile_photo,
 			au.banner_photo,
 			au.birth_date,
 			ac.id,
-			ac."name",
+			ac.name,
 			ac.flag_path
-		from al_user au
-		join al_country ac on au.country_id = ac.id
-		where au.id = $1
-	`
-	err := r.db.QueryRow(ctx, str, userID).Scan(&up.User.ID, &up.User.FirstName, &up.User.LastName, &up.User.NickName, &up.User.Email,
-		&up.User.ProfilePhoto, &up.User.BannerPhoto, &up.User.BirthDate,
-		&up.Country.ID, &up.Country.Name, &up.Country.FlagPath)
+		FROM al_user au
+		JOIN al_country ac ON au.country_id = ac.id
+		WHERE au.id = $1
+	`, userID).Scan(
+		&up.User.ID,
+		&up.User.FirstName,
+		&up.User.LastName,
+		&up.User.NickName,
+		&up.User.ProfilePhoto,
+		&up.User.BannerPhoto,
+		&up.User.BirthDate,
+		&up.Country.ID,
+		&up.Country.Name,
+		&up.Country.FlagPath,
+	)
+
 	if err != nil {
 		return nil, err
 	}
+
 	return &up, nil
+}
+
+func (r *Repository) getUserProviders(ctx context.Context, userID int64) ([]UserAuth, error) {
+
+	rows, err := r.db.Query(ctx, `
+		SELECT id, provider, provider_uid, password_hash
+		FROM al_user_auth
+		WHERE user_id = $1
+	`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var auths []UserAuth
+
+	for rows.Next() {
+		var ua UserAuth
+		var passwordHash sql.NullString
+
+		err := rows.Scan(
+			&ua.ID,
+			&ua.ProviderName,
+			&ua.ProviderUID,
+			&passwordHash,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		if passwordHash.Valid {
+			ua.PasswordHash = passwordHash.String
+		}
+
+		auths = append(auths, ua)
+	}
+
+	return auths, nil
+}
+
+func (r *Repository) GetUserProfileByID(ctx context.Context, userID int64) (*UserProfile, error) {
+
+	up, err := r.getBaseProfile(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	auths, err := r.getUserProviders(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	up.User.Auth = auths
+
+	return up, nil
 }
 
 func (r *Repository) CountryExists(ctx context.Context, countryID int32) (bool, error) {
@@ -243,4 +405,75 @@ func (r *Repository) PatchUser(ctx context.Context, u User) error {
 	}
 
 	return tx.Commit(ctx)
+}
+
+func (r *Repository) GetUserByID(
+	ctx context.Context,
+	userId int64,
+) (*User, error) {
+	var u User
+
+	err := r.db.QueryRow(ctx, `
+		SELECT
+			au.id,
+			au.first_name,
+			au.last_name,
+			au.nickname,
+			au.birth_date,
+			au.active
+		FROM al_user au
+		WHERE au.id = $1
+	`, userId).Scan(
+		&u.ID,
+		&u.FirstName,
+		&u.LastName,
+		&u.NickName,
+		&u.BirthDate,
+		&u.Active)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &u, nil
+}
+
+func (r *Repository) GetUserAuthByUserID(
+	ctx context.Context,
+	userId int64,
+) ([]UserAuth, error) {
+
+	rows, err := r.db.Query(ctx, `
+		SELECT
+			id,
+			provider,
+			provider_uid,
+			password_hash
+		FROM al_user_auth
+		WHERE user_id = $1
+	`, userId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var auths []UserAuth
+
+	for rows.Next() {
+		var ua UserAuth
+
+		err := rows.Scan(
+			&ua.ID,
+			&ua.ProviderName,
+			&ua.ProviderUID,
+			&ua.PasswordHash,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		auths = append(auths, ua)
+	}
+
+	return auths, nil
 }

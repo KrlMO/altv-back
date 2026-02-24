@@ -1,6 +1,7 @@
 package users
 
 import (
+	"arena/pkg/dto"
 	"arena/pkg/utils"
 	"context"
 	"database/sql"
@@ -42,20 +43,24 @@ func (s *Service) Register(ctx context.Context, dto RegisterUserRequest) error {
 	}
 
 	u := User{
-		FirstName:    dto.FirstName,
-		LastName:     dto.LastName,
-		NickName:     dto.NickName,
-		PasswordHash: hash,
+		FirstName: dto.FirstName,
+		LastName:  dto.LastName,
+		NickName:  dto.NickName,
 		BirthDate: sql.NullTime{
 			Time:  t,
 			Valid: true,
 		},
 		CountryId: dto.CountryId,
-		Email:     dto.Email,
-		Active:    true,
+		Auth: []UserAuth{
+			{
+				PasswordHash: hash,
+				ProviderUID:  &dto.Email,
+			},
+		},
+		Active: true,
 	}
 
-	return s.repo.CreateUser(ctx, u)
+	return s.repo.CreateUser(ctx, u, "local")
 }
 
 func (s *Service) FastRegister(ctx context.Context, dto FastRegisterUserRequest) error {
@@ -87,26 +92,34 @@ func (s *Service) FastRegister(ctx context.Context, dto FastRegisterUserRequest)
 	}
 
 	u := User{
-		FirstName:    "Balrog",
-		LastName:     "Newbie-" + strconv.Itoa(int(dto.CountryId)),
-		NickName:     dto.NickName,
-		PasswordHash: hash,
+		FirstName: "Balrog",
+		LastName:  "Newbie-" + strconv.Itoa(int(dto.CountryId)),
+		NickName:  dto.NickName,
 		BirthDate: sql.NullTime{
 			Time:  t,
 			Valid: true,
 		},
 		CountryId: dto.CountryId,
-		Email:     dto.Email,
 		Active:    true,
+		Auth: []UserAuth{
+			{
+				ProviderUID:  &dto.Email,
+				PasswordHash: hash,
+			},
+		},
 	}
 
-	return s.repo.CreateUser(ctx, u)
+	return s.repo.CreateUser(ctx, u, "local")
 }
 
-func (s *Service) GetByEmailOrNickname(ctx context.Context, value string) (*User, []string, error) {
-	u, err := s.repo.GetUserByEmailOrNickname(ctx, value)
+func (s *Service) GetUser(ctx context.Context, providerUID, provider string) (*User, []string, error) {
+	u, err := s.repo.GetUserByProviderUID(ctx, providerUID, provider)
 	if err != nil {
 		return nil, nil, err
+	}
+
+	if u.Active == false {
+		return nil, nil, errors.New("user does not exist")
 	}
 
 	roles, err := s.repo.GetGlobalRolesByUserID(ctx, u.ID)
@@ -117,8 +130,33 @@ func (s *Service) GetByEmailOrNickname(ctx context.Context, value string) (*User
 	return u, roles, nil
 }
 
+func (s *Service) GetUserByID(
+	ctx context.Context,
+	userId int64,
+) (*User, []string, error) {
+
+	u, err := s.repo.GetUserByID(ctx, userId)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	auths, err := s.repo.GetUserAuthByUserID(ctx, userId)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	u.Auth = auths
+
+	roles, err := s.repo.GetGlobalRolesByUserID(ctx, u.ID)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return u, roles, nil
+}
+
 func (s *Service) GetProfile(ctx context.Context, userID int64) (*UserProfileResponse, error) {
-	up, err := s.repo.GetUserProfileByID(ctx, int32(userID))
+	up, err := s.repo.GetUserProfileByID(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -138,11 +176,11 @@ func (s *Service) GetProfile(ctx context.Context, userID int64) (*UserProfileRes
 		FirstName:    up.User.FirstName,
 		LastName:     up.User.LastName,
 		NickName:     up.User.NickName,
-		Email:        up.User.Email,
+		Auth:         mapAuth(up.User.Auth),
 		ProfilePhoto: up.User.ProfilePhoto,
 		BannerPhoto:  up.User.BannerPhoto,
 		BirthDate:    birth,
-		Country: CountryReponse{
+		Country: dto.CountryResponse{
 			ID:       up.Country.ID,
 			Name:     up.Country.Name,
 			FlagPath: flag,
@@ -172,7 +210,7 @@ func (s *Service) UpdateProfile(ctx context.Context, userID int64, dto UpdateUse
 	}
 
 	u := User{
-		ID:           int32(userID),
+		ID:           userID,
 		FirstName:    dto.FirstName,
 		LastName:     dto.LastName,
 		NickName:     dto.NickName,
@@ -189,7 +227,7 @@ func (s *Service) UpdateProfile(ctx context.Context, userID int64, dto UpdateUse
 }
 
 func (s *Service) PatchProfile(ctx context.Context, userID int64, dto PatchUserProfileRequest) error {
-	u := User{ID: int32(userID)}
+	u := User{ID: userID}
 	if dto.BirthDate != nil {
 		t, err := ValidateBirthDate(*dto.BirthDate)
 		if err != nil {

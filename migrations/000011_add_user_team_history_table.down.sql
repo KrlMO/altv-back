@@ -1,0 +1,1 @@
+drop table if exists al_user_team_role_history;

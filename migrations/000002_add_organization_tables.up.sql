@@ -3,12 +3,12 @@
 -- ============================================
 
 CREATE TABLE al_organization (
-    id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     description TEXT,
     logo_path TEXT,
     banner_path TEXT,
-    created_by INT NOT NULL,
+    created_by BIGINT NOT NULL,
     active BOOLEAN NULL DEFAULT true,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
@@ -38,11 +38,11 @@ INSERT INTO al_organization_role (name) VALUES
 -- ============================================
 
 CREATE TABLE al_user_organization_role (
-    user_id INT NOT NULL,
-    organization_id INT NOT NULL,
+    user_id BIGINT NOT NULL,
+    organization_id BIGINT NOT NULL,
     role_id INT NOT NULL,
     assigned_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    assigned_by INT NOT NULL,
+    assigned_by BIGINT NOT NULL,
     active BOOLEAN NULL DEFAULT true,
 
     PRIMARY KEY (user_id, organization_id, role_id),

@@ -12,7 +12,7 @@ type Claims struct {
 	Roles  []string
 }
 
-func GenerateJWT(userID int32, roles []string, secret string, duration time.Duration) (string, error) {
+func GenerateJWT(userID int64, roles []string, secret string, duration time.Duration) (string, error) {
 	claims := jwt.MapClaims{
 		"user_id": userID,
 		"roles":   roles,

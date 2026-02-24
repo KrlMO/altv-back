@@ -1,5 +1,7 @@
 package users
 
+import "arena/pkg/dto"
+
 type RegisterUserRequest struct {
 	FirstName string `json:"first_name" binding:"required"`
 	LastName  string `json:"last_name" binding:"required"`
@@ -18,21 +20,21 @@ type FastRegisterUserRequest struct {
 }
 
 type UserProfileResponse struct {
-	ID           int32          `json:"id"`
-	FirstName    string         `json:"first_name"`
-	LastName     string         `json:"last_name"`
-	NickName     string         `json:"nickname"`
-	Email        string         `json:"email"`
-	ProfilePhoto string         `json:"profile_photo"`
-	BannerPhoto  string         `json:"banner_photo"`
-	BirthDate    string         `json:"birth_date"`
-	Country      CountryReponse `json:"country"`
+	ID           int64                     `json:"id"`
+	FirstName    string                    `json:"first_name"`
+	LastName     string                    `json:"last_name"`
+	NickName     string                    `json:"nickname"`
+	Auth         []AuthUserProfileResponse `json:"auth"`
+	ProfilePhoto string                    `json:"profile_photo"`
+	BannerPhoto  string                    `json:"banner_photo"`
+	BirthDate    string                    `json:"birth_date"`
+	Country      dto.CountryResponse       `json:"country"`
 }
 
-type CountryReponse struct {
-	ID       int32  `json:"id"`
-	Name     string `json:"name"`
-	FlagPath string `json:"flag_path"`
+type AuthUserProfileResponse struct {
+	Provider    string `json:"provider"`
+	ProviderUID string `json:"provider_uid"`
+	ID          int64  `json:"id"`
 }
 
 type UpdateUserProfileRequest struct {

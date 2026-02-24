@@ -1,6 +1,8 @@
 package users
 
+import "arena/pkg/model"
+
 type UserProfile struct {
 	User    User
-	Country Country
+	Country model.Country
 }

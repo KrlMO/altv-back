@@ -2,16 +2,17 @@ package users
 
 import (
 	"arena/pkg/middleware"
+	"arena/pkg/response"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
 func (m *Module) RegisterRoutes(r *gin.Engine, jwtSecret string) {
-
-	users := r.Group("/users")
+	v1 := r.Group("/api/v1")
+	users := v1.Group("/users")
 	{
-		users.POST("/register", m.Register)
+		users.POST("/register/local", m.RegisterLocal)
 		users.POST("/fast-register", m.FastRegister)
 
 		auth := users.Group("/", middleware.Auth(jwtSecret))
@@ -32,8 +33,8 @@ func (m *Module) RegisterRoutes(r *gin.Engine, jwtSecret string) {
 // @Param request body RegisterUserRequest true "User info"
 // @Success 201 {object} map[string]string
 // @Failure 400 {object} map[string]string
-// @Router /users/register [post]
-func (m *Module) Register(c *gin.Context) {
+// @Router /api/v1/users/register/local [post]
+func (m *Module) RegisterLocal(c *gin.Context) {
 	req := RegisterUserRequest{}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -57,7 +58,7 @@ func (m *Module) Register(c *gin.Context) {
 // @Param request body FastRegisterUserRequest true "User info"
 // @Success 201 {object} map[string]string
 // @Failure 400 {object} map[string]string
-// @Router /users/fast-register [post]
+// @Router /api/v1/users/fast-register [post]
 func (m *Module) FastRegister(c *gin.Context) {
 	req := FastRegisterUserRequest{}
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -81,17 +82,23 @@ func (m *Module) FastRegister(c *gin.Context) {
 // @Security BearerAuth
 // @Success 200 {object} UserProfileResponse
 // @Failure 401 {object} map[string]string
-// @Router /users/me [get]
+// @Router /api/v1/users/me [get]
 func (m *Module) GetMe(c *gin.Context) {
 	userID := c.MustGet(middleware.ContextUserID).(int64)
 
 	user, err := m.service.GetProfile(c, userID)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found"})
+		c.JSON(http.StatusUnauthorized, response.ResponseError{
+			Error: "unauthorized",
+			Ok:    false,
+		})
 		return
 	}
 
-	c.JSON(http.StatusOK, user)
+	c.JSON(http.StatusOK, response.ResponseOk[UserProfileResponse]{
+		Ok:   true,
+		Data: *user,
+	})
 }
 
 // UpdateMe godoc
@@ -105,7 +112,7 @@ func (m *Module) GetMe(c *gin.Context) {
 // @Success 200 {object} map[string]string
 // @Failure 400 {object} map[string]string
 // @Failure 401 {object} map[string]string
-// @Router /users/me [put]
+// @Router /api/v1/users/me [put]
 func (m *Module) UpdateMe(c *gin.Context) {
 	userID := c.MustGet(middleware.ContextUserID).(int64)
 	req := UpdateUserProfileRequest{}
@@ -136,7 +143,7 @@ func (m *Module) UpdateMe(c *gin.Context) {
 // @Success 200 {object} map[string]string
 // @Failure 400 {object} map[string]string
 // @Failure 401 {object} map[string]string
-// @Router /users/me [patch]
+// @Router /api/v1/users/me [patch]
 func (m *Module) PatchUpdateMe(c *gin.Context) {
 	userID := c.MustGet(middleware.ContextUserID).(int64)
 	req := PatchUserProfileRequest{}
