@@ -25,4 +25,5 @@ type UserAuth struct {
 	ProviderName *string `db:"provider_name"`
 	ProviderUID  *string `db:"provider_uid"`
 	PasswordHash string  `db:"password_hash"`
+	IsVerified   bool    `db:"is_verified"`
 }

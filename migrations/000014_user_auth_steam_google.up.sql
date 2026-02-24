@@ -8,6 +8,7 @@ CREATE TABLE al_user_auth (
     created_by BIGINT,
     updated_at TIMESTAMP DEFAULT NOW(),
     updated_by BIGINT,
+    is_verified BOOLEAN DEFAULT FALSE,
 
     UNIQUE(provider, provider_uid),
     FOREIGN KEY (user_id) REFERENCES al_user(id),

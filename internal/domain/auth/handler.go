@@ -2,6 +2,7 @@ package auth
 
 import (
 	"arena/internal/domain/auth/rules"
+	"arena/internal/domain/users"
 	"arena/pkg/response"
 	"errors"
 	"net/http"
@@ -14,6 +15,7 @@ func (m *Module) RegisterRoutes(r *gin.Engine) {
 	auth := v1.Group("/auth")
 	{
 		auth.POST("/login/local", m.LoginLocal)
+		auth.POST("/register/local", m.RegisterLocalAndLogin)
 		auth.POST("/refresh", m.Refresh)
 		auth.POST("/logout", m.Logout)
 	}
@@ -30,7 +32,7 @@ func (m *Module) RegisterRoutes(r *gin.Engine) {
 // @Failure 400 {object} map[string]string
 // @Router /api/v1/auth/login/local [post]
 func (m *Module) LoginLocal(c *gin.Context) {
-
+	ctx := c.Request.Context()
 	req := LoginRequest{}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
@@ -38,7 +40,7 @@ func (m *Module) LoginLocal(c *gin.Context) {
 	}
 
 	responseData, refreshToken, err := m.service.LocalLogin(
-		c,
+		ctx,
 		req.Email,
 		req.Password,
 		c.ClientIP(),
@@ -74,14 +76,7 @@ func (m *Module) LoginLocal(c *gin.Context) {
 		return
 	}
 
-	http.SetCookie(c.Writer, &http.Cookie{
-		Name:     "refresh_token",
-		Value:    refreshToken,
-		HttpOnly: true,
-		Secure:   false,
-		SameSite: http.SameSiteLaxMode,
-		Path:     "/",
-	})
+	setRefreshCookie(c, refreshToken)
 
 	c.JSON(http.StatusOK, response.ResponseOk[LoginResponse]{
 		Ok:   true,
@@ -99,7 +94,7 @@ func (m *Module) LoginLocal(c *gin.Context) {
 // @Failure 400 {object} map[string]string
 // @Router /api/v1/auth/refresh [post]
 func (m *Module) Refresh(c *gin.Context) {
-
+	ctx := c.Request.Context()
 	cookie, err := c.Cookie("refresh_token")
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
@@ -109,7 +104,7 @@ func (m *Module) Refresh(c *gin.Context) {
 	}
 
 	reponse, newRefreshToken, err := m.service.Refresh(
-		c,
+		ctx,
 		cookie,
 		c.ClientIP(),
 		c.GetHeader("User-Agent"),
@@ -134,14 +129,7 @@ func (m *Module) Refresh(c *gin.Context) {
 		return
 	}
 
-	http.SetCookie(c.Writer, &http.Cookie{
-		Name:     "refresh_token",
-		Value:    newRefreshToken,
-		HttpOnly: true,
-		Secure:   false, // true en producción
-		SameSite: http.SameSiteLaxMode,
-		Path:     "/",
-	})
+	setRefreshCookie(c, newRefreshToken)
 
 	c.JSON(http.StatusOK, response.ResponseOk[LoginResponse]{
 		Ok:   true,
@@ -159,24 +147,49 @@ func (m *Module) Refresh(c *gin.Context) {
 // @Failure 400 {object} map[string]string
 // @Router /api/v1/auth/logout [post]
 func (m *Module) Logout(c *gin.Context) {
-
+	ctx := c.Request.Context()
 	cookie, err := c.Cookie("refresh_token")
 	if err == nil {
-		_ = m.service.Logout(c, cookie)
+		_ = m.service.Logout(ctx, cookie)
 	}
 
-	http.SetCookie(c.Writer, &http.Cookie{
-		Name:     "refresh_token",
-		Value:    "",
-		Path:     "/",
-		HttpOnly: true,
-		MaxAge:   -1,
-		Secure:   false,
-		SameSite: http.SameSiteLaxMode,
-	})
+	clearRefreshCookie(c)
 
 	c.JSON(http.StatusOK, response.ResponseOk[any]{
 		Ok:  true,
 		Msg: "logged out successfully",
+	})
+}
+
+// RegisterLocalAndLogin godoc
+func (m *Module) RegisterLocalAndLogin(c *gin.Context) {
+	ctx := c.Request.Context()
+	req := users.RegisterUserRequest{}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, response.ResponseError{
+			Error: err.Error(),
+			Ok:    false,
+		})
+		return
+	}
+	if err := m.service.usersService.Register(c, req); err != nil {
+		c.JSON(http.StatusBadRequest, response.ResponseError{
+			Error: err.Error(),
+			Ok:    false,
+		})
+		return
+	}
+
+	if err := m.service.InitiateEmailVerification(ctx, req.Email); err != nil {
+		c.JSON(http.StatusInternalServerError, response.ResponseError{
+			Error: "failed to verify email",
+			Ok:    false,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, response.ResponseOk[any]{
+		Ok:  true,
+		Msg: "check your email to verify your account",
 	})
 }

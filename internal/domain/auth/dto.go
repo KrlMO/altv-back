@@ -21,4 +21,5 @@ type AuthResponse struct {
 	Provider    string `json:"provider"`
 	ProviderUID string `json:"provider_uid"`
 	ID          int64  `json:"id"`
+	IsVerified  bool   `json:"is_verified"`
 }

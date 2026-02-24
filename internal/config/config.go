@@ -6,6 +6,12 @@ type Config struct {
 	DataBaseURL string
 	ServerPort  string
 	JWTSecret   string
+	SMTPHost    string
+	SMTPPort    string
+	SMTPUser    string
+	SMTPPass    string
+	SMTPFrom    string
+	BaseURL     string
 }
 
 func Load() *Config {

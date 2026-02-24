@@ -37,12 +37,18 @@ func (m *Module) RegisterRoutes(r *gin.Engine, jwtSecret string) {
 func (m *Module) RegisterLocal(c *gin.Context) {
 	req := RegisterUserRequest{}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, response.ResponseError{
+			Error: err.Error(),
+			Ok:    false,
+		})
 		return
 	}
 
 	if err := m.service.Register(c, req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, response.ResponseError{
+			Error: err.Error(),
+			Ok:    false,
+		})
 		return
 	}
 

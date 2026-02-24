@@ -7,6 +7,7 @@ import (
 	teamgames "arena/internal/domain/team_games"
 	"arena/internal/domain/teams"
 	"arena/internal/domain/users"
+	"arena/internal/infrastructure/mail"
 	"arena/pkg/middleware"
 	"time"
 
@@ -48,6 +49,14 @@ func SetupRouter(db *pgxpool.Pool, cfg *config.Config) *gin.Engine {
 	countriesModule := countries.NewModule(countriesService)
 	countriesModule.RegisterRoutes(r)
 
+	mailer := mail.NewSMTPMailer(
+		cfg.SMTPHost,
+		cfg.SMTPPort,
+		cfg.SMTPUser,
+		cfg.SMTPPass,
+		cfg.SMTPFrom,
+		cfg.BaseURL,
+	)
 	// AUTH
 	authRepo := auth.NewRepository(db)
 	authModule := auth.NewModule(

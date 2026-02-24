@@ -1,6 +1,7 @@
 package users
 
 import (
+	"arena/internal/domain/users/rules"
 	"arena/pkg/dto"
 	"arena/pkg/utils"
 	"context"
@@ -22,7 +23,7 @@ func NewService(r *Repository) *Service {
 func (s *Service) Register(ctx context.Context, dto RegisterUserRequest) error {
 	t, err := ValidateBirthDate(dto.BirthDate)
 	if err != nil {
-		return err
+		return rules.ErrInvalidBirthDate
 	}
 	err = ValidateRegisterOrUpdate(dto.FirstName, dto.LastName, dto.NickName, "", "")
 	if err != nil {
@@ -39,7 +40,7 @@ func (s *Service) Register(ctx context.Context, dto RegisterUserRequest) error {
 
 	hash, err := utils.HashPassword(dto.Password)
 	if err != nil {
-		return err
+		return rules.ErrInvalidPassword
 	}
 
 	u := User{
@@ -120,6 +121,14 @@ func (s *Service) GetUser(ctx context.Context, providerUID, provider string) (*U
 
 	if u.Active == false {
 		return nil, nil, errors.New("user does not exist")
+	}
+
+	if len(u.Auth) == 0 {
+		return nil, nil, errors.New("user has no auth methods")
+	}
+
+	if provider == "local" && !u.Auth[0].IsVerified {
+		return nil, nil, rules.ErrEmailNotVerified
 	}
 
 	roles, err := s.repo.GetGlobalRolesByUserID(ctx, u.ID)
@@ -287,3 +296,5 @@ func (s *Service) PatchProfile(ctx context.Context, userID int64, dto PatchUserP
 
 	return s.repo.PatchUser(ctx, u)
 }
+
+func (s *Service) LoginAfterRegister()

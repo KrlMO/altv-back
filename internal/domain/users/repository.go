@@ -64,7 +64,7 @@ func (r *Repository) CreateUser(ctx context.Context, u User, provider string) er
 		return err
 	}
 
-	err = r.InsertUserAuth(ctx, tx, userID, userID, userID, *u.Auth[0].ProviderName, *u.Auth[0].ProviderUID, u.Auth[0].PasswordHash)
+	err = r.InsertUserAuth(ctx, tx, userID, userID, userID, provider, *u.Auth[0].ProviderUID, u.Auth[0].PasswordHash)
 
 	if err != nil {
 		return err
@@ -146,7 +146,8 @@ func (r *Repository) GetUserByProviderUID(
 		aua.id,
 		aua.provider,
 		aua.provider_uid,
-		aua.password_hash
+		aua.password_hash,
+		aua.is_verified
 	FROM al_user_auth aua
 	JOIN al_user au ON au.id = aua.user_id
 	WHERE aua.provider = $1
@@ -162,6 +163,7 @@ func (r *Repository) GetUserByProviderUID(
 		&auth.ProviderName,
 		&auth.ProviderUID,
 		&passwordHash,
+		&auth.IsVerified,
 	)
 
 	if passwordHash.Valid {
