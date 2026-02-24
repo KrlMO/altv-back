@@ -2,6 +2,7 @@ package users
 
 import (
 	"arena/pkg/middleware"
+	"arena/pkg/response"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -87,11 +88,17 @@ func (m *Module) GetMe(c *gin.Context) {
 
 	user, err := m.service.GetProfile(c, userID)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found"})
+		c.JSON(http.StatusUnauthorized, response.ResponseError{
+			Error: "unauthorized",
+			Ok:    false,
+		})
 		return
 	}
 
-	c.JSON(http.StatusOK, user)
+	c.JSON(http.StatusOK, response.ResponseOk[UserProfileResponse]{
+		Ok:   true,
+		Data: *user,
+	})
 }
 
 // UpdateMe godoc

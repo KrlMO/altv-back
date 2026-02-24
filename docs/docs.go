@@ -1213,6 +1213,20 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "auth.AuthResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "provider": {
+                    "type": "string"
+                },
+                "provider_uid": {
+                    "type": "string"
+                }
+            }
+        },
         "auth.LoginRequest": {
             "type": "object",
             "required": [
@@ -1242,6 +1256,12 @@ const docTemplate = `{
         "auth.UserResponse": {
             "type": "object",
             "properties": {
+                "auth": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/auth.AuthResponse"
+                    }
+                },
                 "id": {
                     "type": "integer"
                 },
@@ -1249,9 +1269,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "profile_photo": {
-                    "type": "string"
-                },
-                "provider_uid": {
                     "type": "string"
                 }
             }
@@ -1519,6 +1536,20 @@ const docTemplate = `{
                 }
             }
         },
+        "users.AuthUserProfileResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "provider": {
+                    "type": "string"
+                },
+                "provider_uid": {
+                    "type": "string"
+                }
+            }
+        },
         "users.FastRegisterUserRequest": {
             "type": "object",
             "required": [
@@ -1632,6 +1663,12 @@ const docTemplate = `{
         "users.UserProfileResponse": {
             "type": "object",
             "properties": {
+                "auth": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/users.AuthUserProfileResponse"
+                    }
+                },
                 "banner_photo": {
                     "type": "string"
                 },
@@ -1640,9 +1677,6 @@ const docTemplate = `{
                 },
                 "country": {
                     "$ref": "#/definitions/dto.CountryResponse"
-                },
-                "email": {
-                    "type": "string"
                 },
                 "first_name": {
                     "type": "string"

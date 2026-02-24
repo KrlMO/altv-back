@@ -42,7 +42,13 @@ func (s *Service) LocalLogin(
 		return LoginResponse{}, "", rules.ErrUserNotFound
 	}
 
-	if !utils.CheckPasswordHash(password, u.Auth.PasswordHash) {
+	auth := u.Auth[0]
+
+	if auth.PasswordHash == "" {
+		return LoginResponse{}, "", rules.ErrInvalidCredentials
+	}
+
+	if !utils.CheckPasswordHash(password, auth.PasswordHash) {
 		return LoginResponse{}, "", rules.ErrInvalidCredentials
 	}
 
@@ -83,7 +89,7 @@ func (s *Service) LocalLogin(
 		User: UserResponse{
 			ID:           u.ID,
 			Nickname:     u.NickName,
-			ProviderUID:  u.Auth.ProviderUID,
+			Auth:         mapAuth(u.Auth),
 			ProfilePhoto: u.ProfilePhoto,
 		},
 	}, rawRefreshToken, nil
@@ -172,8 +178,8 @@ func (s *Service) Refresh(
 		User: UserResponse{
 			ID:           u.ID,
 			Nickname:     u.NickName,
-			ProviderUID:  u.Auth.ProviderUID,
 			ProfilePhoto: u.ProfilePhoto,
+			Auth:         mapAuth(u.Auth),
 		},
 	}
 

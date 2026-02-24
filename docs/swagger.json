@@ -1208,6 +1208,20 @@
         }
     },
     "definitions": {
+        "auth.AuthResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "provider": {
+                    "type": "string"
+                },
+                "provider_uid": {
+                    "type": "string"
+                }
+            }
+        },
         "auth.LoginRequest": {
             "type": "object",
             "required": [
@@ -1237,6 +1251,12 @@
         "auth.UserResponse": {
             "type": "object",
             "properties": {
+                "auth": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/auth.AuthResponse"
+                    }
+                },
                 "id": {
                     "type": "integer"
                 },
@@ -1244,9 +1264,6 @@
                     "type": "string"
                 },
                 "profile_photo": {
-                    "type": "string"
-                },
-                "provider_uid": {
                     "type": "string"
                 }
             }
@@ -1514,6 +1531,20 @@
                 }
             }
         },
+        "users.AuthUserProfileResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "provider": {
+                    "type": "string"
+                },
+                "provider_uid": {
+                    "type": "string"
+                }
+            }
+        },
         "users.FastRegisterUserRequest": {
             "type": "object",
             "required": [
@@ -1627,6 +1658,12 @@
         "users.UserProfileResponse": {
             "type": "object",
             "properties": {
+                "auth": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/users.AuthUserProfileResponse"
+                    }
+                },
                 "banner_photo": {
                     "type": "string"
                 },
@@ -1635,9 +1672,6 @@
                 },
                 "country": {
                     "$ref": "#/definitions/dto.CountryResponse"
-                },
-                "email": {
-                    "type": "string"
                 },
                 "first_name": {
                     "type": "string"

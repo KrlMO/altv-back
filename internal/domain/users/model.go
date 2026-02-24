@@ -17,12 +17,12 @@ type User struct {
 	BannerPhoto  string       `db:"banner_photo"`
 	Active       bool         `db:"active"`
 	UpdatedAt    time.Time    `db:"updated_at"`
-	Auth         UserAuth     `db:"auth"`
+	Auth         []UserAuth   `db:"auth"`
 }
 
 type UserAuth struct {
-	ID           int64  `db:"id"`
-	ProviderName string `db:"provider_name"`
-	ProviderUID  string `db:"provider_uid"`
-	PasswordHash string `db:"password_hash"`
+	ID           int64   `db:"id"`
+	ProviderName *string `db:"provider_name"`
+	ProviderUID  *string `db:"provider_uid"`
+	PasswordHash string  `db:"password_hash"`
 }

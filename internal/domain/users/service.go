@@ -51,9 +51,11 @@ func (s *Service) Register(ctx context.Context, dto RegisterUserRequest) error {
 			Valid: true,
 		},
 		CountryId: dto.CountryId,
-		Auth: UserAuth{
-			PasswordHash: hash,
-			ProviderUID:  dto.Email,
+		Auth: []UserAuth{
+			{
+				PasswordHash: hash,
+				ProviderUID:  &dto.Email,
+			},
 		},
 		Active: true,
 	}
@@ -99,9 +101,11 @@ func (s *Service) FastRegister(ctx context.Context, dto FastRegisterUserRequest)
 		},
 		CountryId: dto.CountryId,
 		Active:    true,
-		Auth: UserAuth{
-			ProviderUID:  dto.Email,
-			PasswordHash: hash,
+		Auth: []UserAuth{
+			{
+				ProviderUID:  &dto.Email,
+				PasswordHash: hash,
+			},
 		},
 	}
 
@@ -126,15 +130,28 @@ func (s *Service) GetUser(ctx context.Context, providerUID, provider string) (*U
 	return u, roles, nil
 }
 
-func (s *Service) GetUserByID(ctx context.Context, userId int64) (*User, []string, error) {
+func (s *Service) GetUserByID(
+	ctx context.Context,
+	userId int64,
+) (*User, []string, error) {
+
 	u, err := s.repo.GetUserByID(ctx, userId)
 	if err != nil {
 		return nil, nil, err
 	}
+
+	auths, err := s.repo.GetUserAuthByUserID(ctx, userId)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	u.Auth = auths
+
 	roles, err := s.repo.GetGlobalRolesByUserID(ctx, u.ID)
 	if err != nil {
 		return nil, nil, err
 	}
+
 	return u, roles, nil
 }
 
@@ -159,7 +176,7 @@ func (s *Service) GetProfile(ctx context.Context, userID int64) (*UserProfileRes
 		FirstName:    up.User.FirstName,
 		LastName:     up.User.LastName,
 		NickName:     up.User.NickName,
-		Email:        up.User.Auth.ProviderUID,
+		Auth:         mapAuth(up.User.Auth),
 		ProfilePhoto: up.User.ProfilePhoto,
 		BannerPhoto:  up.User.BannerPhoto,
 		BirthDate:    birth,

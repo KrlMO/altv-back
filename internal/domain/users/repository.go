@@ -2,6 +2,7 @@ package users
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"strings"
@@ -18,7 +19,7 @@ func NewRepository(db *pgxpool.Pool) *Repository {
 	return &Repository{db}
 }
 
-func (r *Repository) CreateUser(ctx context.Context, u User, providerName string) error {
+func (r *Repository) CreateUser(ctx context.Context, u User, provider string) error {
 	tx, err := r.db.Begin(ctx)
 	if err != nil {
 		return err
@@ -63,7 +64,7 @@ func (r *Repository) CreateUser(ctx context.Context, u User, providerName string
 		return err
 	}
 
-	err = r.InsertUserAuth(ctx, tx, userID, userID, userID, providerName, u.Auth.ProviderUID, u.Auth.PasswordHash)
+	err = r.InsertUserAuth(ctx, tx, userID, userID, userID, *u.Auth[0].ProviderName, *u.Auth[0].ProviderUID, u.Auth[0].PasswordHash)
 
 	if err != nil {
 		return err
@@ -124,25 +125,54 @@ func (r *Repository) InsertUserGlobalRole(
 	return err
 }
 
-func (r *Repository) GetUserByProviderUID(ctx context.Context, providerUID, provider string) (*User, error) {
-	u := User{}
-	str := `
-		select 
-			au.id,
-			au.first_name,
-			au.last_name,
-			au.nickname,
-			aua.provider_uid,
-			aua.password_hash,
-			au.profile_photo,
-			au.active 
-		from al_user au 
-		join al_user_auth aua on au.id = aua.user_id
-		where aua.provider_uid = $1 and aua.provider = $2`
-	err := r.db.QueryRow(ctx, str, providerUID, provider).Scan(&u.ID, &u.FirstName, &u.LastName, &u.NickName, &u.Auth.ProviderUID, &u.Auth.PasswordHash, &u.ProfilePhoto, &u.Active)
+func (r *Repository) GetUserByProviderUID(
+	ctx context.Context,
+	providerUID string,
+	provider string,
+) (*User, error) {
+
+	var u User
+	var auth UserAuth
+	var passwordHash sql.NullString
+
+	err := r.db.QueryRow(ctx, `
+	SELECT
+		au.id,
+		au.first_name,
+		au.last_name,
+		au.nickname,
+		au.birth_date,
+		au.active,
+		aua.id,
+		aua.provider,
+		aua.provider_uid,
+		aua.password_hash
+	FROM al_user_auth aua
+	JOIN al_user au ON au.id = aua.user_id
+	WHERE aua.provider = $1
+	  AND aua.provider_uid = $2
+`, provider, providerUID).Scan(
+		&u.ID,
+		&u.FirstName,
+		&u.LastName,
+		&u.NickName,
+		&u.BirthDate,
+		&u.Active,
+		&auth.ID,
+		&auth.ProviderName,
+		&auth.ProviderUID,
+		&passwordHash,
+	)
+
+	if passwordHash.Valid {
+		auth.PasswordHash = passwordHash.String
+	}
+
 	if err != nil {
 		return nil, err
 	}
+
+	u.Auth = []UserAuth{auth}
 	return &u, nil
 }
 
@@ -169,32 +199,97 @@ func (r *Repository) GetGlobalRolesByUserID(ctx context.Context, userID int64) (
 	return roles, nil
 }
 
-func (r *Repository) GetUserProfileByID(ctx context.Context, userID int64) (*UserProfile, error) {
+func (r *Repository) getBaseProfile(ctx context.Context, userID int64) (*UserProfile, error) {
 	up := UserProfile{}
-	str := `
-		select
+
+	err := r.db.QueryRow(ctx, `
+		SELECT
 			au.id,
 			au.first_name,
 			au.last_name,
 			au.nickname,
-			au.email,
 			au.profile_photo,
 			au.banner_photo,
 			au.birth_date,
 			ac.id,
-			ac."name",
+			ac.name,
 			ac.flag_path
-		from al_user au
-		join al_country ac on au.country_id = ac.id
-		where au.id = $1
-	`
-	err := r.db.QueryRow(ctx, str, userID).Scan(&up.User.ID, &up.User.FirstName, &up.User.LastName, &up.User.NickName, &up.User.Auth.ProviderUID,
-		&up.User.ProfilePhoto, &up.User.BannerPhoto, &up.User.BirthDate,
-		&up.Country.ID, &up.Country.Name, &up.Country.FlagPath)
+		FROM al_user au
+		JOIN al_country ac ON au.country_id = ac.id
+		WHERE au.id = $1
+	`, userID).Scan(
+		&up.User.ID,
+		&up.User.FirstName,
+		&up.User.LastName,
+		&up.User.NickName,
+		&up.User.ProfilePhoto,
+		&up.User.BannerPhoto,
+		&up.User.BirthDate,
+		&up.Country.ID,
+		&up.Country.Name,
+		&up.Country.FlagPath,
+	)
+
 	if err != nil {
 		return nil, err
 	}
+
 	return &up, nil
+}
+
+func (r *Repository) getUserProviders(ctx context.Context, userID int64) ([]UserAuth, error) {
+
+	rows, err := r.db.Query(ctx, `
+		SELECT id, provider, provider_uid, password_hash
+		FROM al_user_auth
+		WHERE user_id = $1
+	`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var auths []UserAuth
+
+	for rows.Next() {
+		var ua UserAuth
+		var passwordHash sql.NullString
+
+		err := rows.Scan(
+			&ua.ID,
+			&ua.ProviderName,
+			&ua.ProviderUID,
+			&passwordHash,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		if passwordHash.Valid {
+			ua.PasswordHash = passwordHash.String
+		}
+
+		auths = append(auths, ua)
+	}
+
+	return auths, nil
+}
+
+func (r *Repository) GetUserProfileByID(ctx context.Context, userID int64) (*UserProfile, error) {
+
+	up, err := r.getBaseProfile(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	auths, err := r.getUserProviders(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	up.User.Auth = auths
+
+	return up, nil
 }
 
 func (r *Repository) CountryExists(ctx context.Context, countryID int32) (bool, error) {
@@ -341,4 +436,44 @@ func (r *Repository) GetUserByID(
 	}
 
 	return &u, nil
+}
+
+func (r *Repository) GetUserAuthByUserID(
+	ctx context.Context,
+	userId int64,
+) ([]UserAuth, error) {
+
+	rows, err := r.db.Query(ctx, `
+		SELECT
+			id,
+			provider,
+			provider_uid,
+			password_hash
+		FROM al_user_auth
+		WHERE user_id = $1
+	`, userId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var auths []UserAuth
+
+	for rows.Next() {
+		var ua UserAuth
+
+		err := rows.Scan(
+			&ua.ID,
+			&ua.ProviderName,
+			&ua.ProviderUID,
+			&ua.PasswordHash,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		auths = append(auths, ua)
+	}
+
+	return auths, nil
 }

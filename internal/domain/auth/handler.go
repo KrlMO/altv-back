@@ -143,7 +143,10 @@ func (m *Module) Refresh(c *gin.Context) {
 		Path:     "/",
 	})
 
-	c.JSON(http.StatusOK, reponse)
+	c.JSON(http.StatusOK, response.ResponseOk[LoginResponse]{
+		Ok:   true,
+		Data: reponse,
+	})
 }
 
 // Logout godoc

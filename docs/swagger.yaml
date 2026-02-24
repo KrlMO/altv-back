@@ -1,5 +1,14 @@
 basePath: /
 definitions:
+  auth.AuthResponse:
+    properties:
+      id:
+        type: integer
+      provider:
+        type: string
+      provider_uid:
+        type: string
+    type: object
   auth.LoginRequest:
     properties:
       email:
@@ -19,13 +28,15 @@ definitions:
     type: object
   auth.UserResponse:
     properties:
+      auth:
+        items:
+          $ref: '#/definitions/auth.AuthResponse'
+        type: array
       id:
         type: integer
       nickname:
         type: string
       profile_photo:
-        type: string
-      provider_uid:
         type: string
     type: object
   countries.CountryResponse:
@@ -205,6 +216,15 @@ definitions:
     required:
     - role
     type: object
+  users.AuthUserProfileResponse:
+    properties:
+      id:
+        type: integer
+      provider:
+        type: string
+      provider_uid:
+        type: string
+    type: object
   users.FastRegisterUserRequest:
     properties:
       country_id:
@@ -282,14 +302,16 @@ definitions:
     type: object
   users.UserProfileResponse:
     properties:
+      auth:
+        items:
+          $ref: '#/definitions/users.AuthUserProfileResponse'
+        type: array
       banner_photo:
         type: string
       birth_date:
         type: string
       country:
         $ref: '#/definitions/dto.CountryResponse'
-      email:
-        type: string
       first_name:
         type: string
       id:
