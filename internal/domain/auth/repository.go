@@ -1,7 +1,9 @@
 package auth
 
 import (
+	"arena/internal/domain/users"
 	"context"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -190,6 +192,66 @@ func (r *Repository) RevokeByHash(ctx context.Context, hash string) error {
 		SET revoked = true
 		WHERE token_hash = $1 AND revoked = false
 	`, hash)
+
+	return err
+}
+
+func (r *Repository) GetLocalAuthByEmail(
+	ctx context.Context,
+	email string,
+) (*users.UserAuth, error) {
+	auth := &users.UserAuth{}
+
+	err := r.db.QueryRow(ctx, `
+		SELECT
+			id,	
+			provider,
+			provider_uid,
+			password_hash,
+			is_verified
+		FROM al_user_auth
+		WHERE provider = 'local' AND provider_uid = $1
+	`, email).Scan(
+		&auth.ID,
+		&auth.ProviderName,
+		&auth.ProviderUID,
+		&auth.PasswordHash,
+		&auth.IsVerified,
+	)
+
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return auth, nil
+}
+
+func (r *Repository) DeleteVerificationTokens(
+	ctx context.Context,
+	userAuthId int64,
+) error {
+	_, err := r.db.Exec(ctx, `
+		DELETE FROM al_user_verification_tokens
+		WHERE user_auth_id = $1
+	`, userAuthId)
+
+	return err
+}
+
+func (r *Repository) CreateVerificationToken(
+	ctx context.Context,
+	userAuthId int64,
+	tokenHash string,
+	expiresAt time.Time,
+) error {
+	_, err := r.db.Exec(ctx, `
+		INSERT INTO al_user_verification_tokens
+		(user_auth_id, token_hash, expires_at, created_at)
+		VALUES ($1, $2, $3, NOW())
+	`, userAuthId, tokenHash, expiresAt)
 
 	return err
 }

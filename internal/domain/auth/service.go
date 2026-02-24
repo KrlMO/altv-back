@@ -14,11 +14,13 @@ type Service struct {
 	repo                 *Repository
 	accessTokenDuration  time.Duration
 	refreshTokenDuration time.Duration
+	mailer               Mailer
 }
 
 func NewService(
 	usersService *users.Service,
 	jwtSecret string,
+	mailer Mailer,
 	repo *Repository,
 	accessDuration time.Duration,
 	refreshDuration time.Duration,
@@ -27,9 +29,14 @@ func NewService(
 		usersService:         usersService,
 		jwtSecret:            jwtSecret,
 		repo:                 repo,
+		mailer:               mailer,
 		accessTokenDuration:  accessDuration,
 		refreshTokenDuration: refreshDuration,
 	}
+}
+
+type Mailer interface {
+	SendVerificationEmail(to string, token string) error
 }
 
 func (s *Service) LocalLogin(
@@ -62,12 +69,12 @@ func (s *Service) LocalLogin(
 		return LoginResponse{}, "", rules.ErrFailedToGenerateAccessToken
 	}
 
-	rawRefreshToken, err := generateRefreshToken()
+	rawRefreshToken, err := generateToken(64)
 	if err != nil {
 		return LoginResponse{}, "", rules.ErrFailedToGenerateRefreshToken
 	}
 
-	hash := hashRefreshToken(rawRefreshToken)
+	hash := hashToken(rawRefreshToken)
 
 	refresh := &RefreshToken{
 		UserID:     u.ID,
@@ -102,7 +109,7 @@ func (s *Service) Refresh(
 	deviceInfo string,
 ) (LoginResponse, string, error) {
 
-	tokenHash := hashRefreshToken(rawRefreshToken)
+	tokenHash := hashToken(rawRefreshToken)
 
 	tx, err := s.repo.BeginTx(ctx)
 	if err != nil {
@@ -132,12 +139,12 @@ func (s *Service) Refresh(
 		return LoginResponse{}, "", err
 	}
 
-	newRawRefreshToken, err := generateRefreshToken()
+	newRawRefreshToken, err := generateToken(64)
 	if err != nil {
 		return LoginResponse{}, "", rules.ErrFailedToGenerateRefreshToken
 	}
 
-	newHash := hashRefreshToken(newRawRefreshToken)
+	newHash := hashToken(newRawRefreshToken)
 
 	newRefresh := &RefreshToken{
 		UserID:     storedToken.UserID,
@@ -191,7 +198,33 @@ func (s *Service) Logout(ctx context.Context, token string) error {
 		return nil
 	}
 
-	tokenHash := hashRefreshToken(token)
+	tokenHash := hashToken(token)
 
 	return s.repo.RevokeByHash(ctx, tokenHash)
+}
+
+func (s *Service) InitiateEmailVerification(ctx context.Context, email string) error {
+	userAuth, err := s.repo.GetLocalAuthByEmail(ctx, email)
+	if err != nil {
+		return err
+	}
+
+	if err := s.repo.DeleteVerificationTokens(ctx, userAuth.ID); err != nil {
+		return err
+	}
+
+	rawToken, err := generateToken(32)
+	if err != nil {
+		return err
+	}
+
+	tokenHash := hashToken(rawToken)
+
+	err = s.repo.CreateVerificationToken(ctx, userAuth.ID, tokenHash, time.Now().Add(24*time.Hour))
+	if err != nil {
+		return err
+	}
+
+	go s.mailer.SendVerificationEmail(email, rawToken)
+	return nil
 }

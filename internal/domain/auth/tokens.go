@@ -7,18 +7,16 @@ import (
 	"encoding/hex"
 )
 
-func generateRefreshToken() (string, error) {
-	b := make([]byte, 64)
-
+func generateToken(bytes int) (string, error) {
+	b := make([]byte, bytes)
 	_, err := rand.Read(b)
 	if err != nil {
 		return "", err
 	}
-
 	return base64.RawURLEncoding.EncodeToString(b), nil
 }
 
-func hashRefreshToken(token string) string {
+func hashToken(token string) string {
 	hash := sha256.Sum256([]byte(token))
 	return hex.EncodeToString(hash[:])
 }

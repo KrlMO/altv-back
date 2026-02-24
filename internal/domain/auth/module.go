@@ -12,6 +12,7 @@ type Module struct {
 func NewModule(
 	usersService *users.Service,
 	repo *Repository,
+	mailer Mailer,
 	jwtSecret string,
 	accessDuration time.Duration,
 	refreshDuration time.Duration,
