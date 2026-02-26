@@ -62,6 +62,7 @@ func SetupRouter(db *pgxpool.Pool, cfg *config.Config) *gin.Engine {
 	authModule := auth.NewModule(
 		usersService,
 		authRepo,
+		mailer,
 		cfg.JWTSecret,
 		15*time.Minute,
 		7*24*time.Hour,

@@ -20,21 +20,22 @@ type FastRegisterUserRequest struct {
 }
 
 type UserProfileResponse struct {
-	ID           int64                     `json:"id"`
-	FirstName    string                    `json:"first_name"`
-	LastName     string                    `json:"last_name"`
-	NickName     string                    `json:"nickname"`
-	Auth         []AuthUserProfileResponse `json:"auth"`
-	ProfilePhoto string                    `json:"profile_photo"`
-	BannerPhoto  string                    `json:"banner_photo"`
-	BirthDate    string                    `json:"birth_date"`
-	Country      dto.CountryResponse       `json:"country"`
+	ID           int64                   `json:"id"`
+	FirstName    string                  `json:"first_name"`
+	LastName     string                  `json:"last_name"`
+	NickName     string                  `json:"nickname"`
+	Auth         []ProvidersAuthResponse `json:"auth"`
+	ProfilePhoto string                  `json:"profile_photo"`
+	BannerPhoto  string                  `json:"banner_photo"`
+	BirthDate    string                  `json:"birth_date"`
+	Country      dto.CountryResponse     `json:"country"`
 }
 
-type AuthUserProfileResponse struct {
+type ProvidersAuthResponse struct {
 	Provider    string `json:"provider"`
 	ProviderUID string `json:"provider_uid"`
 	ID          int64  `json:"id"`
+	IsVerified  bool   `json:"is_verified"`
 }
 
 type UpdateUserProfileRequest struct {

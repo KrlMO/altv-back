@@ -21,6 +21,7 @@ func NewModule(
 	service := NewService(
 		usersService,
 		jwtSecret,
+		mailer,
 		repo,
 		accessDuration,
 		refreshDuration,

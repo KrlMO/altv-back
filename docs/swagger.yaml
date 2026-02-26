@@ -1,15 +1,77 @@
 basePath: /
 definitions:
-  auth.AuthResponse:
+  arena_internal_domain_users.ProvidersAuthResponse:
     properties:
       id:
         type: integer
+      is_verified:
+        type: boolean
       provider:
         type: string
       provider_uid:
         type: string
     type: object
-  auth.LoginRequest:
+  arena_internal_domain_users.RegisterUserRequest:
+    properties:
+      birth_date:
+        type: string
+      country_id:
+        type: integer
+      email:
+        type: string
+      first_name:
+        type: string
+      last_name:
+        type: string
+      nickname:
+        type: string
+      password:
+        type: string
+    required:
+    - birth_date
+    - country_id
+    - email
+    - first_name
+    - last_name
+    - nickname
+    - password
+    type: object
+  arena_pkg_dto.CountryResponse:
+    properties:
+      flag_path:
+        type: string
+      id:
+        type: integer
+      iso_code:
+        type: string
+      name:
+        type: string
+    type: object
+  arena_pkg_response.ResponseError:
+    properties:
+      error:
+        type: string
+      ok:
+        type: boolean
+    type: object
+  arena_pkg_response.ResponseOk-any:
+    properties:
+      data: {}
+      msg:
+        type: string
+      ok:
+        type: boolean
+    type: object
+  arena_pkg_response.ResponseOk-internal_domain_auth_LoginResponse:
+    properties:
+      data:
+        $ref: '#/definitions/internal_domain_auth.LoginResponse'
+      msg:
+        type: string
+      ok:
+        type: boolean
+    type: object
+  internal_domain_auth.LoginRequest:
     properties:
       email:
         type: string
@@ -19,18 +81,18 @@ definitions:
     - email
     - password
     type: object
-  auth.LoginResponse:
+  internal_domain_auth.LoginResponse:
     properties:
       access_token:
         type: string
       user:
-        $ref: '#/definitions/auth.UserResponse'
+        $ref: '#/definitions/internal_domain_auth.UserResponse'
     type: object
-  auth.UserResponse:
+  internal_domain_auth.UserResponse:
     properties:
       auth:
         items:
-          $ref: '#/definitions/auth.AuthResponse'
+          $ref: '#/definitions/arena_internal_domain_users.ProvidersAuthResponse'
         type: array
       id:
         type: integer
@@ -39,7 +101,7 @@ definitions:
       profile_photo:
         type: string
     type: object
-  countries.CountryResponse:
+  internal_domain_countries.CountryResponse:
     properties:
       flag_path:
         type: string
@@ -50,31 +112,13 @@ definitions:
       name:
         type: string
     type: object
-  dto.CountryResponse:
-    properties:
-      flag_path:
-        type: string
-      id:
-        type: integer
-      iso_code:
-        type: string
-      name:
-        type: string
-    type: object
-  response.ResponseError:
-    properties:
-      error:
-        type: string
-      ok:
-        type: boolean
-    type: object
-  teamgames.AddTeamGameMembersRequest:
+  internal_domain_team_games.AddTeamGameMembersRequest:
     properties:
       game_id:
         type: integer
       members:
         items:
-          $ref: '#/definitions/teamgames.ReqTeamGameMember'
+          $ref: '#/definitions/internal_domain_team_games.ReqTeamGameMember'
         maxItems: 50
         minItems: 1
         type: array
@@ -82,18 +126,18 @@ definitions:
     - game_id
     - members
     type: object
-  teamgames.AddTeamGameRoleToMemberRequest:
+  internal_domain_team_games.AddTeamGameRoleToMemberRequest:
     properties:
       users:
         items:
-          $ref: '#/definitions/teamgames.TeamGameMemberDto'
+          $ref: '#/definitions/internal_domain_team_games.TeamGameMemberDto'
         maxItems: 50
         minItems: 1
         type: array
     required:
     - users
     type: object
-  teamgames.RemoveTeamGameMembersRequest:
+  internal_domain_team_games.RemoveTeamGameMembersRequest:
     properties:
       members:
         items:
@@ -104,41 +148,41 @@ definitions:
     required:
     - members
     type: object
-  teamgames.RemoveTeamGameRoleFromUserRequest:
+  internal_domain_team_games.RemoveTeamGameRoleFromUserRequest:
     properties:
       users:
         items:
-          $ref: '#/definitions/teamgames.TeamGameMemberDto'
+          $ref: '#/definitions/internal_domain_team_games.TeamGameMemberDto'
         maxItems: 50
         minItems: 1
         type: array
     required:
     - users
     type: object
-  teamgames.ReqTeamGameMember:
+  internal_domain_team_games.ReqTeamGameMember:
     properties:
       teamGameRoleID:
         type: integer
       userID:
         type: integer
     type: object
-  teamgames.TeamGameMemberDto:
+  internal_domain_team_games.TeamGameMemberDto:
     properties:
       roles:
         items:
-          $ref: '#/definitions/teamgames.TeamGameRoleDto'
+          $ref: '#/definitions/internal_domain_team_games.TeamGameRoleDto'
         type: array
       userID:
         type: integer
     type: object
-  teamgames.TeamGameRoleDto:
+  internal_domain_team_games.TeamGameRoleDto:
     properties:
       id:
         type: integer
       name:
         type: string
     type: object
-  teams.AddMemberRequest:
+  internal_domain_teams.AddMemberRequest:
     properties:
       role:
         type: string
@@ -148,7 +192,7 @@ definitions:
     - role
     - user_id
     type: object
-  teams.CreateTeamGameRequest:
+  internal_domain_teams.CreateTeamGameRequest:
     properties:
       active:
         type: boolean
@@ -166,7 +210,7 @@ definitions:
     - game_slug
     - name
     type: object
-  teams.PatchUpdateTeamRequest:
+  internal_domain_teams.PatchUpdateTeamRequest:
     properties:
       banner_path:
         type: string
@@ -183,7 +227,7 @@ definitions:
       tag:
         type: string
     type: object
-  teams.RegisterTeamRequest:
+  internal_domain_teams.RegisterTeamRequest:
     properties:
       banner_path:
         type: string
@@ -209,23 +253,14 @@ definitions:
     - name
     - tag
     type: object
-  teams.UpdateTeamMemberRoleRequest:
+  internal_domain_teams.UpdateTeamMemberRoleRequest:
     properties:
       role:
         type: string
     required:
     - role
     type: object
-  users.AuthUserProfileResponse:
-    properties:
-      id:
-        type: integer
-      provider:
-        type: string
-      provider_uid:
-        type: string
-    type: object
-  users.FastRegisterUserRequest:
+  internal_domain_users.FastRegisterUserRequest:
     properties:
       country_id:
         type: integer
@@ -241,7 +276,7 @@ definitions:
     - nickname
     - password
     type: object
-  users.PatchUserProfileRequest:
+  internal_domain_users.PatchUserProfileRequest:
     properties:
       banner_photo:
         type: string
@@ -258,7 +293,18 @@ definitions:
       profile_photo:
         type: string
     type: object
-  users.RegisterUserRequest:
+  internal_domain_users.ProvidersAuthResponse:
+    properties:
+      id:
+        type: integer
+      is_verified:
+        type: boolean
+      provider:
+        type: string
+      provider_uid:
+        type: string
+    type: object
+  internal_domain_users.RegisterUserRequest:
     properties:
       birth_date:
         type: string
@@ -283,7 +329,7 @@ definitions:
     - nickname
     - password
     type: object
-  users.UpdateUserProfileRequest:
+  internal_domain_users.UpdateUserProfileRequest:
     properties:
       banner_photo:
         type: string
@@ -300,18 +346,18 @@ definitions:
       profile_photo:
         type: string
     type: object
-  users.UserProfileResponse:
+  internal_domain_users.UserProfileResponse:
     properties:
       auth:
         items:
-          $ref: '#/definitions/users.AuthUserProfileResponse'
+          $ref: '#/definitions/internal_domain_users.ProvidersAuthResponse'
         type: array
       banner_photo:
         type: string
       birth_date:
         type: string
       country:
-        $ref: '#/definitions/dto.CountryResponse'
+        $ref: '#/definitions/arena_pkg_dto.CountryResponse'
       first_name:
         type: string
       id:
@@ -340,14 +386,14 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/auth.LoginRequest'
+          $ref: '#/definitions/internal_domain_auth.LoginRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/auth.LoginResponse'
+            $ref: '#/definitions/internal_domain_auth.LoginResponse'
         "400":
           description: Bad Request
           schema:
@@ -368,9 +414,7 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/arena_pkg_response.ResponseOk-any'
         "400":
           description: Bad Request
           schema:
@@ -391,6 +435,34 @@ paths:
         "200":
           description: OK
           schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseOk-internal_domain_auth_LoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Refresh user token
+      tags:
+      - Auth
+  /api/v1/auth/register/local:
+    post:
+      consumes:
+      - application/json
+      description: Registers a user with local auth and logs them in
+      parameters:
+      - description: User info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/arena_internal_domain_users.RegisterUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
             additionalProperties:
               type: string
             type: object
@@ -400,7 +472,7 @@ paths:
             additionalProperties:
               type: string
             type: object
-      summary: Refresh user token
+      summary: Register and login a user
       tags:
       - Auth
   /api/v1/countries/:
@@ -415,7 +487,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/countries.CountryResponse'
+              $ref: '#/definitions/internal_domain_countries.CountryResponse'
             type: array
         "400":
           description: Bad Request
@@ -443,7 +515,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/users.FastRegisterUserRequest'
+          $ref: '#/definitions/internal_domain_users.FastRegisterUserRequest'
       produces:
       - application/json
       responses:
@@ -471,7 +543,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/users.UserProfileResponse'
+            $ref: '#/definitions/internal_domain_users.UserProfileResponse'
         "401":
           description: Unauthorized
           schema:
@@ -493,7 +565,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/users.PatchUserProfileRequest'
+          $ref: '#/definitions/internal_domain_users.PatchUserProfileRequest'
       produces:
       - application/json
       responses:
@@ -530,7 +602,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/users.UpdateUserProfileRequest'
+          $ref: '#/definitions/internal_domain_users.UpdateUserProfileRequest'
       produces:
       - application/json
       responses:
@@ -568,7 +640,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/users.RegisterUserRequest'
+          $ref: '#/definitions/internal_domain_users.RegisterUserRequest'
       produces:
       - application/json
       responses:
@@ -610,15 +682,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.ResponseError'
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/response.ResponseError'
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.ResponseError'
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
       security:
       - BearerAuth: []
       summary: Leave Team Game
@@ -640,7 +712,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/teamgames.RemoveTeamGameMembersRequest'
+          $ref: '#/definitions/internal_domain_team_games.RemoveTeamGameMembersRequest'
       produces:
       - application/json
       responses:
@@ -653,11 +725,11 @@ paths:
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/response.ResponseError'
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.ResponseError'
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
       security:
       - BearerAuth: []
       summary: Remove Members from Team Game
@@ -685,15 +757,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.ResponseError'
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/response.ResponseError'
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.ResponseError'
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
       summary: List Team Game Members
       tags:
       - Team Games
@@ -712,7 +784,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/teamgames.AddTeamGameMembersRequest'
+          $ref: '#/definitions/internal_domain_team_games.AddTeamGameMembersRequest'
       produces:
       - application/json
       responses:
@@ -725,11 +797,11 @@ paths:
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/response.ResponseError'
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.ResponseError'
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
       security:
       - BearerAuth: []
       summary: Add Members to Team Game
@@ -751,7 +823,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/teamgames.RemoveTeamGameRoleFromUserRequest'
+          $ref: '#/definitions/internal_domain_team_games.RemoveTeamGameRoleFromUserRequest'
       produces:
       - application/json
       responses:
@@ -764,11 +836,11 @@ paths:
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/response.ResponseError'
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.ResponseError'
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
       security:
       - BearerAuth: []
       summary: Remove Team Game Role from Member
@@ -789,7 +861,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/teamgames.AddTeamGameRoleToMemberRequest'
+          $ref: '#/definitions/internal_domain_team_games.AddTeamGameRoleToMemberRequest'
       produces:
       - application/json
       responses:
@@ -802,11 +874,11 @@ paths:
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/response.ResponseError'
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.ResponseError'
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
       security:
       - BearerAuth: []
       summary: Add Team Game Role to Member
@@ -870,7 +942,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/teams.RegisterTeamRequest'
+          $ref: '#/definitions/internal_domain_teams.RegisterTeamRequest'
       produces:
       - application/json
       responses:
@@ -929,7 +1001,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/teams.PatchUpdateTeamRequest'
+          $ref: '#/definitions/internal_domain_teams.PatchUpdateTeamRequest'
       produces:
       - application/json
       responses:
@@ -966,7 +1038,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/teams.CreateTeamGameRequest'
+          $ref: '#/definitions/internal_domain_teams.CreateTeamGameRequest'
       produces:
       - application/json
       responses:
@@ -1003,7 +1075,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/teams.AddMemberRequest'
+          $ref: '#/definitions/internal_domain_teams.AddMemberRequest'
       produces:
       - application/json
       responses:
@@ -1080,7 +1152,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/teams.UpdateTeamMemberRoleRequest'
+          $ref: '#/definitions/internal_domain_teams.UpdateTeamMemberRoleRequest'
       produces:
       - application/json
       responses:

@@ -199,8 +199,8 @@ func (r *Repository) RevokeByHash(ctx context.Context, hash string) error {
 func (r *Repository) GetLocalAuthByEmail(
 	ctx context.Context,
 	email string,
-) (*users.UserAuth, error) {
-	auth := &users.UserAuth{}
+) (*users.ProviderAuth, error) {
+	auth := &users.ProviderAuth{}
 
 	err := r.db.QueryRow(ctx, `
 		SELECT
