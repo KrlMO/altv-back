@@ -52,7 +52,7 @@ func (s *Service) Register(ctx context.Context, dto RegisterUserRequest) error {
 			Valid: true,
 		},
 		CountryId: dto.CountryId,
-		Auth: []UserAuth{
+		Auth: []ProviderAuth{
 			{
 				PasswordHash: hash,
 				ProviderUID:  &dto.Email,
@@ -102,7 +102,7 @@ func (s *Service) FastRegister(ctx context.Context, dto FastRegisterUserRequest)
 		},
 		CountryId: dto.CountryId,
 		Active:    true,
-		Auth: []UserAuth{
+		Auth: []ProviderAuth{
 			{
 				ProviderUID:  &dto.Email,
 				PasswordHash: hash,
@@ -149,7 +149,7 @@ func (s *Service) GetUserByID(
 		return nil, nil, err
 	}
 
-	auths, err := s.repo.GetUserAuthByUserID(ctx, userId)
+	auths, err := s.repo.getUserProviders(ctx, userId)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -296,5 +296,3 @@ func (s *Service) PatchProfile(ctx context.Context, userID int64, dto PatchUserP
 
 	return s.repo.PatchUser(ctx, u)
 }
-
-func (s *Service) LoginAfterRegister()

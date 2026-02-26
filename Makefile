@@ -4,7 +4,7 @@ debug:
 	dlv debug ./cmd/api/main.go
 
 swagger:
-	swag init -g cmd/api/main.go -d . --parseInternal
+	swag init -g cmd/api/main.go -d . --parseInternal --parseDependency
 
 go:
 	go run ./cmd/api/main.go

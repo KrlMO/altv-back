@@ -90,7 +90,7 @@ func (m *Module) LoginLocal(c *gin.Context) {
 // @Tags Auth
 // @Accept json
 // @Produce json
-// @Success 200 {object} map[string]string
+// @Success 200 {object} response.ResponseOk[LoginResponse]
 // @Failure 400 {object} map[string]string
 // @Router /api/v1/auth/refresh [post]
 func (m *Module) Refresh(c *gin.Context) {
@@ -143,7 +143,7 @@ func (m *Module) Refresh(c *gin.Context) {
 // @Tags Auth
 // @Accept json
 // @Produce json
-// @Success 200 {object} map[string]string
+// @Success 200 {object} response.ResponseOk[any]
 // @Failure 400 {object} map[string]string
 // @Router /api/v1/auth/logout [post]
 func (m *Module) Logout(c *gin.Context) {
@@ -162,6 +162,15 @@ func (m *Module) Logout(c *gin.Context) {
 }
 
 // RegisterLocalAndLogin godoc
+// @Summary Register and login a user
+// @Description Registers a user with local auth and logs them in
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body users.RegisterUserRequest true "User info"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Router /api/v1/auth/register/local [post]
 func (m *Module) RegisterLocalAndLogin(c *gin.Context) {
 	ctx := c.Request.Context()
 	req := users.RegisterUserRequest{}

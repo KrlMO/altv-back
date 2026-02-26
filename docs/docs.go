@@ -36,7 +36,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/auth.LoginRequest"
+                            "$ref": "#/definitions/internal_domain_auth.LoginRequest"
                         }
                     }
                 ],
@@ -44,7 +44,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/auth.LoginResponse"
+                            "$ref": "#/definitions/internal_domain_auth.LoginResponse"
                         }
                     },
                     "400": {
@@ -76,10 +76,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/arena_pkg_response.ResponseOk-any"
                         }
                     },
                     "400": {
@@ -107,6 +104,49 @@ const docTemplate = `{
                     "Auth"
                 ],
                 "summary": "Refresh user token",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseOk-internal_domain_auth_LoginResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/register/local": {
+            "post": {
+                "description": "Registers a user with local auth and logs them in",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Register and login a user",
+                "parameters": [
+                    {
+                        "description": "User info",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/arena_internal_domain_users.RegisterUserRequest"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -148,7 +188,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/countries.CountryResponse"
+                                "$ref": "#/definitions/internal_domain_countries.CountryResponse"
                             }
                         }
                     },
@@ -193,7 +233,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/users.FastRegisterUserRequest"
+                            "$ref": "#/definitions/internal_domain_users.FastRegisterUserRequest"
                         }
                     }
                 ],
@@ -238,7 +278,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/users.UserProfileResponse"
+                            "$ref": "#/definitions/internal_domain_users.UserProfileResponse"
                         }
                     },
                     "401": {
@@ -276,7 +316,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/users.UpdateUserProfileRequest"
+                            "$ref": "#/definitions/internal_domain_users.UpdateUserProfileRequest"
                         }
                     }
                 ],
@@ -334,7 +374,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/users.PatchUserProfileRequest"
+                            "$ref": "#/definitions/internal_domain_users.PatchUserProfileRequest"
                         }
                     }
                 ],
@@ -389,7 +429,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/users.RegisterUserRequest"
+                            "$ref": "#/definitions/internal_domain_users.RegisterUserRequest"
                         }
                     }
                 ],
@@ -455,19 +495,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/response.ResponseError"
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/response.ResponseError"
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/response.ResponseError"
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
                         }
                     }
                 }
@@ -508,19 +548,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/response.ResponseError"
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/response.ResponseError"
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/response.ResponseError"
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
                         }
                     }
                 }
@@ -556,7 +596,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/teamgames.AddTeamGameMembersRequest"
+                            "$ref": "#/definitions/internal_domain_team_games.AddTeamGameMembersRequest"
                         }
                     }
                 ],
@@ -573,13 +613,13 @@ const docTemplate = `{
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/response.ResponseError"
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/response.ResponseError"
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
                         }
                     }
                 }
@@ -615,7 +655,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/teamgames.RemoveTeamGameMembersRequest"
+                            "$ref": "#/definitions/internal_domain_team_games.RemoveTeamGameMembersRequest"
                         }
                     }
                 ],
@@ -632,13 +672,13 @@ const docTemplate = `{
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/response.ResponseError"
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/response.ResponseError"
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
                         }
                     }
                 }
@@ -676,7 +716,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/teamgames.AddTeamGameRoleToMemberRequest"
+                            "$ref": "#/definitions/internal_domain_team_games.AddTeamGameRoleToMemberRequest"
                         }
                     }
                 ],
@@ -693,13 +733,13 @@ const docTemplate = `{
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/response.ResponseError"
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/response.ResponseError"
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
                         }
                     }
                 }
@@ -735,7 +775,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/teamgames.RemoveTeamGameRoleFromUserRequest"
+                            "$ref": "#/definitions/internal_domain_team_games.RemoveTeamGameRoleFromUserRequest"
                         }
                     }
                 ],
@@ -752,13 +792,13 @@ const docTemplate = `{
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/response.ResponseError"
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/response.ResponseError"
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
                         }
                     }
                 }
@@ -859,7 +899,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/teams.RegisterTeamRequest"
+                            "$ref": "#/definitions/internal_domain_teams.RegisterTeamRequest"
                         }
                     }
                 ],
@@ -950,7 +990,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/teams.PatchUpdateTeamRequest"
+                            "$ref": "#/definitions/internal_domain_teams.PatchUpdateTeamRequest"
                         }
                     }
                 ],
@@ -1008,7 +1048,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/teams.CreateTeamGameRequest"
+                            "$ref": "#/definitions/internal_domain_teams.CreateTeamGameRequest"
                         }
                     }
                 ],
@@ -1066,7 +1106,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/teams.AddMemberRequest"
+                            "$ref": "#/definitions/internal_domain_teams.AddMemberRequest"
                         }
                     }
                 ],
@@ -1185,7 +1225,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/teams.UpdateTeamMemberRoleRequest"
+                            "$ref": "#/definitions/internal_domain_teams.UpdateTeamMemberRoleRequest"
                         }
                     }
                 ],
@@ -1213,11 +1253,14 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "auth.AuthResponse": {
+        "arena_internal_domain_users.ProvidersAuthResponse": {
             "type": "object",
             "properties": {
                 "id": {
                     "type": "integer"
+                },
+                "is_verified": {
+                    "type": "boolean"
                 },
                 "provider": {
                     "type": "string"
@@ -1227,7 +1270,96 @@ const docTemplate = `{
                 }
             }
         },
-        "auth.LoginRequest": {
+        "arena_internal_domain_users.RegisterUserRequest": {
+            "type": "object",
+            "required": [
+                "birth_date",
+                "country_id",
+                "email",
+                "first_name",
+                "last_name",
+                "nickname",
+                "password"
+            ],
+            "properties": {
+                "birth_date": {
+                    "type": "string"
+                },
+                "country_id": {
+                    "type": "integer"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "first_name": {
+                    "type": "string"
+                },
+                "last_name": {
+                    "type": "string"
+                },
+                "nickname": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "arena_pkg_dto.CountryResponse": {
+            "type": "object",
+            "properties": {
+                "flag_path": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "iso_code": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "arena_pkg_response.ResponseError": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                },
+                "ok": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "arena_pkg_response.ResponseOk-any": {
+            "type": "object",
+            "properties": {
+                "data": {},
+                "msg": {
+                    "type": "string"
+                },
+                "ok": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "arena_pkg_response.ResponseOk-internal_domain_auth_LoginResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/internal_domain_auth.LoginResponse"
+                },
+                "msg": {
+                    "type": "string"
+                },
+                "ok": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "internal_domain_auth.LoginRequest": {
             "type": "object",
             "required": [
                 "email",
@@ -1242,24 +1374,24 @@ const docTemplate = `{
                 }
             }
         },
-        "auth.LoginResponse": {
+        "internal_domain_auth.LoginResponse": {
             "type": "object",
             "properties": {
                 "access_token": {
                     "type": "string"
                 },
                 "user": {
-                    "$ref": "#/definitions/auth.UserResponse"
+                    "$ref": "#/definitions/internal_domain_auth.UserResponse"
                 }
             }
         },
-        "auth.UserResponse": {
+        "internal_domain_auth.UserResponse": {
             "type": "object",
             "properties": {
                 "auth": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/auth.AuthResponse"
+                        "$ref": "#/definitions/arena_internal_domain_users.ProvidersAuthResponse"
                     }
                 },
                 "id": {
@@ -1273,7 +1405,7 @@ const docTemplate = `{
                 }
             }
         },
-        "countries.CountryResponse": {
+        "internal_domain_countries.CountryResponse": {
             "type": "object",
             "properties": {
                 "flag_path": {
@@ -1290,35 +1422,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.CountryResponse": {
-            "type": "object",
-            "properties": {
-                "flag_path": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "iso_code": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                }
-            }
-        },
-        "response.ResponseError": {
-            "type": "object",
-            "properties": {
-                "error": {
-                    "type": "string"
-                },
-                "ok": {
-                    "type": "boolean"
-                }
-            }
-        },
-        "teamgames.AddTeamGameMembersRequest": {
+        "internal_domain_team_games.AddTeamGameMembersRequest": {
             "type": "object",
             "required": [
                 "game_id",
@@ -1333,12 +1437,12 @@ const docTemplate = `{
                     "maxItems": 50,
                     "minItems": 1,
                     "items": {
-                        "$ref": "#/definitions/teamgames.ReqTeamGameMember"
+                        "$ref": "#/definitions/internal_domain_team_games.ReqTeamGameMember"
                     }
                 }
             }
         },
-        "teamgames.AddTeamGameRoleToMemberRequest": {
+        "internal_domain_team_games.AddTeamGameRoleToMemberRequest": {
             "type": "object",
             "required": [
                 "users"
@@ -1349,12 +1453,12 @@ const docTemplate = `{
                     "maxItems": 50,
                     "minItems": 1,
                     "items": {
-                        "$ref": "#/definitions/teamgames.TeamGameMemberDto"
+                        "$ref": "#/definitions/internal_domain_team_games.TeamGameMemberDto"
                     }
                 }
             }
         },
-        "teamgames.RemoveTeamGameMembersRequest": {
+        "internal_domain_team_games.RemoveTeamGameMembersRequest": {
             "type": "object",
             "required": [
                 "members"
@@ -1370,7 +1474,7 @@ const docTemplate = `{
                 }
             }
         },
-        "teamgames.RemoveTeamGameRoleFromUserRequest": {
+        "internal_domain_team_games.RemoveTeamGameRoleFromUserRequest": {
             "type": "object",
             "required": [
                 "users"
@@ -1381,12 +1485,12 @@ const docTemplate = `{
                     "maxItems": 50,
                     "minItems": 1,
                     "items": {
-                        "$ref": "#/definitions/teamgames.TeamGameMemberDto"
+                        "$ref": "#/definitions/internal_domain_team_games.TeamGameMemberDto"
                     }
                 }
             }
         },
-        "teamgames.ReqTeamGameMember": {
+        "internal_domain_team_games.ReqTeamGameMember": {
             "type": "object",
             "properties": {
                 "teamGameRoleID": {
@@ -1397,13 +1501,13 @@ const docTemplate = `{
                 }
             }
         },
-        "teamgames.TeamGameMemberDto": {
+        "internal_domain_team_games.TeamGameMemberDto": {
             "type": "object",
             "properties": {
                 "roles": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/teamgames.TeamGameRoleDto"
+                        "$ref": "#/definitions/internal_domain_team_games.TeamGameRoleDto"
                     }
                 },
                 "userID": {
@@ -1411,7 +1515,7 @@ const docTemplate = `{
                 }
             }
         },
-        "teamgames.TeamGameRoleDto": {
+        "internal_domain_team_games.TeamGameRoleDto": {
             "type": "object",
             "properties": {
                 "id": {
@@ -1422,7 +1526,7 @@ const docTemplate = `{
                 }
             }
         },
-        "teams.AddMemberRequest": {
+        "internal_domain_teams.AddMemberRequest": {
             "type": "object",
             "required": [
                 "role",
@@ -1437,7 +1541,7 @@ const docTemplate = `{
                 }
             }
         },
-        "teams.CreateTeamGameRequest": {
+        "internal_domain_teams.CreateTeamGameRequest": {
             "type": "object",
             "required": [
                 "game_slug",
@@ -1463,7 +1567,7 @@ const docTemplate = `{
                 }
             }
         },
-        "teams.PatchUpdateTeamRequest": {
+        "internal_domain_teams.PatchUpdateTeamRequest": {
             "type": "object",
             "properties": {
                 "banner_path": {
@@ -1489,7 +1593,7 @@ const docTemplate = `{
                 }
             }
         },
-        "teams.RegisterTeamRequest": {
+        "internal_domain_teams.RegisterTeamRequest": {
             "type": "object",
             "required": [
                 "country_id",
@@ -1525,7 +1629,7 @@ const docTemplate = `{
                 }
             }
         },
-        "teams.UpdateTeamMemberRoleRequest": {
+        "internal_domain_teams.UpdateTeamMemberRoleRequest": {
             "type": "object",
             "required": [
                 "role"
@@ -1536,21 +1640,7 @@ const docTemplate = `{
                 }
             }
         },
-        "users.AuthUserProfileResponse": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "integer"
-                },
-                "provider": {
-                    "type": "string"
-                },
-                "provider_uid": {
-                    "type": "string"
-                }
-            }
-        },
-        "users.FastRegisterUserRequest": {
+        "internal_domain_users.FastRegisterUserRequest": {
             "type": "object",
             "required": [
                 "country_id",
@@ -1573,7 +1663,7 @@ const docTemplate = `{
                 }
             }
         },
-        "users.PatchUserProfileRequest": {
+        "internal_domain_users.PatchUserProfileRequest": {
             "type": "object",
             "properties": {
                 "banner_photo": {
@@ -1599,7 +1689,24 @@ const docTemplate = `{
                 }
             }
         },
-        "users.RegisterUserRequest": {
+        "internal_domain_users.ProvidersAuthResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "is_verified": {
+                    "type": "boolean"
+                },
+                "provider": {
+                    "type": "string"
+                },
+                "provider_uid": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_domain_users.RegisterUserRequest": {
             "type": "object",
             "required": [
                 "birth_date",
@@ -1634,7 +1741,7 @@ const docTemplate = `{
                 }
             }
         },
-        "users.UpdateUserProfileRequest": {
+        "internal_domain_users.UpdateUserProfileRequest": {
             "type": "object",
             "properties": {
                 "banner_photo": {
@@ -1660,13 +1767,13 @@ const docTemplate = `{
                 }
             }
         },
-        "users.UserProfileResponse": {
+        "internal_domain_users.UserProfileResponse": {
             "type": "object",
             "properties": {
                 "auth": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/users.AuthUserProfileResponse"
+                        "$ref": "#/definitions/internal_domain_users.ProvidersAuthResponse"
                     }
                 },
                 "banner_photo": {
@@ -1676,7 +1783,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "country": {
-                    "$ref": "#/definitions/dto.CountryResponse"
+                    "$ref": "#/definitions/arena_pkg_dto.CountryResponse"
                 },
                 "first_name": {
                     "type": "string"

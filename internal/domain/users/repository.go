@@ -132,7 +132,7 @@ func (r *Repository) GetUserByProviderUID(
 ) (*User, error) {
 
 	var u User
-	var auth UserAuth
+	var auth ProviderAuth
 	var passwordHash sql.NullString
 
 	err := r.db.QueryRow(ctx, `
@@ -174,7 +174,7 @@ func (r *Repository) GetUserByProviderUID(
 		return nil, err
 	}
 
-	u.Auth = []UserAuth{auth}
+	u.Auth = []ProviderAuth{auth}
 	return &u, nil
 }
 
@@ -239,7 +239,7 @@ func (r *Repository) getBaseProfile(ctx context.Context, userID int64) (*UserPro
 	return &up, nil
 }
 
-func (r *Repository) getUserProviders(ctx context.Context, userID int64) ([]UserAuth, error) {
+func (r *Repository) getUserProviders(ctx context.Context, userID int64) ([]ProviderAuth, error) {
 
 	rows, err := r.db.Query(ctx, `
 		SELECT id, provider, provider_uid, password_hash
@@ -251,10 +251,10 @@ func (r *Repository) getUserProviders(ctx context.Context, userID int64) ([]User
 	}
 	defer rows.Close()
 
-	var auths []UserAuth
+	var auths []ProviderAuth
 
 	for rows.Next() {
-		var ua UserAuth
+		var ua ProviderAuth
 		var passwordHash sql.NullString
 
 		err := rows.Scan(
@@ -438,44 +438,4 @@ func (r *Repository) GetUserByID(
 	}
 
 	return &u, nil
-}
-
-func (r *Repository) GetUserAuthByUserID(
-	ctx context.Context,
-	userId int64,
-) ([]UserAuth, error) {
-
-	rows, err := r.db.Query(ctx, `
-		SELECT
-			id,
-			provider,
-			provider_uid,
-			password_hash
-		FROM al_user_auth
-		WHERE user_id = $1
-	`, userId)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var auths []UserAuth
-
-	for rows.Next() {
-		var ua UserAuth
-
-		err := rows.Scan(
-			&ua.ID,
-			&ua.ProviderName,
-			&ua.ProviderUID,
-			&ua.PasswordHash,
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		auths = append(auths, ua)
-	}
-
-	return auths, nil
 }
