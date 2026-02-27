@@ -39,7 +39,6 @@ func (m *Module) RegisterLocal(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, response.ResponseError{
 			Error: err.Error(),
-			Ok:    false,
 		})
 		return
 	}
@@ -47,7 +46,6 @@ func (m *Module) RegisterLocal(c *gin.Context) {
 	if err := m.service.Register(c, req); err != nil {
 		c.JSON(http.StatusBadRequest, response.ResponseError{
 			Error: err.Error(),
-			Ok:    false,
 		})
 		return
 	}
@@ -96,13 +94,11 @@ func (m *Module) GetMe(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, response.ResponseError{
 			Error: "unauthorized",
-			Ok:    false,
 		})
 		return
 	}
 
 	c.JSON(http.StatusOK, response.ResponseOk[UserProfileResponse]{
-		Ok:   true,
 		Data: *user,
 	})
 }

@@ -1322,9 +1322,6 @@
             "properties": {
                 "error": {
                     "type": "string"
-                },
-                "ok": {
-                    "type": "boolean"
                 }
             }
         },
@@ -1334,9 +1331,6 @@
                 "data": {},
                 "msg": {
                     "type": "string"
-                },
-                "ok": {
-                    "type": "boolean"
                 }
             }
         },
@@ -1348,9 +1342,6 @@
                 },
                 "msg": {
                     "type": "string"
-                },
-                "ok": {
-                    "type": "boolean"
                 }
             }
         },

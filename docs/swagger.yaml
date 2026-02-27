@@ -51,16 +51,12 @@ definitions:
     properties:
       error:
         type: string
-      ok:
-        type: boolean
     type: object
   arena_pkg_response.ResponseOk-any:
     properties:
       data: {}
       msg:
         type: string
-      ok:
-        type: boolean
     type: object
   arena_pkg_response.ResponseOk-internal_domain_auth_LoginResponse:
     properties:
@@ -68,8 +64,6 @@ definitions:
         $ref: '#/definitions/internal_domain_auth.LoginResponse'
       msg:
         type: string
-      ok:
-        type: boolean
     type: object
   internal_domain_auth.LoginRequest:
     properties:

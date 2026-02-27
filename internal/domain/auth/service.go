@@ -3,8 +3,10 @@ package auth
 import (
 	"arena/internal/domain/auth/rules"
 	"arena/internal/domain/users"
+	userRules "arena/internal/domain/users/rules"
 	"arena/pkg/utils"
 	"context"
+	"errors"
 	"time"
 )
 
@@ -46,7 +48,10 @@ func (s *Service) LocalLogin(
 
 	u, roles, err := s.usersService.GetUser(ctx, email, "local")
 	if err != nil {
-		return LoginResponse{}, "", rules.ErrUserNotFound
+		if errors.Is(err, userRules.ErrEmailNotVerified) {
+			return LoginResponse{}, "", rules.ErrEmailNotVerified
+		}
+		return LoginResponse{}, "", err
 	}
 
 	auth := u.Auth[0]

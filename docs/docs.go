@@ -1327,9 +1327,6 @@ const docTemplate = `{
             "properties": {
                 "error": {
                     "type": "string"
-                },
-                "ok": {
-                    "type": "boolean"
                 }
             }
         },
@@ -1339,9 +1336,6 @@ const docTemplate = `{
                 "data": {},
                 "msg": {
                     "type": "string"
-                },
-                "ok": {
-                    "type": "boolean"
                 }
             }
         },
@@ -1353,9 +1347,6 @@ const docTemplate = `{
                 },
                 "msg": {
                     "type": "string"
-                },
-                "ok": {
-                    "type": "boolean"
                 }
             }
         },
