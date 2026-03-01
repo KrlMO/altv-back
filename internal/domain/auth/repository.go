@@ -255,3 +255,25 @@ func (r *Repository) CreateVerificationToken(
 
 	return err
 }
+
+func (r *Repository) GetActiveVerificationToken(
+	ctx context.Context,
+	userAuthId int64,
+) (UserVerificationToken, error) {
+	token := UserVerificationToken{}
+
+	err := r.db.QueryRow(ctx, `
+		SELECT id, user_auth_id, token_hash, expires_at, created_at, last_send_at
+		FROM al_user_verification_tokens
+		WHERE user_auth_id = $1
+	`, userAuthId).Scan(
+		&token.ID,
+		&token.UserAuthID,
+		&token.TokenHash,
+		&token.ExpiresAt,
+		&token.CreatedAt,
+		&token.LastSendAt,
+	)
+
+	return token, err
+}

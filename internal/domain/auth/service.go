@@ -5,6 +5,8 @@ import (
 	"arena/internal/domain/users"
 	"arena/pkg/utils"
 	"context"
+	"database/sql"
+	"errors"
 	"time"
 )
 
@@ -227,4 +229,50 @@ func (s *Service) InitiateEmailVerification(ctx context.Context, email string) e
 
 	go s.mailer.SendVerificationEmail(email, rawToken)
 	return nil
+}
+
+func (s *Service) VerifyEmailVerification(ctx context.Context, email string) (*VerifyEmailVerificationResponse, error) {
+	userAuth, err := s.repo.GetLocalAuthByEmail(ctx, email)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return &VerifyEmailVerificationResponse{
+				Status: "NOT_FOUND",
+			}, nil
+		}
+		return nil, err
+	}
+
+	if userAuth.IsVerified {
+		return &VerifyEmailVerificationResponse{
+			Status: "VERIFIED",
+		}, nil
+	}
+
+	token, err := s.repo.GetActiveVerificationToken(ctx, userAuth.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	now := time.Now()
+
+	if token.ExpiresAt.Before(now) {
+		return &VerifyEmailVerificationResponse{
+			Status: "EXPIRED",
+		}, nil
+	}
+
+	cooldownDuration := 90 * time.Second
+
+	resendAvailableAt := token.LastSendAt.Add(cooldownDuration)
+	resendCooldown := int64(0)
+	if resendAvailableAt.After(now) {
+		resendCooldown = int64(resendAvailableAt.Sub(now).Seconds())
+	} else {
+		resendCooldown = 0
+	}
+
+	return &VerifyEmailVerificationResponse{
+		Status:         "PENDING",
+		ResendCooldown: resendCooldown,
+	}, nil
 }

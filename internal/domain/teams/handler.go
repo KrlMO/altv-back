@@ -46,7 +46,6 @@ func (m *Module) Register(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(400, response.ResponseError{
 			Error: "invalid request: " + err.Error(),
-			Ok:    false,
 		})
 		return
 	}
@@ -54,7 +53,6 @@ func (m *Module) Register(c *gin.Context) {
 	if err := m.service.RegisterTeam(c, userID, req); err != nil {
 		c.JSON(400, response.ResponseError{
 			Error: "Internal error: " + err.Error(),
-			Ok:    false,
 		})
 		return
 	}
@@ -77,13 +75,11 @@ func (m *Module) GetTeamByID(c *gin.Context) {
 	if err != nil {
 		c.JSON(404, response.ResponseError{
 			Error: "Team not found: " + err.Error(),
-			Ok:    false,
 		})
 		return
 	}
 	response := response.ResponseOk[TeamResponse]{
 		Data: *team,
-		Ok:   true,
 	}
 	c.JSON(200, response)
 }
@@ -111,7 +107,6 @@ func (m *Module) GetTeams(c *gin.Context) {
 		if err != nil {
 			c.JSON(400, response.ResponseError{
 				Error: "invalid country_id",
-				Ok:    false,
 			})
 			return
 		}
@@ -124,7 +119,6 @@ func (m *Module) GetTeams(c *gin.Context) {
 		if err != nil {
 			c.JSON(400, response.ResponseError{
 				Error: "invalid owner_id",
-				Ok:    false,
 			})
 			return
 		}
@@ -136,7 +130,6 @@ func (m *Module) GetTeams(c *gin.Context) {
 		if err != nil {
 			c.JSON(400, response.ResponseError{
 				Error: "invalid active",
-				Ok:    false,
 			})
 			return
 		}
@@ -167,14 +160,12 @@ func (m *Module) GetTeams(c *gin.Context) {
 	if err != nil {
 		c.JSON(500, response.ResponseError{
 			Error: "Internal error: " + err.Error(),
-			Ok:    false,
 		})
 		return
 	}
 
 	response := response.ResponseOk[dto.PaginatedResponse[TeamResponse]]{
 		Data: paginatedTeams,
-		Ok:   true,
 	}
 	c.JSON(200, response)
 }
@@ -198,7 +189,6 @@ func (m *Module) PatchUpdateTeam(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(400, response.ResponseError{
 			Error: "invalid request: " + err.Error(),
-			Ok:    false,
 		})
 		return
 	}
@@ -206,7 +196,6 @@ func (m *Module) PatchUpdateTeam(c *gin.Context) {
 	if err := m.service.PatchUpdateTeam(c, userID, teamID, req); err != nil {
 		c.JSON(400, response.ResponseError{
 			Error: "Internal error: " + err.Error(),
-			Ok:    false,
 		})
 		return
 	}
@@ -234,7 +223,6 @@ func (m *Module) AddMemberToTeam(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(400, response.ResponseError{
 			Error: "invalid request: " + err.Error(),
-			Ok:    false,
 		})
 		return
 	}
@@ -242,7 +230,6 @@ func (m *Module) AddMemberToTeam(c *gin.Context) {
 	if err := m.service.AddMemberToTeam(c, userID, teamID, globalRole, req); err != nil {
 		c.JSON(500, response.ResponseError{
 			Error: "Internal error: " + err.Error(),
-			Ok:    false,
 		})
 		return
 	}
@@ -273,7 +260,6 @@ func (m *Module) UpdateTeamMemberRole(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(400, response.ResponseError{
 			Error: "invalid request: " + err.Error(),
-			Ok:    false,
 		})
 		return
 	}
@@ -281,7 +267,6 @@ func (m *Module) UpdateTeamMemberRole(c *gin.Context) {
 	if err := m.service.UpdateUserTeamRole(c, userID, globalRole, paramTeamId, paramUserUd, req); err != nil {
 		c.JSON(500, response.ResponseError{
 			Error: "Internal error: " + err.Error(),
-			Ok:    false,
 		})
 		return
 	}
@@ -313,14 +298,12 @@ func (m *Module) DeleteUserFromTeam(c *gin.Context) {
 		if errors.Is(err, rules.ErrUserNotMember) {
 			c.JSON(http.StatusNotFound, response.ResponseError{
 				Error: err.Error(),
-				Ok:    false,
 			})
 			return
 		}
 
 		c.JSON(http.StatusInternalServerError, response.ResponseError{
 			Error: "Internal error: " + err.Error(),
-			Ok:    false,
 		})
 		return
 	}
@@ -352,21 +335,18 @@ func (m *Module) CreateTeamGame(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, response.ResponseError{
 			Error: "Invalid Request" + err.Error(),
-			Ok:    false,
 		})
 	}
 	if err := m.service.AddTeamGame(c, paramTeamId, userID, globalRole, req); err != nil {
 		if errors.Is(err, rules.ErrUserNotMember) {
 			c.JSON(http.StatusNotFound, response.ResponseError{
 				Error: err.Error(),
-				Ok:    false,
 			})
 			return
 		}
 
 		c.JSON(http.StatusInternalServerError, response.ResponseError{
 			Error: err.Error(),
-			Ok:    false,
 		})
 		return
 	}
