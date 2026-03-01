@@ -18,6 +18,7 @@ func (m *Module) RegisterRoutes(r *gin.Engine) {
 		auth.POST("/register/local", m.RegisterLocalAndLogin)
 		auth.POST("/refresh", m.Refresh)
 		auth.POST("/logout", m.Logout)
+		auth.POST("/verify-email", m.VerifyEmailVerification)
 	}
 }
 
@@ -63,12 +64,6 @@ func (m *Module) LoginLocal(c *gin.Context) {
 		if errors.Is(err, rules.ErrFailedToStoreRefreshToken) {
 			c.JSON(http.StatusInternalServerError, response.ResponseError{
 				Error: "failed to store refresh token",
-			})
-			return
-		}
-		if errors.Is(err, rules.ErrEmailNotVerified) {
-			c.JSON(http.StatusForbidden, response.ResponseError{
-				Error: "email not verified",
 			})
 			return
 		}
@@ -195,5 +190,38 @@ func (m *Module) RegisterLocalAndLogin(c *gin.Context) {
 
 	c.JSON(http.StatusOK, response.ResponseOk[any]{
 		Msg: "check your email to verify your account",
+	})
+}
+
+// VerifyEmailVerification godoc
+// @Summary Verify email verification
+// @Description Verifies if the email verification token is valid and returns the status
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body VerifyEmailRequest true "Email info"
+// @Success 200 {object} response.ResponseOk[VerifyEmailVerificationResponse]
+// @Failure 400 {object} map[string]string
+// @Router /api/v1/auth/verify-email [post]
+func (m *Module) VerifyEmailVerification(c *gin.Context) {
+	ctx := c.Request.Context()
+	req := VerifyEmailRequest{}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, response.ResponseError{
+			Error: err.Error(),
+		})
+		return
+	}
+
+	responseData, err := m.service.VerifyEmailVerification(ctx, req.Email)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, response.ResponseError{
+			Error: err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, response.ResponseOk[VerifyEmailVerificationResponse]{
+		Data: *responseData,
 	})
 }

@@ -7,4 +7,5 @@ type ResponseOk[T any] struct {
 
 type ResponseError struct {
 	Error string `json:"error"`
+	Code  string `json:"code,omitempty"`
 }

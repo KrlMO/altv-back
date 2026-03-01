@@ -169,6 +169,49 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/auth/verify-email": {
+            "post": {
+                "description": "Verifies if the email verification token is valid and returns the status",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Verify email verification",
+                "parameters": [
+                    {
+                        "description": "Email info",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_domain_auth.VerifyEmailRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseOk-internal_domain_auth_VerifyEmailVerificationResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/countries/": {
             "get": {
                 "description": "Retrieves a list of all countries",
@@ -1325,6 +1368,9 @@ const docTemplate = `{
         "arena_pkg_response.ResponseError": {
             "type": "object",
             "properties": {
+                "code": {
+                    "type": "string"
+                },
                 "error": {
                     "type": "string"
                 }
@@ -1344,6 +1390,17 @@ const docTemplate = `{
             "properties": {
                 "data": {
                     "$ref": "#/definitions/internal_domain_auth.LoginResponse"
+                },
+                "msg": {
+                    "type": "string"
+                }
+            }
+        },
+        "arena_pkg_response.ResponseOk-internal_domain_auth_VerifyEmailVerificationResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/internal_domain_auth.VerifyEmailVerificationResponse"
                 },
                 "msg": {
                     "type": "string"
@@ -1392,6 +1449,28 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "profile_photo": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_domain_auth.VerifyEmailRequest": {
+            "type": "object",
+            "required": [
+                "email"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_domain_auth.VerifyEmailVerificationResponse": {
+            "type": "object",
+            "properties": {
+                "resend_cooldown": {
+                    "type": "integer"
+                },
+                "status": {
                     "type": "string"
                 }
             }

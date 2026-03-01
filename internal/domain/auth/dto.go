@@ -18,3 +18,12 @@ type UserResponse struct {
 	Auth         []users.ProvidersAuthResponse `json:"auth"`
 	ProfilePhoto string                        `json:"profile_photo"`
 }
+
+type VerifyEmailRequest struct {
+	Email string `json:"email" binding:"required,email"`
+}
+
+type VerifyEmailVerificationResponse struct {
+	Status         string `json:"status"`
+	ResendCooldown int64  `json:"resend_cooldown,omitempty"`
+}

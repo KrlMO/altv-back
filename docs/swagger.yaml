@@ -49,6 +49,8 @@ definitions:
     type: object
   arena_pkg_response.ResponseError:
     properties:
+      code:
+        type: string
       error:
         type: string
     type: object
@@ -62,6 +64,13 @@ definitions:
     properties:
       data:
         $ref: '#/definitions/internal_domain_auth.LoginResponse'
+      msg:
+        type: string
+    type: object
+  arena_pkg_response.ResponseOk-internal_domain_auth_VerifyEmailVerificationResponse:
+    properties:
+      data:
+        $ref: '#/definitions/internal_domain_auth.VerifyEmailVerificationResponse'
       msg:
         type: string
     type: object
@@ -93,6 +102,20 @@ definitions:
       nickname:
         type: string
       profile_photo:
+        type: string
+    type: object
+  internal_domain_auth.VerifyEmailRequest:
+    properties:
+      email:
+        type: string
+    required:
+    - email
+    type: object
+  internal_domain_auth.VerifyEmailVerificationResponse:
+    properties:
+      resend_cooldown:
+        type: integer
+      status:
         type: string
     type: object
   internal_domain_countries.CountryResponse:
@@ -467,6 +490,35 @@ paths:
               type: string
             type: object
       summary: Register and login a user
+      tags:
+      - Auth
+  /api/v1/auth/verify-email:
+    post:
+      consumes:
+      - application/json
+      description: Verifies if the email verification token is valid and returns the
+        status
+      parameters:
+      - description: Email info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_domain_auth.VerifyEmailRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseOk-internal_domain_auth_VerifyEmailVerificationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Verify email verification
       tags:
       - Auth
   /api/v1/countries/:
