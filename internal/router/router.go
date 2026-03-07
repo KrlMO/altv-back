@@ -64,6 +64,7 @@ func SetupRouter(db *pgxpool.Pool, cfg *config.Config) *gin.Engine {
 		authRepo,
 		mailer,
 		cfg.JWTSecret,
+		cfg.FrontendURL,
 		15*time.Minute,
 		7*24*time.Hour,
 	)

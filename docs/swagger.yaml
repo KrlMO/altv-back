@@ -492,6 +492,34 @@ paths:
       summary: Register and login a user
       tags:
       - Auth
+  /api/v1/auth/resend-verification:
+    post:
+      consumes:
+      - application/json
+      description: Resends the email verification token to the user's email
+      parameters:
+      - description: Email info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_domain_auth.VerifyEmailRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseOk-any'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Resend email verification
+      tags:
+      - Auth
   /api/v1/auth/verify-email:
     post:
       consumes:

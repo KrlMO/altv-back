@@ -14,6 +14,7 @@ func NewModule(
 	repo *Repository,
 	mailer Mailer,
 	jwtSecret string,
+	frontendURL string,
 	accessDuration time.Duration,
 	refreshDuration time.Duration,
 ) *Module {
@@ -21,6 +22,7 @@ func NewModule(
 	service := NewService(
 		usersService,
 		jwtSecret,
+		frontendURL,
 		mailer,
 		repo,
 		accessDuration,
