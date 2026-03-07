@@ -19,5 +19,5 @@ type UserVerificationToken struct {
 	TokenHash  string    `db:"token_hash"`
 	ExpiresAt  time.Time `db:"expires_at"`
 	CreatedAt  time.Time `db:"created_at"`
-	LastSendAt time.Time `db:"last_send_at"`
+	is_active  bool      `db:"is_active"`
 }

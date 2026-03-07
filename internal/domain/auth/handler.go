@@ -18,7 +18,8 @@ func (m *Module) RegisterRoutes(r *gin.Engine) {
 		auth.POST("/register/local", m.RegisterLocalAndLogin)
 		auth.POST("/refresh", m.Refresh)
 		auth.POST("/logout", m.Logout)
-		auth.POST("/verify-email", m.VerifyEmailVerification)
+		auth.POST("/verify-email-verification", m.VerifyEmailVerification)
+		auth.POST("/resend-verification", m.ResendEmailVerification)
 	}
 }
 
@@ -224,4 +225,69 @@ func (m *Module) VerifyEmailVerification(c *gin.Context) {
 	c.JSON(http.StatusOK, response.ResponseOk[VerifyEmailVerificationResponse]{
 		Data: *responseData,
 	})
+}
+
+// ResendEmailVerification godoc
+// @Summary Resend email verification
+// @Description Resends the email verification token to the user's email
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body VerifyEmailRequest true "Email info"
+// @Success 200 {object} response.ResponseOk[any]
+// @Failure 400 {object} map[string]string
+// @Router /api/v1/auth/resend-verification [post]
+func (m *Module) ResendEmailVerification(c *gin.Context) {
+	ctx := c.Request.Context()
+	req := VerifyEmailRequest{}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, response.ResponseError{
+			Error: err.Error(),
+		})
+		return
+	}
+
+	err := m.service.InitiateEmailVerification(ctx, req.Email)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, response.ResponseError{
+			Error: "failed to resend verification email",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, response.ResponseOk[any]{
+		Msg: "verification email resent successfully",
+	})
+}
+
+// VerifyEmail godoc
+// @Summary Verify email
+// @Description Verifies the email using the token and marks the user as verified
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param token query string true "Verification token"
+// @Success 200 {object} response.ResponseOk[any]
+// @Failure 400 {object} map[string]string
+// @Router /api/v1/auth/verify-email [get]
+func (m *Module) VerifyEmail(c *gin.Context) {
+	ctx := c.Request.Context()
+	token := c.Query("token")
+
+	if token == "" || len(token) < 20 {
+		c.JSON(http.StatusBadRequest, response.ResponseError{
+			Error: "invalid token",
+		})
+		return
+	}
+
+	err := m.service.VerifyEmail(ctx, token)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, response.ResponseError{
+			Error: "invalid or expired token",
+		})
+		return
+	}
+
+	c.Redirect(http.StatusAccepted, m.service.frontendURL+"/email-verified")
 }
