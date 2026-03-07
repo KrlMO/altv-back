@@ -18,6 +18,8 @@ func (m *Module) RegisterRoutes(r *gin.Engine) {
 		auth.POST("/register/local", m.RegisterLocalAndLogin)
 		auth.POST("/refresh", m.Refresh)
 		auth.POST("/logout", m.Logout)
+		auth.POST("/verify-email-verification", m.VerifyEmailVerification)
+		auth.POST("/resend-verification", m.ResendEmailVerification)
 	}
 }
 
@@ -51,27 +53,23 @@ func (m *Module) LoginLocal(c *gin.Context) {
 		if errors.Is(err, rules.ErrUserNotFound) || errors.Is(err, rules.ErrInvalidCredentials) {
 			c.JSON(http.StatusUnauthorized, response.ResponseError{
 				Error: "invalid credentials",
-				Ok:    false,
 			})
 			return
 		}
 		if errors.Is(err, rules.ErrFailedToGenerateAccessToken) || errors.Is(err, rules.ErrFailedToGenerateRefreshToken) {
 			c.JSON(http.StatusInternalServerError, response.ResponseError{
 				Error: "failed to generate tokens",
-				Ok:    false,
 			})
 			return
 		}
 		if errors.Is(err, rules.ErrFailedToStoreRefreshToken) {
 			c.JSON(http.StatusInternalServerError, response.ResponseError{
 				Error: "failed to store refresh token",
-				Ok:    false,
 			})
 			return
 		}
 		c.JSON(http.StatusInternalServerError, response.ResponseError{
 			Error: "internal server error",
-			Ok:    false,
 		})
 		return
 	}
@@ -79,7 +77,6 @@ func (m *Module) LoginLocal(c *gin.Context) {
 	setRefreshCookie(c, refreshToken)
 
 	c.JSON(http.StatusOK, response.ResponseOk[LoginResponse]{
-		Ok:   true,
 		Data: responseData,
 	})
 }
@@ -132,7 +129,6 @@ func (m *Module) Refresh(c *gin.Context) {
 	setRefreshCookie(c, newRefreshToken)
 
 	c.JSON(http.StatusOK, response.ResponseOk[LoginResponse]{
-		Ok:   true,
 		Data: reponse,
 	})
 }
@@ -156,7 +152,6 @@ func (m *Module) Logout(c *gin.Context) {
 	clearRefreshCookie(c)
 
 	c.JSON(http.StatusOK, response.ResponseOk[any]{
-		Ok:  true,
 		Msg: "logged out successfully",
 	})
 }
@@ -177,14 +172,12 @@ func (m *Module) RegisterLocalAndLogin(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, response.ResponseError{
 			Error: err.Error(),
-			Ok:    false,
 		})
 		return
 	}
 	if err := m.service.usersService.Register(c, req); err != nil {
 		c.JSON(http.StatusBadRequest, response.ResponseError{
 			Error: err.Error(),
-			Ok:    false,
 		})
 		return
 	}
@@ -192,13 +185,109 @@ func (m *Module) RegisterLocalAndLogin(c *gin.Context) {
 	if err := m.service.InitiateEmailVerification(ctx, req.Email); err != nil {
 		c.JSON(http.StatusInternalServerError, response.ResponseError{
 			Error: "failed to verify email",
-			Ok:    false,
 		})
 		return
 	}
 
 	c.JSON(http.StatusOK, response.ResponseOk[any]{
-		Ok:  true,
 		Msg: "check your email to verify your account",
 	})
+}
+
+// VerifyEmailVerification godoc
+// @Summary Verify email verification
+// @Description Verifies if the email verification token is valid and returns the status
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body VerifyEmailRequest true "Email info"
+// @Success 200 {object} response.ResponseOk[VerifyEmailVerificationResponse]
+// @Failure 400 {object} map[string]string
+// @Router /api/v1/auth/verify-email [post]
+func (m *Module) VerifyEmailVerification(c *gin.Context) {
+	ctx := c.Request.Context()
+	req := VerifyEmailRequest{}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, response.ResponseError{
+			Error: err.Error(),
+		})
+		return
+	}
+
+	responseData, err := m.service.VerifyEmailVerification(ctx, req.Email)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, response.ResponseError{
+			Error: err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, response.ResponseOk[VerifyEmailVerificationResponse]{
+		Data: *responseData,
+	})
+}
+
+// ResendEmailVerification godoc
+// @Summary Resend email verification
+// @Description Resends the email verification token to the user's email
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body VerifyEmailRequest true "Email info"
+// @Success 200 {object} response.ResponseOk[any]
+// @Failure 400 {object} map[string]string
+// @Router /api/v1/auth/resend-verification [post]
+func (m *Module) ResendEmailVerification(c *gin.Context) {
+	ctx := c.Request.Context()
+	req := VerifyEmailRequest{}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, response.ResponseError{
+			Error: err.Error(),
+		})
+		return
+	}
+
+	err := m.service.InitiateEmailVerification(ctx, req.Email)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, response.ResponseError{
+			Error: "failed to resend verification email",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, response.ResponseOk[any]{
+		Msg: "verification email resent successfully",
+	})
+}
+
+// VerifyEmail godoc
+// @Summary Verify email
+// @Description Verifies the email using the token and marks the user as verified
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param token query string true "Verification token"
+// @Success 200 {object} response.ResponseOk[any]
+// @Failure 400 {object} map[string]string
+// @Router /api/v1/auth/verify-email [get]
+func (m *Module) VerifyEmail(c *gin.Context) {
+	ctx := c.Request.Context()
+	token := c.Query("token")
+
+	if token == "" || len(token) < 20 {
+		c.JSON(http.StatusBadRequest, response.ResponseError{
+			Error: "invalid token",
+		})
+		return
+	}
+
+	err := m.service.VerifyEmail(ctx, token)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, response.ResponseError{
+			Error: "invalid or expired token",
+		})
+		return
+	}
+
+	c.Redirect(http.StatusAccepted, m.service.frontendURL+"/email-verified")
 }

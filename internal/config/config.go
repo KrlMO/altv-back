@@ -12,6 +12,7 @@ type Config struct {
 	SMTPPass    string
 	SMTPFrom    string
 	BaseURL     string
+	FrontendURL string
 }
 
 func Load() *Config {
@@ -25,5 +26,6 @@ func Load() *Config {
 		SMTPPass:    os.Getenv("SMTP_PASS"),
 		SMTPFrom:    os.Getenv("SMTP_FROM"),
 		BaseURL:     os.Getenv("BASE_URL"),
+		FrontendURL: os.Getenv("FRONTEND_URL"),
 	}
 }

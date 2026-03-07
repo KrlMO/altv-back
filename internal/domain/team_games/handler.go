@@ -44,18 +44,15 @@ func (m *Module) ListTeamGameMembers(c *gin.Context) {
 		if errors.Is(err, rules.ErrEmptyRoaster) {
 			c.JSON(http.StatusNotFound, response.ResponseError{
 				Error: err.Error(),
-				Ok:    false,
 			})
 			return
 		}
 		c.JSON(http.StatusBadRequest, response.ResponseError{
 			Error: err.Error(),
-			Ok:    false,
 		})
 		return
 	}
 	c.JSON(http.StatusOK, response.ResponseOk[PublicTeamGameMembersResponse]{
-		Ok:   true,
 		Data: resp,
 		Msg:  "Public Team Game Members from Team Game ID fetched successfully: " + teamGameId,
 	})
@@ -83,7 +80,6 @@ func (m *Module) AddMembersToTeamGame(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, response.ResponseError{
 			Error: err.Error(),
-			Ok:    false,
 		})
 		return
 	}
@@ -93,18 +89,15 @@ func (m *Module) AddMembersToTeamGame(c *gin.Context) {
 		if errors.Is(err, rules.ErrEmptyMembers) {
 			c.JSON(http.StatusBadRequest, response.ResponseError{
 				Error: err.Error(),
-				Ok:    false,
 			})
 			return
 		}
 		c.JSON(http.StatusBadRequest, response.ResponseError{
 			Error: err.Error(),
-			Ok:    false,
 		})
 		return
 	}
 	c.JSON(http.StatusOK, response.ResponseOk[map[string]string]{
-		Ok:   true,
 		Data: map[string]string{"team_game": paramTeamGameId},
 		Msg:  "Team Game Members added successfully in: " + teamGameName,
 	})
@@ -131,7 +124,6 @@ func (m *Module) LeaveTeamGame(c *gin.Context) {
 	if paramTeamGameId == "" {
 		c.JSON(http.StatusBadRequest, response.ResponseError{
 			Error: "team game ID is required",
-			Ok:    false,
 		})
 		return
 	}
@@ -142,32 +134,27 @@ func (m *Module) LeaveTeamGame(c *gin.Context) {
 		if errors.Is(err, rules.ErrCannotLeaveTeamGame) {
 			c.JSON(http.StatusBadRequest, response.ResponseError{
 				Error: err.Error(),
-				Ok:    false,
 			})
 			return
 		}
 		if errors.Is(err, rules.ErrUserDoesNotBelongToTeamGame) {
 			c.JSON(http.StatusNotFound, response.ResponseError{
 				Error: err.Error() + ": " + teamGameName,
-				Ok:    false,
 			})
 			return
 		}
 		if errors.Is(err, rules.ErrCannotLeaveTeamGame) {
 			c.JSON(http.StatusBadRequest, response.ResponseError{
 				Error: err.Error() + ": " + teamGameName,
-				Ok:    false,
 			})
 			return
 		}
 		c.JSON(http.StatusInternalServerError, response.ResponseError{
 			Error: err.Error(),
-			Ok:    false,
 		})
 		return
 	}
 	c.JSON(http.StatusOK, response.ResponseOk[map[string]string]{
-		Ok:   true,
 		Data: map[string]string{"user has left team_game successfully": paramTeamGameId},
 	})
 }
@@ -193,7 +180,6 @@ func (m *Module) RemoveMembersFromTeamGame(c *gin.Context) {
 	if paramTeamGameId == "" {
 		c.JSON(http.StatusBadRequest, response.ResponseError{
 			Error: "team game ID is required",
-			Ok:    false,
 		})
 		return
 	}
@@ -201,7 +187,6 @@ func (m *Module) RemoveMembersFromTeamGame(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, response.ResponseError{
 			Error: err.Error(),
-			Ok:    false,
 		})
 		return
 	}
@@ -211,18 +196,15 @@ func (m *Module) RemoveMembersFromTeamGame(c *gin.Context) {
 		if errors.Is(err, rules.ErrEmptyMembers) {
 			c.JSON(http.StatusBadRequest, response.ResponseError{
 				Error: err.Error(),
-				Ok:    false,
 			})
 			return
 		}
 		c.JSON(http.StatusBadRequest, response.ResponseError{
 			Error: err.Error(),
-			Ok:    false,
 		})
 		return
 	}
 	c.JSON(http.StatusOK, response.ResponseOk[map[string]string]{
-		Ok:   true,
 		Data: map[string]string{"team_game": paramTeamGameId},
 		Msg:  "users removed from team_game successfully in: " + teamGameName,
 	})
@@ -248,7 +230,6 @@ func (m *Module) RemoveTeamGameRoleFromMember(c *gin.Context) {
 	if paramTeamGameId == "" {
 		c.JSON(http.StatusBadRequest, response.ResponseError{
 			Error: "team game ID is required",
-			Ok:    false,
 		})
 		return
 	}
@@ -256,7 +237,6 @@ func (m *Module) RemoveTeamGameRoleFromMember(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, response.ResponseError{
 			Error: err.Error(),
-			Ok:    false,
 		})
 		return
 	}
@@ -266,18 +246,15 @@ func (m *Module) RemoveTeamGameRoleFromMember(c *gin.Context) {
 		if errors.Is(err, rules.ErrEmptyMembers) {
 			c.JSON(http.StatusBadRequest, response.ResponseError{
 				Error: err.Error(),
-				Ok:    false,
 			})
 			return
 		}
 		c.JSON(http.StatusBadRequest, response.ResponseError{
 			Error: err.Error(),
-			Ok:    false,
 		})
 		return
 	}
 	c.JSON(http.StatusOK, response.ResponseOk[map[string]string]{
-		Ok:   true,
 		Data: map[string]string{"team_game": paramTeamGameId},
 		Msg:  "team game role removed from users successfully in: " + teamGameName,
 	})
@@ -303,7 +280,6 @@ func (m *Module) AddTeamGameRoleToMember(c *gin.Context) {
 	if paramTeamGameId == "" {
 		c.JSON(http.StatusBadRequest, response.ResponseError{
 			Error: "team game ID is required",
-			Ok:    false,
 		})
 		return
 	}
@@ -311,7 +287,6 @@ func (m *Module) AddTeamGameRoleToMember(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, response.ResponseError{
 			Error: err.Error(),
-			Ok:    false,
 		})
 		return
 	}
@@ -321,18 +296,15 @@ func (m *Module) AddTeamGameRoleToMember(c *gin.Context) {
 		if errors.Is(err, rules.ErrEmptyMembers) {
 			c.JSON(http.StatusBadRequest, response.ResponseError{
 				Error: err.Error(),
-				Ok:    false,
 			})
 			return
 		}
 		c.JSON(http.StatusBadRequest, response.ResponseError{
 			Error: err.Error(),
-			Ok:    false,
 		})
 		return
 	}
 	c.JSON(http.StatusOK, response.ResponseOk[map[string]string]{
-		Ok:   true,
 		Data: map[string]string{"team_game": paramTeamGameId},
 		Msg:  "team game role added to users successfully in: " + teamGameName,
 	})

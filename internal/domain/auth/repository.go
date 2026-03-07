@@ -255,3 +255,69 @@ func (r *Repository) CreateVerificationToken(
 
 	return err
 }
+
+func (r *Repository) GetActiveVerificationToken(
+	ctx context.Context,
+	userAuthId int64,
+) (UserVerificationToken, error) {
+	token := UserVerificationToken{}
+
+	err := r.db.QueryRow(ctx, `
+		SELECT id, user_auth_id, token_hash, expires_at, created_at, is_active
+		FROM al_user_verification_tokens
+		WHERE user_auth_id = $1
+	`, userAuthId).Scan(
+		&token.ID,
+		&token.UserAuthID,
+		&token.TokenHash,
+		&token.ExpiresAt,
+		&token.CreatedAt,
+		&token.is_active,
+	)
+
+	return token, err
+}
+
+func (r *Repository) GetVerificationTokenByHash(
+	ctx context.Context,
+	tokenHash string,
+) (*UserVerificationToken, error) {
+	token := &UserVerificationToken{}
+
+	err := r.db.QueryRow(ctx, `
+		SELECT id, user_auth_id, token_hash, expires_at, created_at, is_active
+		FROM al_user_verification_tokens
+		WHERE token_hash = $1 AND is_active = true
+	`, tokenHash).Scan(
+		&token.ID,
+		&token.UserAuthID,
+		&token.TokenHash,
+		&token.ExpiresAt,
+		&token.CreatedAt,
+		&token.is_active,
+	)
+
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return token, nil
+}
+
+func (r *Repository) VerifyUserEmail(
+	ctx context.Context,
+	userAuthId int64,
+) error {
+	_, err := r.db.Exec(ctx, `
+		UPDATE al_user_auth
+		SET is_verified = true,
+			updated_at = NOW(),
+			updated_by = 1
+		WHERE id = $1
+	`, userAuthId)
+
+	return err
+}

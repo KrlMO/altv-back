@@ -49,18 +49,16 @@ definitions:
     type: object
   arena_pkg_response.ResponseError:
     properties:
+      code:
+        type: string
       error:
         type: string
-      ok:
-        type: boolean
     type: object
   arena_pkg_response.ResponseOk-any:
     properties:
       data: {}
       msg:
         type: string
-      ok:
-        type: boolean
     type: object
   arena_pkg_response.ResponseOk-internal_domain_auth_LoginResponse:
     properties:
@@ -68,8 +66,13 @@ definitions:
         $ref: '#/definitions/internal_domain_auth.LoginResponse'
       msg:
         type: string
-      ok:
-        type: boolean
+    type: object
+  arena_pkg_response.ResponseOk-internal_domain_auth_VerifyEmailVerificationResponse:
+    properties:
+      data:
+        $ref: '#/definitions/internal_domain_auth.VerifyEmailVerificationResponse'
+      msg:
+        type: string
     type: object
   internal_domain_auth.LoginRequest:
     properties:
@@ -99,6 +102,20 @@ definitions:
       nickname:
         type: string
       profile_photo:
+        type: string
+    type: object
+  internal_domain_auth.VerifyEmailRequest:
+    properties:
+      email:
+        type: string
+    required:
+    - email
+    type: object
+  internal_domain_auth.VerifyEmailVerificationResponse:
+    properties:
+      resend_cooldown:
+        type: integer
+      status:
         type: string
     type: object
   internal_domain_countries.CountryResponse:
@@ -473,6 +490,63 @@ paths:
               type: string
             type: object
       summary: Register and login a user
+      tags:
+      - Auth
+  /api/v1/auth/resend-verification:
+    post:
+      consumes:
+      - application/json
+      description: Resends the email verification token to the user's email
+      parameters:
+      - description: Email info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_domain_auth.VerifyEmailRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseOk-any'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Resend email verification
+      tags:
+      - Auth
+  /api/v1/auth/verify-email:
+    post:
+      consumes:
+      - application/json
+      description: Verifies if the email verification token is valid and returns the
+        status
+      parameters:
+      - description: Email info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_domain_auth.VerifyEmailRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseOk-internal_domain_auth_VerifyEmailVerificationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Verify email verification
       tags:
       - Auth
   /api/v1/countries/:

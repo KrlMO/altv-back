@@ -5,6 +5,8 @@ import (
 	"arena/internal/domain/users"
 	"arena/pkg/utils"
 	"context"
+	"database/sql"
+	"errors"
 	"time"
 )
 
@@ -15,11 +17,13 @@ type Service struct {
 	accessTokenDuration  time.Duration
 	refreshTokenDuration time.Duration
 	mailer               Mailer
+	frontendURL          string
 }
 
 func NewService(
 	usersService *users.Service,
 	jwtSecret string,
+	frontendURL string,
 	mailer Mailer,
 	repo *Repository,
 	accessDuration time.Duration,
@@ -28,6 +32,7 @@ func NewService(
 	return &Service{
 		usersService:         usersService,
 		jwtSecret:            jwtSecret,
+		frontendURL:          frontendURL,
 		repo:                 repo,
 		mailer:               mailer,
 		accessTokenDuration:  accessDuration,
@@ -226,5 +231,80 @@ func (s *Service) InitiateEmailVerification(ctx context.Context, email string) e
 	}
 
 	go s.mailer.SendVerificationEmail(email, rawToken)
+	return nil
+}
+
+func (s *Service) VerifyEmailVerification(ctx context.Context, email string) (*VerifyEmailVerificationResponse, error) {
+	userAuth, err := s.repo.GetLocalAuthByEmail(ctx, email)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return &VerifyEmailVerificationResponse{
+				Status: "NOT_FOUND",
+			}, nil
+		}
+		return nil, err
+	}
+
+	if userAuth.IsVerified {
+		return &VerifyEmailVerificationResponse{
+			Status: "VERIFIED",
+		}, nil
+	}
+
+	token, err := s.repo.GetActiveVerificationToken(ctx, userAuth.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	now := time.Now()
+
+	if token.ExpiresAt.Before(now) {
+		return &VerifyEmailVerificationResponse{
+			Status: "EXPIRED",
+		}, nil
+	}
+
+	cooldownDuration := 90 * time.Second
+
+	resendAvailableAt := token.CreatedAt.Add(cooldownDuration)
+	resendCooldown := int64(0)
+	if resendAvailableAt.After(now) {
+		resendCooldown = int64(resendAvailableAt.Sub(now).Seconds())
+	} else {
+		resendCooldown = 0
+	}
+
+	return &VerifyEmailVerificationResponse{
+		Status:         "PENDING",
+		ResendCooldown: resendCooldown,
+	}, nil
+}
+
+func (s *Service) VerifyEmail(ctx context.Context, token string) error {
+	tokenHash := hashToken(token)
+	verificationToken, err := s.repo.GetVerificationTokenByHash(ctx, tokenHash)
+	if err != nil {
+		return err
+	}
+
+	if verificationToken == nil {
+		return rules.ErrInvalidVerificationToken
+	}
+
+	now := time.Now()
+	if verificationToken.ExpiresAt.Before(now) {
+		return rules.ErrVerificationTokenExpired
+	}
+
+	err = s.repo.VerifyUserEmail(ctx, verificationToken.UserAuthID)
+	if err != nil {
+		return err
+	}
+
+	err = s.repo.DeleteVerificationTokens(ctx, verificationToken.UserAuthID)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

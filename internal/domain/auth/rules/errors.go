@@ -13,4 +13,6 @@ var (
 	ErrFailedToStoreRefreshToken    = errors.New("failed to store refresh token")
 	ErrRefreshTokenReuseDetected    = errors.New("refresh token reuse detected")
 	ErrEmailNotVerified             = errors.New("email not verified")
+	ErrInvalidVerificationToken     = errors.New("invalid verification token")
+	ErrVerificationTokenExpired     = errors.New("verification token expired")
 )
