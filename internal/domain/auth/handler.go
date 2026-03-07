@@ -274,20 +274,16 @@ func (m *Module) VerifyEmail(c *gin.Context) {
 	ctx := c.Request.Context()
 	token := c.Query("token")
 
-	if token == "" || len(token) < 20 {
-		c.JSON(http.StatusBadRequest, response.ResponseError{
-			Error: "invalid token",
-		})
+	if token == "" || len(token) < 32 {
+		c.Redirect(http.StatusFound, m.service.frontendURL+"/email-verification-error")
 		return
 	}
 
 	err := m.service.VerifyEmail(ctx, token)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, response.ResponseError{
-			Error: "invalid or expired token",
-		})
+		c.Redirect(http.StatusFound, m.service.frontendURL+"/email-verification-error")
 		return
 	}
 
-	c.Redirect(http.StatusAccepted, m.service.frontendURL+"/email-verified")
+	c.Redirect(http.StatusFound, m.service.frontendURL+"/email-verified")
 }
