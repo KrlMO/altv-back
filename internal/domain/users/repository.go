@@ -1,11 +1,11 @@
 package users
 
 import (
+	"arena/internal/domain/identity"
+	"arena/pkg/querybuilder"
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
-	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -50,7 +50,7 @@ func (r *Repository) CreateUser(ctx context.Context, u User, provider string) er
 		return err
 	}
 
-	const humanRole = "HUMAN"
+	const humanRole = identity.RoleHuman
 
 	iluvatarId, err := r.FindIluvatarId(ctx, tx)
 
@@ -96,7 +96,7 @@ func (r *Repository) FindIluvatarId(ctx context.Context, tx pgx.Tx) (int64, erro
 
 	err := tx.QueryRow(ctx, `
 		SELECT id FROM al_global_role WHERE name = $1
-	`, "ILUVATAR").Scan(&iluvatarId)
+	`, identity.RoleIluvatar).Scan(&iluvatarId)
 
 	if err != nil {
 		return 0, err
@@ -210,8 +210,8 @@ func (r *Repository) getBaseProfile(ctx context.Context, userID int64) (*UserPro
 			au.first_name,
 			au.last_name,
 			au.nickname,
-			au.profile_photo,
-			au.banner_photo,
+			COALESCE(au.profile_photo, ''),
+			COALESCE(au.banner_photo, ''),
 			au.birth_date,
 			ac.id,
 			ac.name,
@@ -239,7 +239,7 @@ func (r *Repository) getBaseProfile(ctx context.Context, userID int64) (*UserPro
 	return &up, nil
 }
 
-func (r *Repository) getUserProviders(ctx context.Context, userID int64) ([]ProviderAuth, error) {
+func (r *Repository) GetUserProviders(ctx context.Context, userID int64) ([]ProviderAuth, error) {
 
 	rows, err := r.db.Query(ctx, `
 		SELECT id, provider, provider_uid, password_hash
@@ -284,7 +284,7 @@ func (r *Repository) GetUserProfileByID(ctx context.Context, userID int64) (*Use
 		return nil, err
 	}
 
-	auths, err := r.getUserProviders(ctx, userID)
+	auths, err := r.GetUserProviders(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -292,19 +292,6 @@ func (r *Repository) GetUserProfileByID(ctx context.Context, userID int64) (*Use
 	up.User.Auth = auths
 
 	return up, nil
-}
-
-func (r *Repository) CountryExists(ctx context.Context, countryID int32) (bool, error) {
-	var exists bool
-	err := r.db.QueryRow(ctx, `
-		select exists(
-			select 1 from al_country where id = $1
-		)
-	`, countryID).Scan(&exists)
-	if err != nil {
-		return false, err
-	}
-	return exists, nil
 }
 
 func (r *Repository) UpdateUser(ctx context.Context, u User) error {
@@ -335,54 +322,16 @@ func (r *Repository) UpdateUser(ctx context.Context, u User) error {
 }
 
 func (r *Repository) PatchUser(ctx context.Context, u User) error {
+	b := querybuilder.NewUpdateBuilder()
+	b.AddConditionalField("first_name", u.FirstName, u.FirstName != "")
+	b.AddConditionalField("last_name", u.LastName, u.LastName != "")
+	b.AddConditionalField("nickname", u.NickName, u.NickName != "")
+	b.AddConditionalField("profile_photo", u.ProfilePhoto, u.ProfilePhoto != "")
+	b.AddConditionalField("banner_photo", u.BannerPhoto, u.BannerPhoto != "")
+	b.AddConditionalField("country_id", u.CountryId, u.CountryId > 0)
+	b.AddConditionalField("birth_date", u.BirthDate.Time, u.BirthDate.Valid)
 
-	set := []string{}
-	args := []interface{}{}
-	i := 1
-
-	if u.FirstName != "" {
-		set = append(set, fmt.Sprintf("first_name = $%d", i))
-		args = append(args, u.FirstName)
-		i++
-	}
-
-	if u.LastName != "" {
-		set = append(set, fmt.Sprintf("last_name = $%d", i))
-		args = append(args, u.LastName)
-		i++
-	}
-
-	if u.NickName != "" {
-		set = append(set, fmt.Sprintf("nickname = $%d", i))
-		args = append(args, u.NickName)
-		i++
-	}
-
-	if u.ProfilePhoto != "" {
-		set = append(set, fmt.Sprintf("profile_photo = $%d", i))
-		args = append(args, u.ProfilePhoto)
-		i++
-	}
-
-	if u.BannerPhoto != "" {
-		set = append(set, fmt.Sprintf("banner_photo = $%d", i))
-		args = append(args, u.BannerPhoto)
-		i++
-	}
-
-	if u.CountryId > 0 {
-		set = append(set, fmt.Sprintf("country_id = $%d", i))
-		args = append(args, u.CountryId)
-		i++
-	}
-
-	if u.BirthDate.Valid {
-		set = append(set, fmt.Sprintf("birth_date = $%d", i))
-		args = append(args, u.BirthDate.Time)
-		i++
-	}
-
-	if len(set) == 0 {
+	if b.IsEmpty() {
 		return errors.New("nothing to update")
 	}
 
@@ -392,13 +341,7 @@ func (r *Repository) PatchUser(ctx context.Context, u User) error {
 	}
 	defer tx.Rollback(ctx)
 
-	query := fmt.Sprintf(`
-		UPDATE al_user
-		SET %s, updated_at = NOW()
-		WHERE id = $%d
-	`, strings.Join(set, ", "), i)
-
-	args = append(args, u.ID)
+	query, args := b.Build("al_user", "id", u.ID)
 
 	_, err = tx.Exec(ctx, query, args...)
 
@@ -438,4 +381,71 @@ func (r *Repository) GetUserByID(
 	}
 
 	return &u, nil
+}
+
+func (r *Repository) DeactivateUser(ctx context.Context, userID int64) error {
+	_, err := r.db.Exec(ctx, `
+		UPDATE al_user
+		SET active = false, updated_at = NOW()
+		WHERE id = $1
+	`, userID)
+	return err
+}
+
+func (r *Repository) ActivateUser(ctx context.Context, userID int64) error {
+	_, err := r.db.Exec(ctx, `
+		UPDATE al_user
+		SET active = true, updated_at = NOW(), deleted_at = NULL
+		WHERE id = $1
+	`, userID)
+	return err
+}
+
+func (r *Repository) SoftDeleteUser(ctx context.Context, userID int64) error {
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	_, err = tx.Exec(ctx, `
+		UPDATE al_user
+		SET active = false,
+			deleted_at = NOW(),
+			updated_at = NOW(),
+			first_name = 'Deleted',
+			last_name = 'User',
+			nickname = 'deleted_' || $1::text,
+			profile_photo = '',
+			banner_photo = ''
+		WHERE id = $1
+	`, userID)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(ctx, `
+		UPDATE al_user_auth
+		SET password_hash = '', updated_at = NOW()
+		WHERE user_id = $1 AND provider = 'local'
+	`, userID)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(ctx, `
+		DELETE FROM al_refresh_tokens WHERE user_id = $1
+	`, userID)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit(ctx)
+}
+
+func (r *Repository) RevokeAllRefreshTokens(ctx context.Context, userID int64) error {
+	_, err := r.db.Exec(ctx, `
+		DELETE FROM al_refresh_tokens WHERE user_id = $1
+	`, userID)
+	return err
 }

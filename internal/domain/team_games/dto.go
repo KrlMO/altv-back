@@ -1,33 +1,13 @@
 package teamgames
 
-import "arena/pkg/dto"
-
-type PublicTeamGameMembersResponse struct {
-	Roaster []TeamGameMemberResponse `json:"roaster"`
-	Coach   *TeamGameMemberResponse  `json:"coach"`
-}
-
-type TeamGameMemberResponse struct {
-	UserID    int64               `json:"user_id"`
-	Nickname  string              `json:"nickname"`
-	FirstName string              `json:"first_name"`
-	LastName  string              `json:"last_name"`
-	Country   dto.CountryResponse `json:"country"`
-	Role      string              `json:"role"`
-}
-
-type AddTeamGameMembersRequest struct {
-	Members []ReqTeamGameMember `json:"members" binding:"required,min=1,max=50"`
-	GameId  int32               `json:"game_id" binding:"required"`
-}
+import (
+	"arena/pkg/dto"
+	"time"
+)
 
 type ReqTeamGameMember struct {
 	UserID         int64
 	TeamGameRoleID int32
-}
-
-type RemoveTeamGameMembersRequest struct {
-	Members []int64 `json:"members" binding:"required,min=1,max=50"`
 }
 
 type TeamGameMembersRoleUpdate struct {
@@ -39,15 +19,33 @@ type TeamGameRoleDto struct {
 	Name string
 }
 
-type RemoveTeamGameRoleFromUserRequest struct {
-	Users []TeamGameMemberDto `json:"users" binding:"required,min=1,max=50"`
-}
-
 type TeamGameMemberDto struct {
 	UserID int64
 	Roles  []TeamGameRoleDto
 }
 
-type AddTeamGameRoleToMemberRequest struct {
-	Users []TeamGameMemberDto `json:"users" binding:"required,min=1,max=50"`
+type TeamGameListFilter struct {
+	Name      *string `form:"name"`
+	RegionID  *int32  `form:"region_id"`
+	CountryID *int32  `form:"country_id"`
+	GameID    *int32  `form:"game_id"`
+	SortBy    *string `form:"sort_by"`
+	Page      *int    `form:"page"`
+}
+
+type TeamGameListItemResponse struct {
+	ID          int64      `json:"id"`
+	Name        string     `json:"name"`
+	LogoPath    *string    `json:"logo_path"`
+	TeamName    string     `json:"team_name"`
+	GameName    string     `json:"game_name"`
+	RegionName  *string    `json:"region_name"`
+	RegionISO   *string    `json:"region_iso"`
+	CountryName *string    `json:"country_name"`
+	CreatedAt   *time.Time `json:"created_at"`
+}
+
+type TeamGameListSuccessResponse struct {
+	Data dto.PaginatedResponse[TeamGameListItemResponse] `json:"data"`
+	Msg  string                                           `json:"msg"`
 }

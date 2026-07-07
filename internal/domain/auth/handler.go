@@ -275,15 +275,15 @@ func (m *Module) VerifyEmail(c *gin.Context) {
 	token := c.Query("token")
 
 	if token == "" || len(token) < 32 {
-		c.Redirect(http.StatusFound, m.service.frontendURL+"/email-verification-error")
+		c.Redirect(http.StatusFound, m.service.frontendURL+"/email-verified?success=false")
 		return
 	}
 
 	err := m.service.VerifyEmail(ctx, token)
 	if err != nil {
-		c.Redirect(http.StatusFound, m.service.frontendURL+"/email-verification-error")
+		c.Redirect(http.StatusFound, m.service.frontendURL+"/email-verified?success=false")
 		return
 	}
 
-	c.Redirect(http.StatusFound, m.service.frontendURL+"/email-verified")
+	c.Redirect(http.StatusFound, m.service.frontendURL+"/email-verified?success=true")
 }

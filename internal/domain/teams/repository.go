@@ -1,11 +1,11 @@
 package teams
 
 import (
+	"arena/internal/domain/identity"
 	"arena/internal/domain/teams/rules"
+	"arena/pkg/querybuilder"
 	"context"
 	"errors"
-	"strconv"
-	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -17,19 +17,6 @@ type Repository struct {
 
 func NewRepository(db *pgxpool.Pool) *Repository {
 	return &Repository{db: db}
-}
-
-func (r *Repository) CountryExists(ctx context.Context, countryID int32) (bool, error) {
-	var exists bool
-	err := r.db.QueryRow(ctx, `
-		select exists(
-			select 1 from al_country where id = $1
-		)
-	`, countryID).Scan(&exists)
-	if err != nil {
-		return false, err
-	}
-	return exists, nil
 }
 
 func (r *Repository) CreateTeam(ctx context.Context, t Team) error {
@@ -47,7 +34,7 @@ func (r *Repository) CreateTeam(ctx context.Context, t Team) error {
 	if err != nil {
 		return err
 	}
-	const teamRole = "TEAM_OWNER"
+	const teamRole = identity.RoleTeamOwner
 	err = r.InsertUserTeamRole(ctx, tx, t.CreatedBy, t.ID, t.CreatedBy, teamRole)
 
 	return tx.Commit(ctx)
@@ -211,74 +198,18 @@ func (r *Repository) GetTeams(ctx context.Context, filter TeamFilter) ([]TeamRea
 	return teams, total, nil
 }
 
-func (r *Repository) GetUserTeamRoles(ctx context.Context, userID, teamID int64) ([]string, error) {
-	roles := []string{}
-	rows, err := r.db.Query(ctx, `
-		SELECT tr.name
-		FROM al_user_team_role utr
-		JOIN al_team_role tr ON utr.role_id = tr.id
-		WHERE utr.user_id = $1 AND utr.team_id = $2
-	`, userID, teamID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var roleName string
-		if err := rows.Scan(&roleName); err != nil {
-			return nil, err
-		}
-		roles = append(roles, roleName)
-	}
-	return roles, nil
-}
-
 func (r *Repository) UpdateTeam(ctx context.Context, t Team) error {
-	set := []string{}
-	args := []interface{}{}
-	i := 1
+	b := querybuilder.NewUpdateBuilder()
+	b.AddConditionalField("name", t.Name, t.Name != "")
+	b.AddConditionalField("tag", t.Tag, t.Tag != "")
+	b.AddConditionalField("description", t.Description, t.Description != "")
+	b.AddConditionalField("logo_path", t.LogoPath, t.LogoPath != "")
+	b.AddConditionalField("banner_path", t.BannerPath, t.BannerPath != "")
+	b.AddConditionalField("country_id", t.CountryId, t.CountryId != 0)
+	b.AddField("is_virtual", t.IsVirtual)
+	b.AddField("updated_by", t.UpdatedBy)
 
-	if t.Name != "" {
-		set = append(set, "name = $"+strconv.Itoa(i))
-		args = append(args, t.Name)
-		i++
-	}
-	if t.Tag != "" {
-		set = append(set, "tag = $"+strconv.Itoa(i))
-		args = append(args, t.Tag)
-		i++
-	}
-	if t.Description != "" {
-		set = append(set, "description = $"+strconv.Itoa(i))
-		args = append(args, t.Description)
-		i++
-	}
-	if t.LogoPath != "" {
-		set = append(set, "logo_path = $"+strconv.Itoa(i))
-		args = append(args, t.LogoPath)
-		i++
-	}
-	if t.BannerPath != "" {
-		set = append(set, "banner_path = $"+strconv.Itoa(i))
-		args = append(args, t.BannerPath)
-		i++
-	}
-	if t.CountryId != 0 {
-		set = append(set, "country_id = $"+strconv.Itoa(i))
-		args = append(args, t.CountryId)
-		i++
-	}
-
-	set = append(set, "is_virtual = $"+strconv.Itoa(i))
-	args = append(args, t.IsVirtual)
-	i++
-
-	set = append(set, "updated_by = $"+strconv.Itoa(i))
-	args = append(args, t.UpdatedBy)
-	i++
-
-	if len(set) == 0 {
+	if b.IsEmpty() {
 		return errors.New("nothing to update")
 	}
 
@@ -288,8 +219,7 @@ func (r *Repository) UpdateTeam(ctx context.Context, t Team) error {
 	}
 	defer tx.Rollback(ctx)
 
-	query := "UPDATE al_team SET " + strings.Join(set, ", ") + ", updated_at = NOW() WHERE id = $" + strconv.Itoa(i)
-	args = append(args, t.ID)
+	query, args := b.Build("al_team", "id", t.ID)
 
 	_, err = tx.Exec(ctx, query, args...)
 	if err != nil {

@@ -4,10 +4,13 @@ import (
 	"arena/internal/config"
 	"arena/internal/domain/auth"
 	"arena/internal/domain/countries"
+	"arena/internal/domain/games"
+	"arena/internal/domain/regions"
 	teamgames "arena/internal/domain/team_games"
 	"arena/internal/domain/teams"
 	"arena/internal/domain/users"
 	"arena/internal/infrastructure/mail"
+	"arena/internal/shared"
 	"arena/pkg/middleware"
 	"time"
 
@@ -21,24 +24,35 @@ import (
 func SetupRouter(db *pgxpool.Pool, cfg *config.Config) *gin.Engine {
 	r := gin.Default()
 
-	r.Use(cors.New(middleware.CorsConfig()))
+	r.Use(cors.New(middleware.CorsConfig(cfg.CORSOrigin)))
+
+	r.GET("/health", func(c *gin.Context) {
+		if err := db.Ping(c.Request.Context()); err != nil {
+			c.JSON(503, gin.H{"status": "unhealthy", "error": err.Error()})
+			return
+		}
+		c.JSON(200, gin.H{"status": "healthy"})
+	})
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
+	// SHARED
+	sharedRepo := shared.NewSharedRepository(db)
+
 	// USERS
 	usersRepo := users.NewRepository(db)
-	usersService := users.NewService(usersRepo)
+	usersService := users.NewService(usersRepo, sharedRepo)
 	usersModule := users.NewModule(usersService)
 	usersModule.RegisterRoutes(r, cfg.JWTSecret)
 
 	//TEAMS
 	teamsRepo := teams.NewRepository(db)
-	teamsService := teams.NewService(teamsRepo)
+	teamsService := teams.NewService(teamsRepo, sharedRepo)
 	teamsModule := teams.NewModule(teamsService)
 	teamsModule.RegisterRoutes(r, cfg.JWTSecret)
 
 	//TEAM GAMES
-	teamGamesRepo := teamgames.NewRepository(db)
+	teamGamesRepo := teamgames.NewRepository(db, sharedRepo)
 	teamGamesService := teamgames.NewService(teamGamesRepo)
 	teamGamesModule := teamgames.NewModule(teamGamesService)
 	teamGamesModule.RegisterRoutes(r, cfg.JWTSecret)
@@ -48,6 +62,18 @@ func SetupRouter(db *pgxpool.Pool, cfg *config.Config) *gin.Engine {
 	countriesService := countries.NewService(countriesRepo)
 	countriesModule := countries.NewModule(countriesService)
 	countriesModule.RegisterRoutes(r)
+
+	// GAMES
+	gamesRepo := games.NewRepository(db)
+	gamesService := games.NewService(gamesRepo)
+	gamesModule := games.NewModule(gamesService)
+	gamesModule.RegisterRoutes(r)
+
+	// REGIONS
+	regionsRepo := regions.NewRepository(db)
+	regionsService := regions.NewService(regionsRepo)
+	regionsModule := regions.NewModule(regionsService)
+	regionsModule.RegisterRoutes(r)
 
 	mailer := mail.NewSMTPMailer(
 		cfg.SMTPHost,

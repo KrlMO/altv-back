@@ -47,6 +47,24 @@ definitions:
       name:
         type: string
     type: object
+  arena_pkg_dto.PaginatedResponse-internal_domain_team_games_TeamGameListItemResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/internal_domain_team_games.TeamGameListItemResponse'
+        type: array
+      meta:
+        $ref: '#/definitions/arena_pkg_dto.PaginationMeta'
+    type: object
+  arena_pkg_dto.PaginationMeta:
+    properties:
+      limit:
+        type: integer
+      offset:
+        type: integer
+      total:
+        type: integer
+    type: object
   arena_pkg_response.ResponseError:
     properties:
       code:
@@ -57,6 +75,24 @@ definitions:
   arena_pkg_response.ResponseOk-any:
     properties:
       data: {}
+      msg:
+        type: string
+    type: object
+  arena_pkg_response.ResponseOk-array_internal_domain_games_GameListItemResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/internal_domain_games.GameListItemResponse'
+        type: array
+      msg:
+        type: string
+    type: object
+  arena_pkg_response.ResponseOk-array_internal_domain_regions_RegionResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/internal_domain_regions.RegionResponse'
+        type: array
       msg:
         type: string
     type: object
@@ -129,6 +165,26 @@ definitions:
       name:
         type: string
     type: object
+  internal_domain_games.GameListItemResponse:
+    properties:
+      color_hex:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  internal_domain_regions.RegionResponse:
+    properties:
+      flag_path:
+        type: string
+      id:
+        type: integer
+      iso_code:
+        type: string
+      name:
+        type: string
+    type: object
   internal_domain_team_games.AddTeamGameMembersRequest:
     properties:
       game_id:
@@ -182,6 +238,34 @@ definitions:
         type: integer
       userID:
         type: integer
+    type: object
+  internal_domain_team_games.TeamGameListItemResponse:
+    properties:
+      country_name:
+        type: string
+      created_at:
+        type: string
+      game_name:
+        type: string
+      id:
+        type: integer
+      logo_path:
+        type: string
+      name:
+        type: string
+      region_iso:
+        type: string
+      region_name:
+        type: string
+      team_name:
+        type: string
+    type: object
+  internal_domain_team_games.TeamGameListSuccessResponse:
+    properties:
+      data:
+        $ref: '#/definitions/arena_pkg_dto.PaginatedResponse-internal_domain_team_games_TeamGameListItemResponse'
+      msg:
+        type: string
     type: object
   internal_domain_team_games.TeamGameMemberDto:
     properties:
@@ -521,6 +605,32 @@ paths:
       tags:
       - Auth
   /api/v1/auth/verify-email:
+    get:
+      consumes:
+      - application/json
+      description: Verifies the email using the token and marks the user as verified
+      parameters:
+      - description: Verification token
+        in: query
+        name: token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseOk-any'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Verify email
+      tags:
+      - Auth
     post:
       consumes:
       - application/json
@@ -578,6 +688,703 @@ paths:
       summary: Get all countries
       tags:
       - Countries
+  /api/v1/games:
+    get:
+      consumes:
+      - application/json
+      description: Get a list of games, optionally filtered by name
+      parameters:
+      - description: Filter by game name
+        in: query
+        name: name
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseOk-array_internal_domain_games_GameListItemResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+      summary: List Games
+      tags:
+      - Games
+  /api/v1/regions:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a list of all registered regions
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseOk-array_internal_domain_regions_RegionResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+      summary: Get all regions
+      tags:
+      - Regions
+  /api/v1/team-games:
+    get:
+      consumes:
+      - application/json
+      description: Get a paginated list of team games with optional filters
+      parameters:
+      - description: Filter by team game name
+        in: query
+        name: name
+        type: string
+      - description: Filter by region ID
+        in: query
+        name: region_id
+        type: integer
+      - description: Filter by country ID
+        in: query
+        name: country_id
+        type: integer
+      - description: Filter by game ID
+        in: query
+        name: game_id
+        type: integer
+      - description: 'Sort order: name_asc, name_desc, newest, oldest'
+        in: query
+        name: sort_by
+        type: string
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_domain_team_games.TeamGameListSuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+      summary: List Team Games
+      tags:
+      - Team Games
+  /api/v1/team-games/{id}/leave:
+    post:
+      consumes:
+      - application/json
+      description: Allows the current user to leave a team game
+      parameters:
+      - description: Team Game ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+      security:
+      - BearerAuth: []
+      summary: Leave Team Game
+      tags:
+      - Team Games
+  /api/v1/team-games/{id}/members:
+    delete:
+      consumes:
+      - application/json
+      description: Remove members from a team game
+      parameters:
+      - description: Team Game ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Remove Team Game Members Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_domain_team_games.RemoveTeamGameMembersRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+      security:
+      - BearerAuth: []
+      summary: Remove Members from Team Game
+      tags:
+      - Team Games
+    get:
+      consumes:
+      - application/json
+      description: Get public members of a team game by team game ID
+      parameters:
+      - description: Team Game ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+      summary: List Team Game Members
+      tags:
+      - Team Games
+    post:
+      consumes:
+      - application/json
+      description: Add members to a team game
+      parameters:
+      - description: Team Game ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Add Team Game Members Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_domain_team_games.AddTeamGameMembersRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+      security:
+      - BearerAuth: []
+      summary: Add Members to Team Game
+      tags:
+      - Team Games
+  /api/v1/team-games/{id}/members/roles:
+    delete:
+      consumes:
+      - application/json
+      description: Remove a specific role from members in a team game
+      parameters:
+      - description: Team Game ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Remove Team Game Role From User Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_domain_team_games.RemoveTeamGameRoleFromUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+      security:
+      - BearerAuth: []
+      summary: Remove Team Game Role from Member
+      tags:
+      - Team Games
+    post:
+      consumes:
+      - application/json
+      description: Add a specific role to members in a team game
+      parameters:
+      - description: Team Game ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Add Team Game Role To Member Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_domain_team_games.AddTeamGameRoleToMemberRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+      security:
+      - BearerAuth: []
+      summary: Add Team Game Role to Member
+      tags:
+      - Team Games
+  /api/v1/teams:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a list of teams with optional filters
+      parameters:
+      - description: Filter by country ID
+        in: query
+        name: country_id
+        type: integer
+      - description: Filter by owner ID
+        in: query
+        name: owner_id
+        type: integer
+      - description: Filter by active status
+        in: query
+        name: active
+        type: boolean
+      - description: Filter by name substring
+        in: query
+        name: name_like
+        type: string
+      - description: Filter by tag substring
+        in: query
+        name: tag_like
+        type: string
+      - default: 10
+        description: Limit number of results
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset for pagination
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get list of teams
+      tags:
+      - Teams
+    post:
+      consumes:
+      - application/json
+      description: Adds a member to a team
+      parameters:
+      - description: Team info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_domain_teams.RegisterTeamRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Add a member to a team
+      tags:
+      - Teams
+  /api/v1/teams/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a team by its ID
+      parameters:
+      - description: Team ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get team by ID
+      tags:
+      - Teams
+    patch:
+      consumes:
+      - application/json
+      description: Updates the details of an existing team
+      parameters:
+      - description: Team ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Updated team info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_domain_teams.PatchUpdateTeamRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update team details
+      tags:
+      - Teams
+  /api/v1/teams/{id}/games:
+    post:
+      consumes:
+      - application/json
+      description: Add a game into a team
+      parameters:
+      - description: Team ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Team Game info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_domain_teams.CreateTeamGameRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Add a game into a team
+      tags:
+      - Teams
+  /api/v1/teams/{id}/members:
+    post:
+      consumes:
+      - application/json
+      description: Adds a member to a team
+      parameters:
+      - description: Team ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Member info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_domain_teams.AddMemberRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Add a member to a team
+      tags:
+      - Teams
+  /api/v1/teams/{id}/members/{userId}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete member from a team
+      parameters:
+      - description: Team ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: User ID
+        in: path
+        name: userId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete member from a team
+      tags:
+      - Teams
+    patch:
+      consumes:
+      - application/json
+      description: Updates team member role role
+      parameters:
+      - description: Team ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: User ID
+        in: path
+        name: userId
+        required: true
+        type: string
+      - description: Role
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_domain_teams.UpdateTeamMemberRoleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Updates team member role role
+      tags:
+      - Teams
+  /api/v1/users/{id}:
+    delete:
+      description: Soft-deletes a user by ID. Only ILUVATAR or AINUR roles allowed.
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+      security:
+      - BearerAuth: []
+      summary: Delete a user (admin)
+      tags:
+      - Users
+  /api/v1/users/{id}/activate:
+    patch:
+      description: Activates a deactivated user by ID. Only ILUVATAR or AINUR roles
+        allowed.
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+      security:
+      - BearerAuth: []
+      summary: Activate a user (admin)
+      tags:
+      - Users
+  /api/v1/users/{id}/deactivate:
+    patch:
+      description: Deactivates a user by ID. Only ILUVATAR or AINUR roles allowed.
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+      security:
+      - BearerAuth: []
+      summary: Deactivate a user (admin)
+      tags:
+      - Users
   /api/v1/users/fast-register:
     post:
       consumes:
@@ -609,6 +1416,31 @@ paths:
       tags:
       - Users
   /api/v1/users/me:
+    delete:
+      description: Soft-deletes the current user account (GDPR). Anonymizes PII and
+        revokes all tokens.
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+      security:
+      - BearerAuth: []
+      summary: Delete current user account
+      tags:
+      - Users
     get:
       description: Retrieves the profile of the currently authenticated user
       produces:
@@ -733,520 +1565,6 @@ paths:
       summary: Register a new user
       tags:
       - Users
-  /team-games/{id}/leave:
-    post:
-      consumes:
-      - application/json
-      description: Allows the current user to leave a team game
-      parameters:
-      - description: Team Game ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/arena_pkg_response.ResponseError'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/arena_pkg_response.ResponseError'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/arena_pkg_response.ResponseError'
-      security:
-      - BearerAuth: []
-      summary: Leave Team Game
-      tags:
-      - Team Games
-  /team-games/{id}/members:
-    delete:
-      consumes:
-      - application/json
-      description: Remove members from a team game
-      parameters:
-      - description: Team Game ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Remove Team Game Members Request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/internal_domain_team_games.RemoveTeamGameMembersRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/arena_pkg_response.ResponseError'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/arena_pkg_response.ResponseError'
-      security:
-      - BearerAuth: []
-      summary: Remove Members from Team Game
-      tags:
-      - Team Games
-    get:
-      consumes:
-      - application/json
-      description: Get public members of a team game by team game ID
-      parameters:
-      - description: Team Game ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/arena_pkg_response.ResponseError'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/arena_pkg_response.ResponseError'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/arena_pkg_response.ResponseError'
-      summary: List Team Game Members
-      tags:
-      - Team Games
-    post:
-      consumes:
-      - application/json
-      description: Add members to a team game
-      parameters:
-      - description: Team Game ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Add Team Game Members Request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/internal_domain_team_games.AddTeamGameMembersRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/arena_pkg_response.ResponseError'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/arena_pkg_response.ResponseError'
-      security:
-      - BearerAuth: []
-      summary: Add Members to Team Game
-      tags:
-      - Team Games
-  /team-games/{id}/members/roles:
-    delete:
-      consumes:
-      - application/json
-      description: Remove a specific role from members in a team game
-      parameters:
-      - description: Team Game ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Remove Team Game Role From User Request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/internal_domain_team_games.RemoveTeamGameRoleFromUserRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/arena_pkg_response.ResponseError'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/arena_pkg_response.ResponseError'
-      security:
-      - BearerAuth: []
-      summary: Remove Team Game Role from Member
-      tags:
-      - Team Games
-    post:
-      consumes:
-      - application/json
-      description: Add a specific role to members in a team game
-      parameters:
-      - description: Team Game ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Add Team Game Role To Member Request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/internal_domain_team_games.AddTeamGameRoleToMemberRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/arena_pkg_response.ResponseError'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/arena_pkg_response.ResponseError'
-      security:
-      - BearerAuth: []
-      summary: Add Team Game Role to Member
-      tags:
-      - Team Games
-  /teams:
-    get:
-      consumes:
-      - application/json
-      description: Retrieves a list of teams with optional filters
-      parameters:
-      - description: Filter by country ID
-        in: query
-        name: country_id
-        type: integer
-      - description: Filter by owner ID
-        in: query
-        name: owner_id
-        type: integer
-      - description: Filter by active status
-        in: query
-        name: active
-        type: boolean
-      - description: Filter by name substring
-        in: query
-        name: name_like
-        type: string
-      - description: Filter by tag substring
-        in: query
-        name: tag_like
-        type: string
-      - default: 10
-        description: Limit number of results
-        in: query
-        name: limit
-        type: integer
-      - default: 0
-        description: Offset for pagination
-        in: query
-        name: offset
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Get list of teams
-      tags:
-      - Teams
-    post:
-      consumes:
-      - application/json
-      description: Adds a member to a team
-      parameters:
-      - description: Team info
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/internal_domain_teams.RegisterTeamRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Add a member to a team
-      tags:
-      - Teams
-  /teams/{id}:
-    get:
-      consumes:
-      - application/json
-      description: Retrieves a team by its ID
-      parameters:
-      - description: Team ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "404":
-          description: Not Found
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Get team by ID
-      tags:
-      - Teams
-    patch:
-      consumes:
-      - application/json
-      description: Updates the details of an existing team
-      parameters:
-      - description: Team ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Updated team info
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/internal_domain_teams.PatchUpdateTeamRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Update team details
-      tags:
-      - Teams
-  /teams/{id}/games:
-    post:
-      consumes:
-      - application/json
-      description: Add a game into a team
-      parameters:
-      - description: Team ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Team Game info
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/internal_domain_teams.CreateTeamGameRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Add a game into a team
-      tags:
-      - Teams
-  /teams/{id}/members:
-    post:
-      consumes:
-      - application/json
-      description: Adds a member to a team
-      parameters:
-      - description: Team ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Member info
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/internal_domain_teams.AddMemberRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Add a member to a team
-      tags:
-      - Teams
-  /teams/{id}/members/{userId}:
-    delete:
-      consumes:
-      - application/json
-      description: Delete member from a team
-      parameters:
-      - description: Team ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: User ID
-        in: path
-        name: userId
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Delete member from a team
-      tags:
-      - Teams
-    patch:
-      consumes:
-      - application/json
-      description: Updates team member role role
-      parameters:
-      - description: Team ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: User ID
-        in: path
-        name: userId
-        required: true
-        type: string
-      - description: Role
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/internal_domain_teams.UpdateTeamMemberRoleRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Updates team member role role
-      tags:
-      - Teams
 schemes:
 - http
 securityDefinitions:

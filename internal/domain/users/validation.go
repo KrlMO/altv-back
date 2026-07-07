@@ -17,13 +17,8 @@ func ValidateRegisterOrUpdate(firstName, lastName, nickName, profilePhoto, banne
 		return errors.New("last_name must be between 2 and 50 characters")
 	}
 
-	if len(nickName) < 3 || len(nickName) > 30 {
-		return errors.New("nickname must be between 3 and 30 characters")
-	}
-
-	ok, _ := regexp.MatchString(`^[a-zA-Z0-9_]+$`, nickName)
-	if !ok {
-		return errors.New("nickname contains invalid characters")
+	if err := ValidateNickname(nickName); err != nil {
+		return err
 	}
 
 	if profilePhoto != "" {
@@ -40,6 +35,35 @@ func ValidateRegisterOrUpdate(firstName, lastName, nickName, profilePhoto, banne
 		}
 	}
 
+	return nil
+}
+
+func ValidateNickname(nick string) error {
+	if len(nick) < 3 || len(nick) > 30 {
+		return errors.New("nickname must be between 3 and 30 characters")
+	}
+	ok, _ := regexp.MatchString(`^[a-zA-Z0-9_]+$`, nick)
+	if !ok {
+		return errors.New("nickname contains invalid characters")
+	}
+	return nil
+}
+
+func ValidateOptionalField(ptr *string, minLen, maxLen int, fieldName string) error {
+	if ptr != nil {
+		if len(*ptr) < minLen || len(*ptr) > maxLen {
+			return errors.New(fieldName + " must be between " + string(rune('0'+minLen)) + " and " + string(rune('0'+maxLen)) + " characters")
+		}
+	}
+	return nil
+}
+
+func ValidateOptionalURL(ptr *string, fieldName string) error {
+	if ptr != nil && *ptr != "" {
+		if _, err := url.ParseRequestURI(*ptr); err != nil {
+			return errors.New("invalid " + fieldName + " URL")
+		}
+	}
 	return nil
 }
 

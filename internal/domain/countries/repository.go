@@ -6,6 +6,10 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+type RepositoryInterface interface {
+	GetAllCountries(ctx context.Context) ([]Country, error)
+}
+
 type Repository struct {
 	db *pgxpool.Pool
 }

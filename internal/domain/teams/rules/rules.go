@@ -1,8 +1,10 @@
 package rules
 
+import "arena/internal/domain/identity"
+
 func IsTeamOwnerOrManager(roles []string) bool {
 	for _, r := range roles {
-		if r == "TEAM_MANAGER" || r == "TEAM_OWNER" {
+		if r == identity.RoleTeamManager || r == identity.RoleTeamOwner {
 			return true
 		}
 	}
@@ -11,7 +13,7 @@ func IsTeamOwnerOrManager(roles []string) bool {
 
 func IsTeamManager(roles []string) bool {
 	for _, r := range roles {
-		if r == "TEAM_MANAGER" {
+		if r == identity.RoleTeamManager {
 			return true
 		}
 	}
@@ -20,7 +22,7 @@ func IsTeamManager(roles []string) bool {
 
 func IsTeamOwner(roles []string) bool {
 	for _, r := range roles {
-		if r == "TEAM_OWNER" {
+		if r == identity.RoleTeamOwner {
 			return true
 		}
 	}
@@ -29,7 +31,7 @@ func IsTeamOwner(roles []string) bool {
 
 func IsTeamOwnerOrManagerOrStaff(roles []string) bool {
 	for _, r := range roles {
-		if r == "TEAM_MANAGER" || r == "TEAM_OWNER" || r == "TEAM_STAFF" {
+		if r == identity.RoleTeamManager || r == identity.RoleTeamOwner || r == identity.RoleTeamStaff {
 			return true
 		}
 	}

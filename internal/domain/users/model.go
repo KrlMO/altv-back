@@ -17,6 +17,7 @@ type User struct {
 	BannerPhoto  string         `db:"banner_photo"`
 	Active       bool           `db:"active"`
 	UpdatedAt    time.Time      `db:"updated_at"`
+	DeletedAt    sql.NullTime   `db:"deleted_at"`
 	Auth         []ProviderAuth `db:"auth"`
 }
 

@@ -6,9 +6,12 @@ import (
 	"github.com/gin-contrib/cors"
 )
 
-func CorsConfig() cors.Config {
+func CorsConfig(origin string) cors.Config {
+	if origin == "" {
+		origin = "http://localhost:3000"
+	}
 	return cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000"},
+		AllowOrigins:     []string{origin},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"},
 		AllowHeaders:     []string{"Content-Type", "Authorization"},
 		AllowCredentials: true,

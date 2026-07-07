@@ -12,10 +12,41 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     logging:
       driver: "json-file"
       options:
-        max-size: "50m" 
+        max-size: "50m"
+        max-file: "3"
+
+  migrate:
+    build: .
+    container_name: arena-migrate
+    command: ["./migrate", "up"]
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    build: .
+    container_name: arena-api
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
         max-file: "3"
 
 volumes:

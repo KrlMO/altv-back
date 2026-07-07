@@ -3,28 +3,38 @@ package teams
 import (
 	"arena/internal/domain/identity"
 	"arena/internal/domain/teams/rules"
+	"arena/internal/shared"
 	"arena/pkg/dto"
 	grules "arena/pkg/global_rules"
-	"arena/pkg/middleware"
 	"context"
 	"errors"
-	"regexp"
 	"strconv"
-
-	"github.com/gin-gonic/gin"
 )
 
+type TeamRepository interface {
+	CreateTeam(ctx context.Context, t Team) error
+	GetTeamByID(ctx context.Context, teamID string) (*TeamReadModel, error)
+	GetTeams(ctx context.Context, filter TeamFilter) ([]TeamReadModel, int64, error)
+	UpdateTeam(ctx context.Context, t Team) error
+	AddMemberToTeam(ctx context.Context, userID, teamID, assignedBy int64, roleCode string) error
+	UpdateUserTeamRole(ctx context.Context, userId, teamId, assignedBy int64, roleName string) error
+	GetUserTeamRole(ctx context.Context, userId, teamId int64) (string, error)
+	DeleteUserFromTeam(ctx context.Context, userId, teamId, assignedBy int64) error
+	GetGameBySlug(ctx context.Context, gameSlug string) (int32, error)
+	CreateTeamGame(ctx context.Context, teamId, createdBy int64, gameId int32, nameTeamGame, logoPath, bannerPath string) error
+}
+
 type Service struct {
-	repo *Repository
+	repo       TeamRepository
+	sharedRepo *shared.SharedRepository
 }
 
-func NewService(repo *Repository) *Service {
-	return &Service{repo: repo}
+func NewService(repo TeamRepository, sharedRepo *shared.SharedRepository) *Service {
+	return &Service{repo: repo, sharedRepo: sharedRepo}
 }
 
-func (s *Service) RegisterTeam(c *gin.Context, userID int64, dto RegisterTeamRequest) error {
-	roles := c.MustGet(middleware.ContextRoles).([]string)
-	if identity.IsOrc(roles) {
+func (s *Service) RegisterTeam(ctx context.Context, userID int64, globalRoles []string, dto RegisterTeamRequest) error {
+	if identity.IsOrc(globalRoles) {
 		return errors.New("User cannot create a team, user is banned from creating teams")
 	}
 
@@ -33,7 +43,7 @@ func (s *Service) RegisterTeam(c *gin.Context, userID int64, dto RegisterTeamReq
 		return err
 	}
 
-	exists, err := s.repo.CountryExists(c, dto.CountryId)
+	exists, err := s.sharedRepo.CountryExists(ctx, dto.CountryId)
 	if err != nil {
 		return err
 	}
@@ -52,11 +62,11 @@ func (s *Service) RegisterTeam(c *gin.Context, userID int64, dto RegisterTeamReq
 		CreatedBy:   userID,
 		UpdatedBy:   userID,
 	}
-	return s.repo.CreateTeam(c, t)
+	return s.repo.CreateTeam(ctx, t)
 }
 
-func (s *Service) GetTeamByID(c *gin.Context, teamID string) (*TeamResponse, error) {
-	t, err := s.repo.GetTeamByID(c, teamID)
+func (s *Service) GetTeamByID(ctx context.Context, teamID string) (*TeamResponse, error) {
+	t, err := s.repo.GetTeamByID(ctx, teamID)
 	if err != nil {
 		return nil, err
 	}
@@ -123,8 +133,7 @@ func (s *Service) GetTeams(ctx context.Context, filter TeamFilter) (dto.Paginate
 	return response, nil
 }
 
-func (s *Service) PatchUpdateTeam(ctx *gin.Context, userId int64, teamId string, dto PatchUpdateTeamRequest) error {
-	globalRoles := ctx.MustGet(middleware.ContextRoles).([]string)
+func (s *Service) PatchUpdateTeam(ctx context.Context, userId int64, globalRoles []string, teamId string, dto PatchUpdateTeamRequest) error {
 	if identity.IsOrc(globalRoles) {
 		return errors.New("User cannot update a team, user is banned from updating teams")
 	}
@@ -133,7 +142,7 @@ func (s *Service) PatchUpdateTeam(ctx *gin.Context, userId int64, teamId string,
 		return errors.New("invalid team ID")
 	}
 
-	teamRoles, err := s.repo.GetUserTeamRoles(ctx, userId, parsedID)
+	teamRoles, err := s.sharedRepo.GetUserTeamRoles(ctx, userId, parsedID)
 	t := Team{ID: parsedID}
 	if err != nil {
 		return errors.New("Error fetching user team roles: " + err.Error())
@@ -142,43 +151,27 @@ func (s *Service) PatchUpdateTeam(ctx *gin.Context, userId int64, teamId string,
 		return errors.New("user does not have permission to update this team or is not an administrator")
 	}
 
+	if err := ValidateTeamPatch(dto.Name, dto.Tag, dto.Description, dto.LogoPath, dto.BannerPath); err != nil {
+		return err
+	}
+
 	if dto.Name != nil {
-		if len(*dto.Name) < 3 || len(*dto.Name) > 50 {
-			return errors.New("Name must be between 3 and 50 characters")
-		}
 		t.Name = *dto.Name
 	}
-
 	if dto.Tag != nil {
-		if len(*dto.Tag) < 2 || len(*dto.Tag) > 15 {
-			return errors.New("Tag must be between 2 and 15 characters")
-		}
 		t.Tag = *dto.Tag
 	}
-
 	if dto.Description != nil {
-		if len(*dto.Description) > 500 {
-			return errors.New("Description must be less than 500 characters")
-		}
 		t.Description = *dto.Description
 	}
-
 	if dto.LogoPath != nil {
-		_, err := regexp.MatchString(`^https?://`, *dto.LogoPath)
-		if err != nil {
-			return errors.New("invalid logo_path URL")
-		}
 		t.LogoPath = *dto.LogoPath
 	}
 	if dto.BannerPath != nil {
-		_, err := regexp.MatchString(`^https?://`, *dto.BannerPath)
-		if err != nil {
-			return errors.New("invalid banner_path URL")
-		}
 		t.BannerPath = *dto.BannerPath
 	}
 	if dto.CountryId != nil {
-		exists, err := s.repo.CountryExists(ctx, *dto.CountryId)
+		exists, err := s.sharedRepo.CountryExists(ctx, *dto.CountryId)
 		if err != nil {
 			return err
 		}
@@ -213,7 +206,7 @@ func (s *Service) AddMemberToTeam(
 	if err != nil {
 		return errors.New("invalid team ID")
 	}
-	teamRoles, err := s.repo.GetUserTeamRoles(ctx, userID, parsedTeamID)
+	teamRoles, err := s.sharedRepo.GetUserTeamRoles(ctx, userID, parsedTeamID)
 	if err != nil {
 		return errors.New("Error fetching user team roles: " + err.Error())
 	}
@@ -257,7 +250,7 @@ func (s *Service) UpdateUserTeamRole(
 		return errors.New("invalid user ID")
 	}
 
-	teamRoles, err := s.repo.GetUserTeamRoles(ctx, currentUserId, parsedTeamID)
+	teamRoles, err := s.sharedRepo.GetUserTeamRoles(ctx, currentUserId, parsedTeamID)
 	if err != nil {
 		return errors.New("Error fetching user team roles: " + err.Error())
 	}
@@ -297,7 +290,7 @@ func (s *Service) DeleteUserFromTeam(
 		return errors.New("invalid user ID")
 	}
 
-	teamRoles, err := s.repo.GetUserTeamRoles(ctx, currentUserId, parsedTeamID)
+	teamRoles, err := s.sharedRepo.GetUserTeamRoles(ctx, currentUserId, parsedTeamID)
 	if err != nil {
 		return errors.New("Error fetching user team roles: " + err.Error())
 	}
@@ -336,7 +329,7 @@ func (s *Service) AddTeamGame(
 	if err != nil {
 		return errors.New("invalid team ID")
 	}
-	teamRoles, err := s.repo.GetUserTeamRoles(ctx, currentUserId, parsedTeamID)
+	teamRoles, err := s.sharedRepo.GetUserTeamRoles(ctx, currentUserId, parsedTeamID)
 	if err != nil {
 		return errors.New("Error fetching user team roles: " + err.Error())
 	}

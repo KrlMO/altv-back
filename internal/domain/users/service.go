@@ -2,22 +2,37 @@ package users
 
 import (
 	"arena/internal/domain/users/rules"
+	"arena/internal/shared"
 	"arena/pkg/dto"
 	"arena/pkg/utils"
 	"context"
 	"database/sql"
 	"errors"
-	"regexp"
 	"strconv"
 	"time"
 )
 
-type Service struct {
-	repo *Repository
+type UserRepository interface {
+	CreateUser(ctx context.Context, u User, provider string) error
+	GetUserByProviderUID(ctx context.Context, providerUID string, provider string) (*User, error)
+	GetGlobalRolesByUserID(ctx context.Context, userID int64) ([]string, error)
+	GetUserProfileByID(ctx context.Context, userID int64) (*UserProfile, error)
+	GetUserByID(ctx context.Context, userId int64) (*User, error)
+	GetUserProviders(ctx context.Context, userID int64) ([]ProviderAuth, error)
+	UpdateUser(ctx context.Context, u User) error
+	PatchUser(ctx context.Context, u User) error
+	DeactivateUser(ctx context.Context, userID int64) error
+	ActivateUser(ctx context.Context, userID int64) error
+	SoftDeleteUser(ctx context.Context, userID int64) error
 }
 
-func NewService(r *Repository) *Service {
-	return &Service{repo: r}
+type Service struct {
+	repo       UserRepository
+	sharedRepo *shared.SharedRepository
+}
+
+func NewService(r UserRepository, sharedRepo *shared.SharedRepository) *Service {
+	return &Service{repo: r, sharedRepo: sharedRepo}
 }
 
 func (s *Service) Register(ctx context.Context, dto RegisterUserRequest) error {
@@ -30,7 +45,7 @@ func (s *Service) Register(ctx context.Context, dto RegisterUserRequest) error {
 		return err
 	}
 
-	exists, err := s.repo.CountryExists(ctx, dto.CountryId)
+	exists, err := s.sharedRepo.CountryExists(ctx, dto.CountryId)
 	if err != nil {
 		return err
 	}
@@ -70,16 +85,11 @@ func (s *Service) FastRegister(ctx context.Context, dto FastRegisterUserRequest)
 		return errors.New("birth_date must be YYYY-MM-DD")
 	}
 
-	if len(dto.NickName) < 3 || len(dto.NickName) > 30 {
-		return errors.New("nickname must be between 3 and 30 characters")
+	if err := ValidateNickname(dto.NickName); err != nil {
+		return err
 	}
 
-	ok, _ := regexp.MatchString(`^[a-zA-Z0-9_]+$`, dto.NickName)
-	if !ok {
-		return errors.New("nickname contains invalid characters")
-	}
-
-	exists, err := s.repo.CountryExists(ctx, dto.CountryId)
+	exists, err := s.sharedRepo.CountryExists(ctx, dto.CountryId)
 	if err != nil {
 		return err
 	}
@@ -149,7 +159,7 @@ func (s *Service) GetUserByID(
 		return nil, nil, err
 	}
 
-	auths, err := s.repo.getUserProviders(ctx, userId)
+	auths, err := s.repo.GetUserProviders(ctx, userId)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -210,7 +220,7 @@ func (s *Service) UpdateProfile(ctx context.Context, userID int64, dto UpdateUse
 		return err
 	}
 
-	exists, err := s.repo.CountryExists(ctx, dto.CountryId)
+	exists, err := s.sharedRepo.CountryExists(ctx, dto.CountryId)
 	if err != nil {
 		return err
 	}
@@ -248,43 +258,37 @@ func (s *Service) PatchProfile(ctx context.Context, userID int64, dto PatchUserP
 		}
 	}
 	if dto.FirstName != nil {
-		if len(*dto.FirstName) > 50 || len(*dto.FirstName) < 2 {
-			return errors.New("first_name must be between 2 and 50 characters")
+		if err := ValidateOptionalField(dto.FirstName, 2, 50, "first_name"); err != nil {
+			return err
 		}
 		u.FirstName = *dto.FirstName
 	}
 	if dto.LastName != nil {
-		if len(*dto.LastName) > 50 || len(*dto.LastName) < 2 {
-			return errors.New("last_name must be between 2 and 50 characters")
+		if err := ValidateOptionalField(dto.LastName, 2, 50, "last_name"); err != nil {
+			return err
 		}
 		u.LastName = *dto.LastName
 	}
 	if dto.NickName != nil {
-		if len(*dto.NickName) < 3 || len(*dto.NickName) > 30 {
-			return errors.New("nickname must be between 3 and 30 characters")
-		}
-		ok, _ := regexp.MatchString(`^[a-zA-Z0-9_]+$`, *dto.NickName)
-		if !ok {
-			return errors.New("nickname contains invalid characters")
+		if err := ValidateNickname(*dto.NickName); err != nil {
+			return err
 		}
 		u.NickName = *dto.NickName
 	}
 	if dto.ProfilePhoto != nil {
-		_, err := regexp.MatchString(`^https?://`, *dto.ProfilePhoto)
-		if err != nil {
-			return errors.New("invalid profile_photo URL")
+		if err := ValidateOptionalURL(dto.ProfilePhoto, "profile_photo"); err != nil {
+			return err
 		}
 		u.ProfilePhoto = *dto.ProfilePhoto
 	}
 	if dto.BannerPhoto != nil {
-		_, err := regexp.MatchString(`^https?://`, *dto.BannerPhoto)
-		if err != nil {
-			return errors.New("invalid banner_photo URL")
+		if err := ValidateOptionalURL(dto.BannerPhoto, "banner_photo"); err != nil {
+			return err
 		}
 		u.BannerPhoto = *dto.BannerPhoto
 	}
 	if dto.CountryId != nil {
-		exists, err := s.repo.CountryExists(ctx, *dto.CountryId)
+		exists, err := s.sharedRepo.CountryExists(ctx, *dto.CountryId)
 		if err != nil {
 			return err
 		}
@@ -295,4 +299,20 @@ func (s *Service) PatchProfile(ctx context.Context, userID int64, dto PatchUserP
 	}
 
 	return s.repo.PatchUser(ctx, u)
+}
+
+func (s *Service) DeactivateUser(ctx context.Context, userID int64) error {
+	return s.repo.DeactivateUser(ctx, userID)
+}
+
+func (s *Service) ActivateUser(ctx context.Context, userID int64) error {
+	return s.repo.ActivateUser(ctx, userID)
+}
+
+func (s *Service) SoftDeleteUser(ctx context.Context, userID int64) error {
+	return s.repo.SoftDeleteUser(ctx, userID)
+}
+
+func (s *Service) SelfDelete(ctx context.Context, userID int64) error {
+	return s.repo.SoftDeleteUser(ctx, userID)
 }

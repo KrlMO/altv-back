@@ -19,7 +19,7 @@ string escapeSQL(const char *s)
 
 int main()
 {
-    ifstream archPaises("paises.txt", ios::in);
+    ifstream archPaises("data_paises.txt", ios::in);
     if (not archPaises.is_open())
     {
         cerr << "Nose puede abrir el archivo paises.txt" << endl;

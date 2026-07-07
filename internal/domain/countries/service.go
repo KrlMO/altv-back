@@ -3,10 +3,10 @@ package countries
 import "context"
 
 type Service struct {
-	repo *Repository
+	repo RepositoryInterface
 }
 
-func NewService(repo *Repository) *Service {
+func NewService(repo RepositoryInterface) *Service {
 	return &Service{repo: repo}
 }
 

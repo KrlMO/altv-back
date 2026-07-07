@@ -213,6 +213,45 @@ const docTemplate = `{
             }
         },
         "/api/v1/auth/verify-email": {
+            "get": {
+                "description": "Verifies the email using the token and marks the user as verified",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Verify email",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Verification token",
+                        "name": "token",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseOk-any"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
             "post": {
                 "description": "Verifies if the email verification token is valid and returns the status",
                 "consumes": [
@@ -299,92 +338,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/users/fast-register": {
-            "post": {
-                "description": "Quickly creates a new user in the system with minimal info",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Users"
-                ],
-                "summary": "Fast register a new user",
-                "parameters": [
-                    {
-                        "description": "User info",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/internal_domain_users.FastRegisterUserRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/users/me": {
+        "/api/v1/games": {
             "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Retrieves the profile of the currently authenticated user",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Users"
-                ],
-                "summary": "Get current user profile",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/internal_domain_users.UserProfileResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            },
-            "put": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Updates the profile of the currently authenticated user",
+                "description": "Get a list of games, optionally filtered by name",
                 "consumes": [
                     "application/json"
                 ],
@@ -392,112 +348,36 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Users"
+                    "Games"
                 ],
-                "summary": "Update current user profile",
+                "summary": "List Games",
                 "parameters": [
                     {
-                        "description": "Updated user info",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/internal_domain_users.UpdateUserProfileRequest"
-                        }
+                        "type": "string",
+                        "description": "Filter by game name",
+                        "name": "name",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/arena_pkg_response.ResponseOk-array_internal_domain_games_GameListItemResponse"
                         }
                     },
-                    "400": {
-                        "description": "Bad Request",
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            },
-            "patch": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Partially updates the profile of the currently authenticated user",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Users"
-                ],
-                "summary": "Partially update current user profile",
-                "parameters": [
-                    {
-                        "description": "Partially updated user info",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/internal_domain_users.PatchUserProfileRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
                         }
                     }
                 }
             }
         },
-        "/api/v1/users/register/local": {
-            "post": {
-                "description": "Creates a new user in the system",
+        "/api/v1/regions": {
+            "get": {
+                "description": "Retrieves a list of all registered regions",
                 "consumes": [
                     "application/json"
                 ],
@@ -505,43 +385,99 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Users"
+                    "Regions"
                 ],
-                "summary": "Register a new user",
-                "parameters": [
-                    {
-                        "description": "User info",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/internal_domain_users.RegisterUserRequest"
-                        }
-                    }
-                ],
+                "summary": "Get all regions",
                 "responses": {
-                    "201": {
-                        "description": "Created",
+                    "200": {
+                        "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/arena_pkg_response.ResponseOk-array_internal_domain_regions_RegionResponse"
                         }
                     },
-                    "400": {
-                        "description": "Bad Request",
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
                         }
                     }
                 }
             }
         },
-        "/team-games/{id}/leave": {
+        "/api/v1/team-games": {
+            "get": {
+                "description": "Get a paginated list of team games with optional filters",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Team Games"
+                ],
+                "summary": "List Team Games",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter by team game name",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Filter by region ID",
+                        "name": "region_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Filter by country ID",
+                        "name": "country_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Filter by game ID",
+                        "name": "game_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Sort order: name_asc, name_desc, newest, oldest",
+                        "name": "sort_by",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_domain_team_games.TeamGameListSuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/team-games/{id}/leave": {
             "post": {
                 "security": [
                     {
@@ -599,7 +535,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/team-games/{id}/members": {
+        "/api/v1/team-games/{id}/members": {
             "get": {
                 "description": "Get public members of a team game by team game ID",
                 "consumes": [
@@ -770,7 +706,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/team-games/{id}/members/roles": {
+        "/api/v1/team-games/{id}/members/roles": {
             "post": {
                 "security": [
                     {
@@ -890,7 +826,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/teams": {
+        "/api/v1/teams": {
             "get": {
                 "description": "Retrieves a list of teams with optional filters",
                 "consumes": [
@@ -1011,7 +947,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/teams/{id}": {
+        "/api/v1/teams/{id}": {
             "get": {
                 "description": "Retrieves a team by its ID",
                 "consumes": [
@@ -1102,7 +1038,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/teams/{id}/games": {
+        "/api/v1/teams/{id}/games": {
             "post": {
                 "security": [
                     {
@@ -1160,7 +1096,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/teams/{id}/members": {
+        "/api/v1/teams/{id}/members": {
             "post": {
                 "security": [
                     {
@@ -1218,7 +1154,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/teams/{id}/members/{userId}": {
+        "/api/v1/teams/{id}/members/{userId}": {
             "delete": {
                 "security": [
                     {
@@ -1336,6 +1272,430 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/api/v1/users/fast-register": {
+            "post": {
+                "description": "Quickly creates a new user in the system with minimal info",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Fast register a new user",
+                "parameters": [
+                    {
+                        "description": "User info",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_domain_users.FastRegisterUserRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/me": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieves the profile of the currently authenticated user",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Get current user profile",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_domain_users.UserProfileResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Updates the profile of the currently authenticated user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Update current user profile",
+                "parameters": [
+                    {
+                        "description": "Updated user info",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_domain_users.UpdateUserProfileRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Soft-deletes the current user account (GDPR). Anonymizes PII and revokes all tokens.",
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Delete current user account",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Partially updates the profile of the currently authenticated user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Partially update current user profile",
+                "parameters": [
+                    {
+                        "description": "Partially updated user info",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_domain_users.PatchUserProfileRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/register/local": {
+            "post": {
+                "description": "Creates a new user in the system",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Register a new user",
+                "parameters": [
+                    {
+                        "description": "User info",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_domain_users.RegisterUserRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Soft-deletes a user by ID. Only ILUVATAR or AINUR roles allowed.",
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Delete a user (admin)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/{id}/activate": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Activates a deactivated user by ID. Only ILUVATAR or AINUR roles allowed.",
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Activate a user (admin)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/{id}/deactivate": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Deactivates a user by ID. Only ILUVATAR or AINUR roles allowed.",
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Deactivate a user (admin)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -1408,6 +1768,34 @@ const docTemplate = `{
                 }
             }
         },
+        "arena_pkg_dto.PaginatedResponse-internal_domain_team_games_TeamGameListItemResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_domain_team_games.TeamGameListItemResponse"
+                    }
+                },
+                "meta": {
+                    "$ref": "#/definitions/arena_pkg_dto.PaginationMeta"
+                }
+            }
+        },
+        "arena_pkg_dto.PaginationMeta": {
+            "type": "object",
+            "properties": {
+                "limit": {
+                    "type": "integer"
+                },
+                "offset": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
         "arena_pkg_response.ResponseError": {
             "type": "object",
             "properties": {
@@ -1423,6 +1811,34 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "data": {},
+                "msg": {
+                    "type": "string"
+                }
+            }
+        },
+        "arena_pkg_response.ResponseOk-array_internal_domain_games_GameListItemResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_domain_games.GameListItemResponse"
+                    }
+                },
+                "msg": {
+                    "type": "string"
+                }
+            }
+        },
+        "arena_pkg_response.ResponseOk-array_internal_domain_regions_RegionResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_domain_regions.RegionResponse"
+                    }
+                },
                 "msg": {
                     "type": "string"
                 }
@@ -1535,6 +1951,37 @@ const docTemplate = `{
                 }
             }
         },
+        "internal_domain_games.GameListItemResponse": {
+            "type": "object",
+            "properties": {
+                "color_hex": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_domain_regions.RegionResponse": {
+            "type": "object",
+            "properties": {
+                "flag_path": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "iso_code": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
         "internal_domain_team_games.AddTeamGameMembersRequest": {
             "type": "object",
             "required": [
@@ -1611,6 +2058,49 @@ const docTemplate = `{
                 },
                 "userID": {
                     "type": "integer"
+                }
+            }
+        },
+        "internal_domain_team_games.TeamGameListItemResponse": {
+            "type": "object",
+            "properties": {
+                "country_name": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "game_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "logo_path": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "region_iso": {
+                    "type": "string"
+                },
+                "region_name": {
+                    "type": "string"
+                },
+                "team_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_domain_team_games.TeamGameListSuccessResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/arena_pkg_dto.PaginatedResponse-internal_domain_team_games_TeamGameListItemResponse"
+                },
+                "msg": {
+                    "type": "string"
                 }
             }
         },

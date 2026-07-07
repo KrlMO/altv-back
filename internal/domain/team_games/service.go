@@ -186,6 +186,58 @@ func (s *Service) RemoveTeamGameRoleFromMember(
 	return teamGameName, nil
 }
 
+func (s *Service) ListTeamGames(
+	ctx context.Context,
+	filter TeamGameListFilter,
+	page int,
+) (dto.PaginatedResponse[TeamGameListItemResponse], error) {
+	if page < 1 {
+		page = 1
+	}
+	limit := 10
+	offset := (page - 1) * limit
+
+	items, total, err := s.repo.FilterTeamGames(ctx, filter, page, limit)
+	if err != nil {
+		return dto.PaginatedResponse[TeamGameListItemResponse]{}, err
+	}
+
+	response := make([]TeamGameListItemResponse, 0, len(items))
+	for _, item := range items {
+		resp := TeamGameListItemResponse{
+			ID:       item.ID,
+			Name:     item.Name,
+			TeamName: item.TeamName,
+			GameName: item.GameName,
+		}
+		if item.LogoPath.Valid {
+			resp.LogoPath = &item.LogoPath.String
+		}
+		if item.RegionName.Valid {
+			resp.RegionName = &item.RegionName.String
+		}
+		if item.RegionISO.Valid {
+			resp.RegionISO = &item.RegionISO.String
+		}
+		if item.CountryName.Valid {
+			resp.CountryName = &item.CountryName.String
+		}
+		if item.CreatedAt.Valid {
+			resp.CreatedAt = &item.CreatedAt.Time
+		}
+		response = append(response, resp)
+	}
+
+	return dto.PaginatedResponse[TeamGameListItemResponse]{
+		Data: response,
+		Meta: dto.PaginationMeta{
+			Total:  total,
+			Limit:  limit,
+			Offset: offset,
+		},
+	}, nil
+}
+
 func (s *Service) AddTeamGameRoleToMember(
 	ctx context.Context,
 	currentUserId int64,

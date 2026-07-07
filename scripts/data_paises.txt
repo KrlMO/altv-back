@@ -66,6 +66,7 @@ Egypt;EG;EGY;818
 El Salvador;SV;SLV;222
 Equatorial Guinea;GQ;GNQ;226
 Eritrea;ER;ERI;232
+España;ES;ESP;724
 Estonia;EE;EST;233
 Eswatini;SZ;SWZ;748
 Ethiopia;ET;ETH;231
@@ -206,7 +207,6 @@ Somalia;SO;SOM;706
 South Africa;ZA;ZAF;710
 South Georgia and the South Sandwich Islands;GS;SGS;239
 South Sudan;SS;SSD;728
-Spain;ES;ESP;724
 Sri Lanka;LK;LKA;144
 Sudan (the);SD;SDN;729
 Suriname;SR;SUR;740

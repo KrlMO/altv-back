@@ -27,10 +27,15 @@ go.work.sum
 # env file
 .env
 
-# Editor/IDE
-# .idea/
-# .vscode/
-scripts/countryToSQL
+# Build artifacts
+bin/
 *.exe
 *.out
 *.o
+
+# Test artifacts
+coverage.*
+
+# Editor/IDE
+# .idea/
+# .vscode/

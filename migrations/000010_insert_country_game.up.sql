@@ -71,6 +71,7 @@ values ('Afghanistan', 'AF'),
 ('El Salvador', 'SV'),
 ('Equatorial Guinea', 'GQ'),
 ('Eritrea', 'ER'),
+('España', 'ES'),
 ('Estonia', 'EE'),
 ('Eswatini', 'SZ'),
 ('Ethiopia', 'ET'),
@@ -211,7 +212,6 @@ values ('Afghanistan', 'AF'),
 ('South Africa', 'ZA'),
 ('South Georgia and the South Sandwich Islands', 'GS'),
 ('South Sudan', 'SS'),
-('Spain', 'ES'),
 ('Sri Lanka', 'LK'),
 ('Sudan (the)', 'SD'),
 ('Suriname', 'SR'),
@@ -254,18 +254,19 @@ values ('Afghanistan', 'AF'),
 ('Åland Islands', 'AX');
 
 
+
 -- Insert initial data into al_game table
-insert into al_game (name,year_founded,slug)
+insert into al_game (name, year_founded, slug, color_hex)
 values
-('Left 4 Dead 2',2009,'left-4-dead-2'),
-('Rocket League',2015,'rocket-league'),
-('League of Legends',2009,'league-of-legends'),
-('Dota 2',2013,'dota-2'),
-('Counter-Strike: 2',2023,'counter-strike-2'),
-('Valorant',2020,'valorant'),
-('Fortnite',2017,'fortnite'),
-('Overwatch',2016,'overwatch'),
-('Call of Duty: Warzone',2020,'call-of-duty-warzone'),
-('Rainbow Six Siege',2015,'rainbow-six-siege'),
-('Apex Legends',2019,'apex-legends'),
-('PUBG: Battlegrounds',2017,'pubg-battlegrounds');
+('Left 4 Dead 2',            2009, 'left-4-dead-2',          '#729E08'),
+('Rocket League',            2015, 'rocket-league',          '#1E88E5'),
+('League of Legends',        2009, 'league-of-legends',      '#0A5C8F'),
+('Dota 2',                   2013, 'dota-2',                 '#C23B22'),
+('Counter-Strike: 2',        2023, 'counter-strike-2',       '#F89E1B'),
+('Valorant',                 2020, 'valorant',              '#00FFFF'),
+('Fortnite',                 2017, 'fortnite',              '#7B61FF'),
+('Overwatch',                2016, 'overwatch',             '#F99E1A'),
+('Call of Duty: Warzone',    2020, 'call-of-duty-warzone',  '#B0BDC3'),
+('Rainbow Six Siege',        2015, 'rainbow-six-siege',     '#1F3A5F'),
+('Apex Legends',             2019, 'apex-legends',          '#A63D2E'),
+('PUBG: Battlegrounds',      2017, 'pubg-battlegrounds',    '#D4C281');

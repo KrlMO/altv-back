@@ -2,6 +2,7 @@ package teamgames
 
 import (
 	"arena/internal/domain/team_games/rules"
+	"arena/internal/shared"
 	"arena/pkg/utils"
 	"context"
 	"fmt"
@@ -13,7 +14,8 @@ import (
 )
 
 type Repository struct {
-	db *pgxpool.Pool
+	db         *pgxpool.Pool
+	sharedRepo *shared.SharedRepository
 }
 
 type MembershipHistoryParams struct {
@@ -29,8 +31,8 @@ type MembershipHistoryParams struct {
 	LeftAt   *time.Time
 }
 
-func NewRepository(db *pgxpool.Pool) *Repository {
-	return &Repository{db: db}
+func NewRepository(db *pgxpool.Pool, sharedRepo *shared.SharedRepository) *Repository {
+	return &Repository{db: db, sharedRepo: sharedRepo}
 }
 
 func (r *Repository) GetTeamGamePublicMembers(
@@ -115,7 +117,7 @@ func (r *Repository) GetUserTeamAndTeamGameRoles(
 	if err != nil {
 		return "", nil, nil, err
 	}
-	teamRoles, err = r.GetUserTeamRoles(ctx, userId, teamId)
+	teamRoles, err = r.sharedRepo.GetUserTeamRoles(ctx, userId, teamId)
 	if err != nil {
 		return "", nil, nil, err
 	}
@@ -164,28 +166,6 @@ func (r *Repository) GetTeamIdFromTeamGameId(ctx context.Context, teamGameId int
 	return teamId, nil
 }
 
-func (r *Repository) GetUserTeamRoles(ctx context.Context, userID, teamID int64) ([]string, error) {
-	roles := []string{}
-	rows, err := r.db.Query(ctx, `
-		SELECT tr.name
-		FROM al_user_team_role utr
-		JOIN al_team_role tr ON utr.role_id = tr.id
-		WHERE utr.user_id = $1 AND utr.team_id = $2
-	`, userID, teamID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var roleName string
-		if err := rows.Scan(&roleName); err != nil {
-			return nil, err
-		}
-		roles = append(roles, roleName)
-	}
-	return roles, nil
-}
 func (r *Repository) AddMembersToTeamGame(
 	ctx context.Context,
 	currentUserId, teamGameId int64,
@@ -579,4 +559,114 @@ func (r *Repository) AddTeamGameRoleToMember(
 		return err
 	}
 	return tx.Commit(ctx)
+}
+
+func (r *Repository) FilterTeamGames(
+	ctx context.Context,
+	filter TeamGameListFilter,
+	page, limit int,
+) ([]TeamGameListItem, int64, error) {
+	where := []string{"tg.active = true"}
+	args := []interface{}{}
+	argIdx := 1
+
+	if filter.Name != nil && *filter.Name != "" {
+		where = append(where, fmt.Sprintf("tg.name ILIKE '%%' || $%d || '%%'", argIdx))
+		args = append(args, *filter.Name)
+		argIdx++
+	}
+	if filter.RegionID != nil {
+		where = append(where, fmt.Sprintf("tg.region_id = $%d", argIdx))
+		args = append(args, *filter.RegionID)
+		argIdx++
+	}
+	if filter.CountryID != nil {
+		where = append(where, fmt.Sprintf("tg.country_id = $%d", argIdx))
+		args = append(args, *filter.CountryID)
+		argIdx++
+	}
+	if filter.GameID != nil {
+		where = append(where, fmt.Sprintf("tg.game_id = $%d", argIdx))
+		args = append(args, *filter.GameID)
+		argIdx++
+	}
+
+	whereClause := strings.Join(where, " AND ")
+
+	countQuery := fmt.Sprintf(`
+		SELECT COUNT(*)
+		FROM al_team_game tg
+		WHERE %s
+	`, whereClause)
+
+	var total int64
+	err := r.db.QueryRow(ctx, countQuery, args...).Scan(&total)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	orderBy := "tg.created_at DESC"
+	if filter.SortBy != nil {
+		switch *filter.SortBy {
+		case "name_asc":
+			orderBy = "tg.name ASC"
+		case "name_desc":
+			orderBy = "tg.name DESC"
+		case "newest":
+			orderBy = "tg.created_at DESC"
+		case "oldest":
+			orderBy = "tg.created_at ASC"
+		}
+	}
+
+	offset := (page - 1) * limit
+	query := fmt.Sprintf(`
+		SELECT
+			tg.id,
+			tg.name,
+			tg.logo_path,
+			t.name AS team_name,
+			g.name AS game_name,
+			r.name AS region_name,
+			r.iso_code AS region_iso,
+			c.name AS country_name,
+			tg.created_at
+		FROM al_team_game tg
+		JOIN al_team t ON tg.team_id = t.id
+		JOIN al_game g ON tg.game_id = g.id
+		LEFT JOIN al_region r ON tg.region_id = r.id
+		LEFT JOIN al_country c ON tg.country_id = c.id
+		WHERE %s
+		ORDER BY %s
+		LIMIT $%d OFFSET $%d
+	`, whereClause, orderBy, argIdx, argIdx+1)
+
+	args = append(args, limit, offset)
+
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	var items []TeamGameListItem
+	for rows.Next() {
+		var item TeamGameListItem
+		if err := rows.Scan(
+			&item.ID,
+			&item.Name,
+			&item.LogoPath,
+			&item.TeamName,
+			&item.GameName,
+			&item.RegionName,
+			&item.RegionISO,
+			&item.CountryName,
+			&item.CreatedAt,
+		); err != nil {
+			return nil, 0, err
+		}
+		items = append(items, item)
+	}
+
+	return items, total, rows.Err()
 }

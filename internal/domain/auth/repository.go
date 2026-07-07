@@ -315,7 +315,7 @@ func (r *Repository) VerifyUserEmail(
 		UPDATE al_user_auth
 		SET is_verified = true,
 			updated_at = NOW(),
-			updated_by = 1
+			updated_by = NULL
 		WHERE id = $1
 	`, userAuthId)
 

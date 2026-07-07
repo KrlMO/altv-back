@@ -2,17 +2,20 @@ package teamgames
 
 import (
 	"arena/internal/domain/team_games/rules"
+	"arena/pkg/dto"
 	"arena/pkg/middleware"
 	"arena/pkg/response"
 	"errors"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
 
 func (m *Module) RegisterRoutes(r *gin.Engine, jwtSecret string) {
-	teamGames := r.Group("/team-games")
+	teamGames := r.Group("/api/v1/team-games")
 	{
+		teamGames.GET("", m.ListTeamGames)
 		teamGames.GET("/:id/members", m.ListTeamGameMembers)
 		auth := teamGames.Group("/", middleware.Auth(jwtSecret))
 		{
@@ -23,6 +26,82 @@ func (m *Module) RegisterRoutes(r *gin.Engine, jwtSecret string) {
 			auth.POST("/:id/leave", m.LeaveTeamGame)
 		}
 	}
+}
+
+// ListTeamGames godoc
+// @Summary      List Team Games
+// @Description  Get a paginated list of team games with optional filters
+// @Tags         Team Games
+// @Accept       json
+// @Produce      json
+// @Param        name       query     string  false  "Filter by team game name"
+// @Param        region_id  query     int     false  "Filter by region ID"
+// @Param        country_id query     int     false  "Filter by country ID"
+// @Param        game_id    query     int     false  "Filter by game ID"
+// @Param        sort_by    query     string  false  "Sort order: name_asc, name_desc, newest, oldest"
+// @Param        page       query     int     false  "Page number (default 1)"
+// @Success      200  {object}  TeamGameListSuccessResponse
+// @Failure      400  {object}  response.ResponseError
+// @Failure      500  {object}  response.ResponseError
+// @Router /api/v1/team-games [get]
+func (m *Module) ListTeamGames(c *gin.Context) {
+	filter := TeamGameListFilter{}
+
+	if name := c.Query("name"); name != "" {
+		filter.Name = &name
+	}
+	if regionID := c.Query("region_id"); regionID != "" {
+		v, err := strconv.ParseInt(regionID, 10, 32)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, response.ResponseError{Error: "invalid region_id"})
+			return
+		}
+		v32 := int32(v)
+		filter.RegionID = &v32
+	}
+	if countryID := c.Query("country_id"); countryID != "" {
+		v, err := strconv.ParseInt(countryID, 10, 32)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, response.ResponseError{Error: "invalid country_id"})
+			return
+		}
+		v32 := int32(v)
+		filter.CountryID = &v32
+	}
+	if gameID := c.Query("game_id"); gameID != "" {
+		v, err := strconv.ParseInt(gameID, 10, 32)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, response.ResponseError{Error: "invalid game_id"})
+			return
+		}
+		v32 := int32(v)
+		filter.GameID = &v32
+	}
+	if sortBy := c.Query("sort_by"); sortBy != "" {
+		filter.SortBy = &sortBy
+	}
+
+	page := 1
+	if p := c.Query("page"); p != "" {
+		v, err := strconv.Atoi(p)
+		if err != nil || v < 1 {
+			c.JSON(http.StatusBadRequest, response.ResponseError{Error: "invalid page"})
+			return
+		}
+		page = v
+	}
+
+	result, err := m.service.ListTeamGames(c.Request.Context(), filter, page)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, response.ResponseError{
+			Error: "failed to list team games: " + err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, response.ResponseOk[dto.PaginatedResponse[TeamGameListItemResponse]]{
+		Data: result,
+	})
 }
 
 // ListTeamGameMembers godoc
@@ -36,7 +115,7 @@ func (m *Module) RegisterRoutes(r *gin.Engine, jwtSecret string) {
 // @Failure      400  {object}  response.ResponseError
 // @Failure      404  {object}  response.ResponseError
 // @Failure      500  {object}  response.ResponseError
-// @Router       /team-games/{id}/members [get]
+// @Router /api/v1/team-games/{id}/members [get]
 func (m *Module) ListTeamGameMembers(c *gin.Context) {
 	teamGameId := c.Param("id")
 	resp, err := m.service.GetTeamGameMembers(c, teamGameId)
@@ -70,7 +149,7 @@ func (m *Module) ListTeamGameMembers(c *gin.Context) {
 // @Success 200  {object}  map[string]string
 // @Failure 404  {object}  response.ResponseError
 // @Failure 500  {object}  response.ResponseError
-// @Router /team-games/{id}/members [post]
+// @Router /api/v1/team-games/{id}/members [post]
 func (m *Module) AddMembersToTeamGame(c *gin.Context) {
 	userID := c.MustGet(middleware.ContextUserID).(int64)
 	globalRole := c.MustGet(middleware.ContextRoles).([]string)
@@ -115,7 +194,7 @@ func (m *Module) AddMembersToTeamGame(c *gin.Context) {
 // @Failure 400  {object}  response.ResponseError
 // @Failure 404  {object}  response.ResponseError
 // @Failure 500  {object}  response.ResponseError
-// @Router /team-games/{id}/leave [post]
+// @Router /api/v1/team-games/{id}/leave [post]
 func (m *Module) LeaveTeamGame(c *gin.Context) {
 	userID := c.MustGet(middleware.ContextUserID).(int64)
 	globalRole := c.MustGet(middleware.ContextRoles).([]string)
@@ -171,7 +250,7 @@ func (m *Module) LeaveTeamGame(c *gin.Context) {
 // @Success 200  {object}  map[string]string
 // @Failure 404  {object}  response.ResponseError
 // @Failure 500  {object}  response.ResponseError
-// @Router /team-games/{id}/members [delete]
+// @Router /api/v1/team-games/{id}/members [delete]
 func (m *Module) RemoveMembersFromTeamGame(c *gin.Context) {
 	userID := c.MustGet(middleware.ContextUserID).(int64)
 	globalRole := c.MustGet(middleware.ContextRoles).([]string)
@@ -222,7 +301,7 @@ func (m *Module) RemoveMembersFromTeamGame(c *gin.Context) {
 // @Success 200  {object}  map[string]string
 // @Failure 404  {object}  response.ResponseError
 // @Failure 500  {object}  response.ResponseError
-// @Router /team-games/{id}/members/roles [delete]
+// @Router /api/v1/team-games/{id}/members/roles [delete]
 func (m *Module) RemoveTeamGameRoleFromMember(c *gin.Context) {
 	userID := c.MustGet(middleware.ContextUserID).(int64)
 	globalRole := c.MustGet(middleware.ContextRoles).([]string)
@@ -272,7 +351,7 @@ func (m *Module) RemoveTeamGameRoleFromMember(c *gin.Context) {
 // @Success 200  {object}  map[string]string
 // @Failure 404  {object}  response.ResponseError
 // @Failure 500  {object}  response.ResponseError
-// @Router /team-games/{id}/members/roles [post]
+// @Router /api/v1/team-games/{id}/members/roles [post]
 func (m *Module) AddTeamGameRoleToMember(c *gin.Context) {
 	userID := c.MustGet(middleware.ContextUserID).(int64)
 	globalRole := c.MustGet(middleware.ContextRoles).([]string)

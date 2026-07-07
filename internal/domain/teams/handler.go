@@ -13,7 +13,7 @@ import (
 )
 
 func (m *Module) RegisterRoutes(r *gin.Engine, jwtSecret string) {
-	teams := r.Group("/teams")
+	teams := r.Group("/api/v1/teams")
 	{
 		teams.GET("/:id", m.GetTeamByID)
 		teams.GET("/", m.GetTeams)
@@ -39,9 +39,10 @@ func (m *Module) RegisterRoutes(r *gin.Engine, jwtSecret string) {
 // @Param request body RegisterTeamRequest true "Team info"
 // @Success 201 {object} map[string]string
 // @Failure 400 {object} map[string]string
-// @Router /teams [post]
+// @Router /api/v1/teams [post]
 func (m *Module) Register(c *gin.Context) {
 	userID := c.MustGet(middleware.ContextUserID).(int64)
+	globalRoles := c.MustGet(middleware.ContextRoles).([]string)
 	req := RegisterTeamRequest{}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(400, response.ResponseError{
@@ -50,7 +51,7 @@ func (m *Module) Register(c *gin.Context) {
 		return
 	}
 
-	if err := m.service.RegisterTeam(c, userID, req); err != nil {
+	if err := m.service.RegisterTeam(c.Request.Context(), userID, globalRoles, req); err != nil {
 		c.JSON(400, response.ResponseError{
 			Error: "Internal error: " + err.Error(),
 		})
@@ -68,10 +69,10 @@ func (m *Module) Register(c *gin.Context) {
 // @Produce json
 // @Param id path string true "Team ID"
 // @Failure 404 {object} map[string]string
-// @Router /teams/{id} [get]
+// @Router /api/v1/teams/{id} [get]
 func (m *Module) GetTeamByID(c *gin.Context) {
 	teamID := c.Param("id")
-	team, err := m.service.GetTeamByID(c, teamID)
+	team, err := m.service.GetTeamByID(c.Request.Context(), teamID)
 	if err != nil {
 		c.JSON(404, response.ResponseError{
 			Error: "Team not found: " + err.Error(),
@@ -98,7 +99,7 @@ func (m *Module) GetTeamByID(c *gin.Context) {
 // @Param limit query int false "Limit number of results" default(10)
 // @Param offset query int false "Offset for pagination" default(0)
 // @Failure 400 {object} map[string]string
-// @Router /teams [get]
+// @Router /api/v1/teams [get]
 func (m *Module) GetTeams(c *gin.Context) {
 	var filter TeamFilter
 
@@ -181,9 +182,10 @@ func (m *Module) GetTeams(c *gin.Context) {
 // @Param request body PatchUpdateTeamRequest true "Updated team info"
 // @Success 200 {object} map[string]string
 // @Failure 400 {object} map[string]string
-// @Router /teams/{id} [patch]
+// @Router /api/v1/teams/{id} [patch]
 func (m *Module) PatchUpdateTeam(c *gin.Context) {
 	userID := c.MustGet(middleware.ContextUserID).(int64)
+	globalRoles := c.MustGet(middleware.ContextRoles).([]string)
 	teamID := c.Param("id")
 	req := PatchUpdateTeamRequest{}
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -193,7 +195,7 @@ func (m *Module) PatchUpdateTeam(c *gin.Context) {
 		return
 	}
 
-	if err := m.service.PatchUpdateTeam(c, userID, teamID, req); err != nil {
+	if err := m.service.PatchUpdateTeam(c.Request.Context(), userID, globalRoles, teamID, req); err != nil {
 		c.JSON(400, response.ResponseError{
 			Error: "Internal error: " + err.Error(),
 		})
@@ -214,7 +216,7 @@ func (m *Module) PatchUpdateTeam(c *gin.Context) {
 // @Param request body AddMemberRequest true "Member info"
 // @Success 200 {object} map[string]string
 // @Failure 400 {object} map[string]string
-// @Router /teams/{id}/members [post]
+// @Router /api/v1/teams/{id}/members [post]
 func (m *Module) AddMemberToTeam(c *gin.Context) {
 	userID := c.MustGet(middleware.ContextUserID).(int64)
 	globalRole := c.MustGet(middleware.ContextRoles).([]string)
@@ -227,7 +229,7 @@ func (m *Module) AddMemberToTeam(c *gin.Context) {
 		return
 	}
 
-	if err := m.service.AddMemberToTeam(c, userID, teamID, globalRole, req); err != nil {
+	if err := m.service.AddMemberToTeam(c.Request.Context(), userID, teamID, globalRole, req); err != nil {
 		c.JSON(500, response.ResponseError{
 			Error: "Internal error: " + err.Error(),
 		})
@@ -249,12 +251,12 @@ func (m *Module) AddMemberToTeam(c *gin.Context) {
 // @Param request body UpdateTeamMemberRoleRequest true "Role"
 // @Success 200 {object} map[string]string
 // @Failure 400 {object} map[string]string
-// @Router /teams/{id}/members/{userId} [patch]
+// @Router /api/v1/teams/{id}/members/{userId} [patch]
 func (m *Module) UpdateTeamMemberRole(c *gin.Context) {
 	userID := c.MustGet(middleware.ContextUserID).(int64)
 	globalRole := c.MustGet(middleware.ContextRoles).([]string)
 	paramTeamId := c.Param("id")
-	paramUserUd := c.Param("userId")
+	paramUserID := c.Param("userId")
 
 	req := UpdateTeamMemberRoleRequest{}
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -264,7 +266,7 @@ func (m *Module) UpdateTeamMemberRole(c *gin.Context) {
 		return
 	}
 
-	if err := m.service.UpdateUserTeamRole(c, userID, globalRole, paramTeamId, paramUserUd, req); err != nil {
+	if err := m.service.UpdateUserTeamRole(c.Request.Context(), userID, globalRole, paramTeamId, paramUserID, req); err != nil {
 		c.JSON(500, response.ResponseError{
 			Error: "Internal error: " + err.Error(),
 		})
@@ -285,14 +287,14 @@ func (m *Module) UpdateTeamMemberRole(c *gin.Context) {
 // @Param userId path string true "User ID"
 // @Success 200 {object} map[string]string
 // @Failure 400 {object} map[string]string
-// @Router /teams/{id}/members/{userId} [delete]
+// @Router /api/v1/teams/{id}/members/{userId} [delete]
 func (m *Module) DeleteUserFromTeam(c *gin.Context) {
 	userID := c.MustGet(middleware.ContextUserID).(int64)
 	globalRole := c.MustGet(middleware.ContextRoles).([]string)
 	paramTeamId := c.Param("id")
-	paramUserUd := c.Param("userId")
+	paramUserID := c.Param("userId")
 
-	err := m.service.DeleteUserFromTeam(c, userID, globalRole, paramTeamId, paramUserUd)
+	err := m.service.DeleteUserFromTeam(c.Request.Context(), userID, globalRole, paramTeamId, paramUserID)
 	if err != nil {
 
 		if errors.Is(err, rules.ErrUserNotMember) {
@@ -309,7 +311,7 @@ func (m *Module) DeleteUserFromTeam(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "User " + paramUserUd + " was deleted succesfuly from team: " + paramTeamId,
+		"message": "User " + paramUserID + " was deleted succesfuly from team: " + paramTeamId,
 	})
 
 }
@@ -325,7 +327,7 @@ func (m *Module) DeleteUserFromTeam(c *gin.Context) {
 // @Param request body CreateTeamGameRequest true "Team Game info"
 // @Success 200 {object} map[string]string
 // @Failure 400 {object} map[string]string
-// @Router /teams/{id}/games [post]
+// @Router /api/v1/teams/{id}/games [post]
 func (m *Module) CreateTeamGame(c *gin.Context) {
 	userID := c.MustGet(middleware.ContextUserID).(int64)
 	globalRole := c.MustGet(middleware.ContextRoles).([]string)
@@ -336,8 +338,9 @@ func (m *Module) CreateTeamGame(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, response.ResponseError{
 			Error: "Invalid Request" + err.Error(),
 		})
+		return
 	}
-	if err := m.service.AddTeamGame(c, paramTeamId, userID, globalRole, req); err != nil {
+	if err := m.service.AddTeamGame(c.Request.Context(), paramTeamId, userID, globalRole, req); err != nil {
 		if errors.Is(err, rules.ErrUserNotMember) {
 			c.JSON(http.StatusNotFound, response.ResponseError{
 				Error: err.Error(),

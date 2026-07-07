@@ -1,6 +1,9 @@
 package config
 
-import "os"
+import (
+	"errors"
+	"os"
+)
 
 type Config struct {
 	DataBaseURL string
@@ -13,10 +16,11 @@ type Config struct {
 	SMTPFrom    string
 	BaseURL     string
 	FrontendURL string
+	CORSOrigin  string
 }
 
-func Load() *Config {
-	return &Config{
+func Load() (*Config, error) {
+	cfg := &Config{
 		DataBaseURL: os.Getenv("DATABASE_URL"),
 		ServerPort:  os.Getenv("SERVER_PORT"),
 		JWTSecret:   os.Getenv("JWT_SECRET"),
@@ -27,5 +31,18 @@ func Load() *Config {
 		SMTPFrom:    os.Getenv("SMTP_FROM"),
 		BaseURL:     os.Getenv("BASE_URL"),
 		FrontendURL: os.Getenv("FRONTEND_URL"),
+		CORSOrigin:  os.Getenv("CORS_ORIGIN"),
 	}
+
+	if cfg.DataBaseURL == "" {
+		return nil, errors.New("DATABASE_URL is required")
+	}
+	if cfg.JWTSecret == "" {
+		return nil, errors.New("JWT_SECRET is required")
+	}
+	if cfg.ServerPort == "" {
+		cfg.ServerPort = "8080"
+	}
+
+	return cfg, nil
 }
