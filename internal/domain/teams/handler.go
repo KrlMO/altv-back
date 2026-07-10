@@ -13,7 +13,8 @@ import (
 )
 
 func (m *Module) RegisterRoutes(r *gin.Engine, jwtSecret string) {
-	teams := r.Group("/api/v1/teams")
+	v1 := r.Group("/api/v1")
+	teams := v1.Group("/teams")
 	{
 		teams.GET("/:id", m.GetTeamByID)
 		teams.GET("/", m.GetTeams)
@@ -25,6 +26,7 @@ func (m *Module) RegisterRoutes(r *gin.Engine, jwtSecret string) {
 			auth.PATCH("/:id/members/:userId", m.UpdateTeamMemberRole)
 			auth.DELETE("/:id/members/:userId", m.DeleteUserFromTeam)
 			auth.POST("/:id/games", m.CreateTeamGame)
+			auth.GET("/my", m.GetMyTeams)
 		}
 	}
 }
@@ -59,6 +61,23 @@ func (m *Module) Register(c *gin.Context) {
 	}
 
 	c.JSON(201, gin.H{"message": "team registered"})
+}
+
+func (m *Module) GetMyTeams(c *gin.Context) {
+	userID := c.MustGet(middleware.ContextUserID).(int64)
+	globalRoles := c.MustGet(middleware.ContextRoles).([]string)
+
+	teams, err := m.service.GetMyTeams(c.Request.Context(), userID, globalRoles)
+	if err != nil {
+		c.JSON(500, response.ResponseError{
+			Error: "Internal error: " + err.Error(),
+		})
+		return
+	}
+
+	c.JSON(200, response.ResponseOk[[]MyTeamListItem]{
+		Data: teams,
+	})
 }
 
 // GetTeamByID godoc

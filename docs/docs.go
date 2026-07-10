@@ -2079,9 +2079,6 @@ const docTemplate = `{
                 "logo_path": {
                     "type": "string"
                 },
-                "name": {
-                    "type": "string"
-                },
                 "region_iso": {
                     "type": "string"
                 },

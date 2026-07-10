@@ -13,13 +13,12 @@ type TeamGame struct {
 }
 
 type TeamGameListItem struct {
-	ID           int64          `db:"id"`
-	Name         string         `db:"name"`
-	LogoPath     sql.NullString `db:"logo_path"`
-	TeamName     string         `db:"team_name"`
-	GameName     string         `db:"game_name"`
-	RegionName   sql.NullString `db:"region_name"`
-	RegionISO    sql.NullString `db:"region_iso"`
-	CountryName  sql.NullString `db:"country_name"`
-	CreatedAt    sql.NullTime   `db:"created_at"`
+	ID          int64          `db:"id"`
+	LogoPath    sql.NullString `db:"logo_path"`
+	TeamName    string         `db:"team_name"`
+	GameName    string         `db:"game_name"`
+	RegionName  sql.NullString `db:"region_name"`
+	RegionISO   sql.NullString `db:"region_iso"`
+	CountryName sql.NullString `db:"country_name"`
+	CreatedAt   sql.NullTime   `db:"created_at"`
 }

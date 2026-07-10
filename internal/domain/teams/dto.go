@@ -60,3 +60,11 @@ type CreateTeamGameRequest struct {
 	BannerPath *string `json:"banner_path" binding:"omitempty"`
 	Active     bool    `json:"active" binding:"omitempty"`
 }
+
+type MyTeamListItem struct {
+	ID         int64   `json:"id"`
+	Name       string  `json:"name"`
+	Tag        string  `json:"tag"`
+	LogoPath   *string `json:"logo_path"`
+	MemberRole string  `json:"member_role"`
+}

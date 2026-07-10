@@ -206,7 +206,6 @@ func (s *Service) ListTeamGames(
 	for _, item := range items {
 		resp := TeamGameListItemResponse{
 			ID:       item.ID,
-			Name:     item.Name,
 			TeamName: item.TeamName,
 			GameName: item.GameName,
 		}

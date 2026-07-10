@@ -403,6 +403,43 @@ func (r *Repository) GetGameBySlug(
 	return gameId, nil
 }
 
+func (r *Repository) GetMyTeams(ctx context.Context, userId int64, globalRoles []string) ([]MyTeamListItem, error) {
+	query := `
+		SELECT DISTINCT
+			t.id,
+			t.name,
+			t.tag,
+			t.logo_path,
+			tr.name AS member_role
+		FROM al_team t
+		JOIN al_user_team_role utr ON utr.team_id = t.id
+		JOIN al_team_role tr ON tr.id = utr.role_id
+		WHERE utr.user_id = $1
+		ORDER BY t.id
+	`
+
+	rows, err := r.db.Query(ctx, query, userId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var teams []MyTeamListItem
+	for rows.Next() {
+		var t MyTeamListItem
+		if err := rows.Scan(&t.ID, &t.Name, &t.Tag, &t.LogoPath, &t.MemberRole); err != nil {
+			return nil, err
+		}
+		teams = append(teams, t)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return teams, nil
+}
+
 func (r *Repository) CreateTeamGame(
 	ctx context.Context,
 	teamId, createdBy int64,

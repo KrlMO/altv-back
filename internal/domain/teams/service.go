@@ -22,6 +22,7 @@ type TeamRepository interface {
 	DeleteUserFromTeam(ctx context.Context, userId, teamId, assignedBy int64) error
 	GetGameBySlug(ctx context.Context, gameSlug string) (int32, error)
 	CreateTeamGame(ctx context.Context, teamId, createdBy int64, gameId int32, nameTeamGame, logoPath, bannerPath string) error
+	GetMyTeams(ctx context.Context, userId int64, globalRoles []string) ([]MyTeamListItem, error)
 }
 
 type Service struct {
@@ -352,4 +353,11 @@ func (s *Service) AddTeamGame(
 		return errors.New("Error creating Team Game: " + err.Error())
 	}
 	return s.repo.CreateTeamGame(ctx, parsedTeamID, tgc.Actor.ActorID, tgc.GameId, dto.Name, *dto.LogoPath, *dto.BannerPath)
+}
+
+func (s *Service) GetMyTeams(ctx context.Context, userId int64, globalRoles []string) ([]MyTeamListItem, error) {
+	if err := identity.CanInteractWithTeams(globalRoles); err != nil {
+		return nil, err
+	}
+	return s.repo.GetMyTeams(ctx, userId, globalRoles)
 }

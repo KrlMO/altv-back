@@ -571,7 +571,7 @@ func (r *Repository) FilterTeamGames(
 	argIdx := 1
 
 	if filter.Name != nil && *filter.Name != "" {
-		where = append(where, fmt.Sprintf("tg.name ILIKE '%%' || $%d || '%%'", argIdx))
+		where = append(where, fmt.Sprintf("t.name ILIKE '%%' || $%d || '%%'", argIdx))
 		args = append(args, *filter.Name)
 		argIdx++
 	}
@@ -596,6 +596,7 @@ func (r *Repository) FilterTeamGames(
 	countQuery := fmt.Sprintf(`
 		SELECT COUNT(*)
 		FROM al_team_game tg
+		JOIN al_team t ON tg.team_id = t.id
 		WHERE %s
 	`, whereClause)
 
@@ -609,9 +610,9 @@ func (r *Repository) FilterTeamGames(
 	if filter.SortBy != nil {
 		switch *filter.SortBy {
 		case "name_asc":
-			orderBy = "tg.name ASC"
+			orderBy = "t.name ASC"
 		case "name_desc":
-			orderBy = "tg.name DESC"
+			orderBy = "t.name DESC"
 		case "newest":
 			orderBy = "tg.created_at DESC"
 		case "oldest":
@@ -623,8 +624,7 @@ func (r *Repository) FilterTeamGames(
 	query := fmt.Sprintf(`
 		SELECT
 			tg.id,
-			tg.name,
-			tg.logo_path,
+			t.logo_path,
 			t.name AS team_name,
 			g.name AS game_name,
 			r.name AS region_name,
@@ -654,7 +654,6 @@ func (r *Repository) FilterTeamGames(
 		var item TeamGameListItem
 		if err := rows.Scan(
 			&item.ID,
-			&item.Name,
 			&item.LogoPath,
 			&item.TeamName,
 			&item.GameName,

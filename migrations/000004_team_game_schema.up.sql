@@ -30,10 +30,7 @@ CREATE TABLE al_team_game (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     team_id BIGINT NOT NULL,
     game_id INT NOT NULL,
-
-    name VARCHAR(150) NOT NULL,
-    logo_path TEXT,
-    banner_path TEXT,
+    
     active BOOLEAN DEFAULT true,
 
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),

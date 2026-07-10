@@ -35,7 +35,6 @@ type TeamGameListFilter struct {
 
 type TeamGameListItemResponse struct {
 	ID          int64      `json:"id"`
-	Name        string     `json:"name"`
 	LogoPath    *string    `json:"logo_path"`
 	TeamName    string     `json:"team_name"`
 	GameName    string     `json:"game_name"`
@@ -47,5 +46,5 @@ type TeamGameListItemResponse struct {
 
 type TeamGameListSuccessResponse struct {
 	Data dto.PaginatedResponse[TeamGameListItemResponse] `json:"data"`
-	Msg  string                                           `json:"msg"`
+	Msg  string                                          `json:"msg"`
 }
