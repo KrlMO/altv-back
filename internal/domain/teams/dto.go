@@ -9,7 +9,6 @@ type RegisterTeamRequest struct {
 	LogoPath    string `json:"logo_path" binding:"omitempty"`
 	BannerPath  string `json:"banner_path" binding:"omitempty"`
 	CountryId   int32  `json:"country_id" binding:"required"`
-	IsVirtual   bool   `json:"is_virtual" binding:"omitempty"`
 }
 
 type TeamResponse struct {
@@ -61,10 +60,29 @@ type CreateTeamGameRequest struct {
 	Active     bool    `json:"active" binding:"omitempty"`
 }
 
-type MyTeamListItem struct {
+type MyTeamListItemDto struct {
 	ID         int64   `json:"id"`
 	Name       string  `json:"name"`
 	Tag        string  `json:"tag"`
-	LogoPath   *string `json:"logo_path"`
+	Logo       *string `json:"logo"`
 	MemberRole string  `json:"member_role"`
+}
+
+type CreateTeamRequestDto struct {
+	Name        string            `json:"name" binding:"required,min=3,max=50"`
+	Tag         string            `json:"tag" binding:"required,min=2,max=15"`
+	Description *string           `json:"description" binding:"omitempty,max=500"`
+	CountryId   int32             `json:"country_id" binding:"required"`
+	Roasters    []RoasterEntryDto `json:"roasters" binding:"omitempty,dive"`
+}
+
+type RoasterEntryDto struct {
+	GameId  int32              `json:"game_id"`
+	Members []RoasterMemberDto `json:"members"`
+}
+
+type RoasterMemberDto struct {
+	UserID   int64  `json:"user_id"`
+	Role     string `json:"role"`
+	TeamRole string `json:"team_role"`
 }

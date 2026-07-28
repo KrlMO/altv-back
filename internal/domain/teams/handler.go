@@ -32,8 +32,8 @@ func (m *Module) RegisterRoutes(r *gin.Engine, jwtSecret string) {
 }
 
 // AddMemberToTeam godoc
-// @Summary Add a member to a team
-// @Description Adds a member to a team
+// @Summary Create a new team
+// @Description Create a new team
 // @Tags Teams
 // @Accept json
 // @Produce json
@@ -75,7 +75,7 @@ func (m *Module) GetMyTeams(c *gin.Context) {
 		return
 	}
 
-	c.JSON(200, response.ResponseOk[[]MyTeamListItem]{
+	c.JSON(200, response.ResponseOk[[]MyTeamListItemDto]{
 		Data: teams,
 	})
 }

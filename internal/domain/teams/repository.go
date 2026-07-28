@@ -28,9 +28,9 @@ func (r *Repository) CreateTeam(ctx context.Context, t Team) error {
 
 	err = tx.QueryRow(ctx, `
 		INSERT INTO al_team
-		(name, tag, description, logo_path, banner_path, country_id, is_virtual, active, created_by, updated_by, created_at, updated_at)
+		(name, tag, description, logo_path, banner_path, country_id, active, created_by, updated_by, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW()) returning id
-	`, t.Name, t.Tag, t.Description, t.LogoPath, t.BannerPath, t.CountryId, t.IsVirtual, t.Active, t.CreatedBy, t.UpdatedBy).Scan(&t.ID)
+	`, t.Name, t.Tag, t.Description, t.LogoPath, t.BannerPath, t.CountryId, t.Active, t.CreatedBy, t.UpdatedBy).Scan(&t.ID)
 	if err != nil {
 		return err
 	}
@@ -100,7 +100,6 @@ func (r *Repository) GetTeamByID(ctx context.Context, teamID string) (*TeamReadM
 		&t.Team.LogoPath,
 		&t.Team.BannerPath,
 		&t.Team.CountryId,
-		&t.Team.IsVirtual,
 		&t.Team.Active,
 		&t.Country.ID,
 		&t.Country.Name,
@@ -176,7 +175,6 @@ func (r *Repository) GetTeams(ctx context.Context, filter TeamFilter) ([]TeamRea
 			&t.Team.Description,
 			&t.Team.LogoPath,
 			&t.Team.CountryId,
-			&t.Team.IsVirtual,
 			&t.Team.Active,
 
 			&t.Country.ID,
@@ -206,7 +204,6 @@ func (r *Repository) UpdateTeam(ctx context.Context, t Team) error {
 	b.AddConditionalField("logo_path", t.LogoPath, t.LogoPath != "")
 	b.AddConditionalField("banner_path", t.BannerPath, t.BannerPath != "")
 	b.AddConditionalField("country_id", t.CountryId, t.CountryId != 0)
-	b.AddField("is_virtual", t.IsVirtual)
 	b.AddField("updated_by", t.UpdatedBy)
 
 	if b.IsEmpty() {
@@ -423,6 +420,10 @@ func (r *Repository) GetMyTeams(ctx context.Context, userId int64, globalRoles [
 		return nil, err
 	}
 	defer rows.Close()
+
+	if rows == nil {
+		return nil, nil
+	}
 
 	var teams []MyTeamListItem
 	for rows.Next() {

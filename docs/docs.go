@@ -903,7 +903,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Adds a member to a team",
+                "description": "Create a new team",
                 "consumes": [
                     "application/json"
                 ],
@@ -913,7 +913,7 @@ const docTemplate = `{
                 "tags": [
                     "Teams"
                 ],
-                "summary": "Add a member to a team",
+                "summary": "Create a new team",
                 "parameters": [
                     {
                         "description": "Team info",
@@ -1553,6 +1553,47 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/users/search": {
+            "get": {
+                "description": "Searches for users based on a query string. Returns a list of matching users.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Search users",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Search query",
+                        "name": "q",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseOk-array_internal_domain_users_UserSearchResult"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/users/{id}": {
             "delete": {
                 "security": [
@@ -1837,6 +1878,20 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/internal_domain_regions.RegionResponse"
+                    }
+                },
+                "msg": {
+                    "type": "string"
+                }
+            }
+        },
+        "arena_pkg_response.ResponseOk-array_internal_domain_users_UserSearchResult": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_domain_users.UserSearchResult"
                     }
                 },
                 "msg": {
@@ -2211,9 +2266,6 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 500
                 },
-                "is_virtual": {
-                    "type": "boolean"
-                },
                 "logo_path": {
                     "type": "string"
                 },
@@ -2379,6 +2431,32 @@ const docTemplate = `{
                 "banner_photo": {
                     "type": "string"
                 },
+                "birth_date": {
+                    "type": "string"
+                },
+                "country": {
+                    "$ref": "#/definitions/arena_pkg_dto.CountryResponse"
+                },
+                "first_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "last_name": {
+                    "type": "string"
+                },
+                "nickname": {
+                    "type": "string"
+                },
+                "profile_photo": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_domain_users.UserSearchResult": {
+            "type": "object",
+            "properties": {
                 "birth_date": {
                     "type": "string"
                 },

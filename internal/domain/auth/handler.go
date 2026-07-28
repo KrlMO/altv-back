@@ -68,6 +68,12 @@ func (m *Module) LoginLocal(c *gin.Context) {
 			})
 			return
 		}
+		if errors.Is(err, rules.ErrEmailNotVerified) {
+			c.JSON(http.StatusForbidden, response.ResponseError{
+				Error: "email not verified",
+			})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, response.ResponseError{
 			Error: "internal server error",
 		})

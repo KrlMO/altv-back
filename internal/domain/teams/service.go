@@ -58,7 +58,6 @@ func (s *Service) RegisterTeam(ctx context.Context, userID int64, globalRoles []
 		LogoPath:    dto.LogoPath,
 		BannerPath:  dto.BannerPath,
 		CountryId:   dto.CountryId,
-		IsVirtual:   dto.IsVirtual,
 		Active:      true,
 		CreatedBy:   userID,
 		UpdatedBy:   userID,
@@ -87,8 +86,7 @@ func (s *Service) GetTeamByID(ctx context.Context, teamID string) (*TeamResponse
 			Name:     t.Country.Name,
 			FlagPath: flag,
 		},
-		IsVirtual: t.Team.IsVirtual,
-		Active:    t.Team.Active,
+		Active: t.Team.Active,
 	}
 	return team, nil
 }
@@ -117,8 +115,7 @@ func (s *Service) GetTeams(ctx context.Context, filter TeamFilter) (dto.Paginate
 				Name:     t.Country.Name,
 				FlagPath: flag,
 			},
-			IsVirtual: t.Team.IsVirtual,
-			Active:    t.Team.Active,
+			Active: t.Team.Active,
 		}
 		result = append(result, team)
 	}
@@ -180,10 +177,6 @@ func (s *Service) PatchUpdateTeam(ctx context.Context, userId int64, globalRoles
 			return errors.New("invalid country")
 		}
 		t.CountryId = *dto.CountryId
-	}
-
-	if dto.IsVirtual != nil {
-		t.IsVirtual = *dto.IsVirtual
 	}
 
 	t.UpdatedBy = userId
@@ -355,9 +348,27 @@ func (s *Service) AddTeamGame(
 	return s.repo.CreateTeamGame(ctx, parsedTeamID, tgc.Actor.ActorID, tgc.GameId, dto.Name, *dto.LogoPath, *dto.BannerPath)
 }
 
-func (s *Service) GetMyTeams(ctx context.Context, userId int64, globalRoles []string) ([]MyTeamListItem, error) {
+func (s *Service) GetMyTeams(ctx context.Context, userId int64, globalRoles []string) ([]MyTeamListItemDto, error) {
 	if err := identity.CanInteractWithTeams(globalRoles); err != nil {
 		return nil, err
 	}
-	return s.repo.GetMyTeams(ctx, userId, globalRoles)
+	teams, err := s.repo.GetMyTeams(ctx, userId, globalRoles)
+	if err != nil {
+		return nil, err
+	}
+
+	if teams == nil {
+		return []MyTeamListItemDto{}, nil
+	}
+
+	var result []MyTeamListItemDto
+	for _, t := range teams {
+		result = append(result, MyTeamListItemDto{
+			ID:   t.ID,
+			Name: t.Name,
+			Tag:  t.Tag,
+			Logo: t.LogoPath,
+		})
+	}
+	return result, nil
 }

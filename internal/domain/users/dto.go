@@ -57,3 +57,13 @@ type PatchUserProfileRequest struct {
 	ProfilePhoto *string `json:"profile_photo"`
 	BannerPhoto  *string `json:"banner_photo"`
 }
+
+type UserSearchResult struct {
+	ID           int64               `json:"id"`
+	FirstName    string              `json:"first_name"`
+	LastName     string              `json:"last_name"`
+	NickName     string              `json:"nickname"`
+	ProfilePhoto string              `json:"profile_photo"`
+	BirthDate    string              `json:"birth_date"`
+	Country      dto.CountryResponse `json:"country"`
+}

@@ -24,6 +24,7 @@ type UserRepository interface {
 	DeactivateUser(ctx context.Context, userID int64) error
 	ActivateUser(ctx context.Context, userID int64) error
 	SoftDeleteUser(ctx context.Context, userID int64) error
+	SearchUsers(ctx context.Context, query string) ([]UserSearchResult, error)
 }
 
 type Service struct {
@@ -315,4 +316,8 @@ func (s *Service) SoftDeleteUser(ctx context.Context, userID int64) error {
 
 func (s *Service) SelfDelete(ctx context.Context, userID int64) error {
 	return s.repo.SoftDeleteUser(ctx, userID)
+}
+
+func (s *Service) SearchUsers(ctx context.Context, query string) ([]UserSearchResult, error) {
+	return s.repo.SearchUsers(ctx, query)
 }
