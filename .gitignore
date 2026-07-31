@@ -39,3 +39,4 @@ coverage.*
 # Editor/IDE
 # .idea/
 # .vscode/
+__debug_bin*

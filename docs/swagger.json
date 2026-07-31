@@ -2104,10 +2104,12 @@
             "type": "object",
             "properties": {
                 "teamGameRoleID": {
-                    "type": "integer"
+                    "type": "integer",
+                    "format": "int32"
                 },
                 "userID": {
-                    "type": "integer"
+                    "type": "integer",
+                    "format": "int64"
                 }
             }
         },
@@ -2161,7 +2163,8 @@
                     }
                 },
                 "userID": {
-                    "type": "integer"
+                    "type": "integer",
+                    "format": "int64"
                 }
             }
         },
@@ -2169,7 +2172,8 @@
             "type": "object",
             "properties": {
                 "id": {
-                    "type": "integer"
+                    "type": "integer",
+                    "format": "int32"
                 },
                 "name": {
                     "type": "string"

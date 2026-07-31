@@ -244,8 +244,10 @@ definitions:
   internal_domain_team_games.ReqTeamGameMember:
     properties:
       teamGameRoleID:
+        format: int32
         type: integer
       userID:
+        format: int64
         type: integer
     type: object
   internal_domain_team_games.TeamGameListItemResponse:
@@ -281,11 +283,13 @@ definitions:
           $ref: '#/definitions/internal_domain_team_games.TeamGameRoleDto'
         type: array
       userID:
+        format: int64
         type: integer
     type: object
   internal_domain_team_games.TeamGameRoleDto:
     properties:
       id:
+        format: int32
         type: integer
       name:
         type: string
