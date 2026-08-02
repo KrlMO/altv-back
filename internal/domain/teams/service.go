@@ -6,13 +6,24 @@ import (
 	"arena/internal/shared"
 	"arena/pkg/dto"
 	grules "arena/pkg/global_rules"
+	"arena/pkg/storage"
 	"context"
 	"errors"
+	"mime/multipart"
+	"net/http"
 	"strconv"
 )
 
+var allowedImageTypes = map[string]string{
+	"image/png":  ".png",
+	"image/jpeg": ".jpg",
+	"image/webp": ".webp",
+}
+
+const maxImageSize = 5 * 1024 * 1024
+
 type TeamRepository interface {
-	CreateTeam(ctx context.Context, t Team) error
+	CreateTeam(ctx context.Context, t Team) (int64, error)
 	GetTeamByID(ctx context.Context, teamID string) (*TeamReadModel, error)
 	GetTeams(ctx context.Context, filter TeamFilter) ([]TeamReadModel, int64, error)
 	UpdateTeam(ctx context.Context, t Team) error
@@ -23,64 +34,81 @@ type TeamRepository interface {
 	GetGameBySlug(ctx context.Context, gameSlug string) (int32, error)
 	CreateTeamGame(ctx context.Context, teamId, createdBy int64, gameId int32, nameTeamGame, logoPath, bannerPath string) error
 	GetMyTeams(ctx context.Context, userId int64, globalRoles []string) ([]MyTeamListItem, error)
+	GetUserTeamCount(ctx context.Context, userId int64) (int, error)
 }
 
 type Service struct {
 	repo       TeamRepository
 	sharedRepo *shared.SharedRepository
+	storage    storage.Storage
 }
 
-func NewService(repo TeamRepository, sharedRepo *shared.SharedRepository) *Service {
-	return &Service{repo: repo, sharedRepo: sharedRepo}
+func NewService(repo TeamRepository, sharedRepo *shared.SharedRepository, mediaStorage storage.Storage) *Service {
+	return &Service{repo: repo, sharedRepo: sharedRepo, storage: mediaStorage}
 }
 
-func (s *Service) RegisterTeam(ctx context.Context, userID int64, globalRoles []string, dto RegisterTeamRequest) error {
-	if identity.IsOrc(globalRoles) {
-		return errors.New("User cannot create a team, user is banned from creating teams")
+func validateTeamImage(fh *multipart.FileHeader, field string) (string, error) {
+	if fh == nil {
+		return "", nil
 	}
-
-	err := ValidateTeamCreateOrUpdate(dto.Name, dto.Tag, dto.Description, dto.LogoPath, dto.BannerPath)
+	if fh.Size > maxImageSize {
+		return "", errors.New("The " + field + " image cannot exceed 5MB")
+	}
+	f, err := fh.Open()
 	if err != nil {
-		return err
+		return "", err
 	}
+	defer f.Close()
 
-	exists, err := s.sharedRepo.CountryExists(ctx, dto.CountryId)
-	if err != nil {
-		return err
+	buf := make([]byte, 512)
+	n, _ := f.Read(buf)
+	contentType := http.DetectContentType(buf[:n])
+	ext, ok := allowedImageTypes[contentType]
+	if !ok {
+		return "", errors.New("The " + field + " image must be PNG, JPEG or WEBP")
 	}
-	if !exists {
-		return errors.New("Country does not exist")
-	}
-	t := Team{
-		Name:        dto.Name,
-		Tag:         dto.Tag,
-		Description: dto.Description,
-		LogoPath:    dto.LogoPath,
-		BannerPath:  dto.BannerPath,
-		CountryId:   dto.CountryId,
-		Active:      true,
-		CreatedBy:   userID,
-		UpdatedBy:   userID,
-	}
-	return s.repo.CreateTeam(ctx, t)
+	return ext, nil
 }
 
-func (s *Service) GetTeamByID(ctx context.Context, teamID string) (*TeamResponse, error) {
-	t, err := s.repo.GetTeamByID(ctx, teamID)
+func (s *Service) saveTeamImage(ctx context.Context, fh *multipart.FileHeader, folder, field string) (string, error) {
+	ext, err := validateTeamImage(fh, field)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
+	filename := storage.RandomFilename(ext)
+
+	f, err := fh.Open()
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	if err := s.storage.Save(ctx, folder, filename, f, fh.Size, fh.Header.Get("Content-Type")); err != nil {
+		return "", err
+	}
+	return filename, nil
+}
+
+func (s *Service) toTeamResponse(t *TeamReadModel) *TeamResponse {
 	flag := ""
 	if t.Country.FlagPath.Valid {
 		flag = t.Country.FlagPath.String
 	}
-	team := &TeamResponse{
+	logo := ""
+	if t.Team.LogoKey != "" {
+		logo = s.storage.URL(storage.FolderTeamsLogo, t.Team.LogoKey)
+	}
+	banner := ""
+	if t.Team.BannerKey != "" {
+		banner = s.storage.URL(storage.FolderTeamsBanner, t.Team.BannerKey)
+	}
+	return &TeamResponse{
 		ID:          t.Team.ID,
 		Name:        t.Team.Name,
 		Tag:         t.Team.Tag,
 		Description: t.Team.Description,
-		LogoPath:    t.Team.LogoPath,
-		BannerPath:  t.Team.BannerPath,
+		Logo:        logo,
+		Banner:      banner,
 		Country: dto.CountryResponse{
 			ID:       t.Country.ID,
 			Name:     t.Country.Name,
@@ -88,7 +116,83 @@ func (s *Service) GetTeamByID(ctx context.Context, teamID string) (*TeamResponse
 		},
 		Active: t.Team.Active,
 	}
-	return team, nil
+}
+
+func (s *Service) RegisterTeam(ctx context.Context, userID int64, globalRoles []string, dto *CreateTeamRequestDto) (*TeamResponse, error) {
+	if identity.IsOrc(globalRoles) {
+		return nil, errors.New("User cannot create a team, user is banned from creating teams")
+	}
+
+	if !identity.IsIluvatarOrAinur(globalRoles) {
+		teamCount, err := s.repo.GetUserTeamCount(ctx, userID)
+		if err != nil {
+			return nil, err
+		}
+		if teamCount >= 1 {
+			return nil, errors.New("User already has a team, cannot create another one")
+		}
+	}
+
+	description := ""
+	if dto.Description != nil {
+		description = *dto.Description
+	}
+
+	if err := ValidateTeamCreateOrUpdate(dto.Name, dto.Tag, description); err != nil {
+		return nil, err
+	}
+
+	exists, err := s.sharedRepo.CountryExists(ctx, dto.CountryId)
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		return nil, errors.New("Country does not exist")
+	}
+
+	t := Team{
+		Name:        dto.Name,
+		Tag:         dto.Tag,
+		Description: description,
+		CountryId:   dto.CountryId,
+		Active:      true,
+		CreatedBy:   userID,
+		UpdatedBy:   userID,
+	}
+
+	if dto.Logo != nil {
+		filename, err := s.saveTeamImage(ctx, dto.Logo, storage.FolderTeamsLogo, "logo")
+		if err != nil {
+			return nil, err
+		}
+		t.LogoKey = filename
+	}
+	if dto.Banner != nil {
+		filename, err := s.saveTeamImage(ctx, dto.Banner, storage.FolderTeamsBanner, "banner")
+		if err != nil {
+			return nil, err
+		}
+		t.BannerKey = filename
+	}
+
+	teamID, err := s.repo.CreateTeam(ctx, t)
+	if err != nil {
+		return nil, err
+	}
+
+	created, err := s.repo.GetTeamByID(ctx, strconv.FormatInt(teamID, 10))
+	if err != nil {
+		return nil, err
+	}
+	return s.toTeamResponse(created), nil
+}
+
+func (s *Service) GetTeamByID(ctx context.Context, teamID string) (*TeamResponse, error) {
+	t, err := s.repo.GetTeamByID(ctx, teamID)
+	if err != nil {
+		return nil, err
+	}
+	return s.toTeamResponse(t), nil
 }
 
 func (s *Service) GetTeams(ctx context.Context, filter TeamFilter) (dto.PaginatedResponse[TeamResponse], error) {
@@ -99,25 +203,7 @@ func (s *Service) GetTeams(ctx context.Context, filter TeamFilter) (dto.Paginate
 
 	result := make([]TeamResponse, 0, len(teams))
 	for _, t := range teams {
-		flag := ""
-		if t.Country.FlagPath.Valid {
-			flag = t.Country.FlagPath.String
-		}
-		team := TeamResponse{
-			ID:          t.Team.ID,
-			Name:        t.Team.Name,
-			Tag:         t.Team.Tag,
-			Description: t.Team.Description,
-			LogoPath:    t.Team.LogoPath,
-			BannerPath:  t.Team.BannerPath,
-			Country: dto.CountryResponse{
-				ID:       t.Country.ID,
-				Name:     t.Country.Name,
-				FlagPath: flag,
-			},
-			Active: t.Team.Active,
-		}
-		result = append(result, team)
+		result = append(result, *s.toTeamResponse(&t))
 	}
 	response := dto.PaginatedResponse[TeamResponse]{
 		Data: result,
@@ -149,7 +235,12 @@ func (s *Service) PatchUpdateTeam(ctx context.Context, userId int64, globalRoles
 		return errors.New("user does not have permission to update this team or is not an administrator")
 	}
 
-	if err := ValidateTeamPatch(dto.Name, dto.Tag, dto.Description, dto.LogoPath, dto.BannerPath); err != nil {
+	current, err := s.repo.GetTeamByID(ctx, teamId)
+	if err != nil {
+		return errors.New("Error fetching team: " + err.Error())
+	}
+
+	if err := ValidateTeamPatch(dto.Name, dto.Tag, dto.Description); err != nil {
 		return err
 	}
 
@@ -162,12 +253,6 @@ func (s *Service) PatchUpdateTeam(ctx context.Context, userId int64, globalRoles
 	if dto.Description != nil {
 		t.Description = *dto.Description
 	}
-	if dto.LogoPath != nil {
-		t.LogoPath = *dto.LogoPath
-	}
-	if dto.BannerPath != nil {
-		t.BannerPath = *dto.BannerPath
-	}
 	if dto.CountryId != nil {
 		exists, err := s.sharedRepo.CountryExists(ctx, *dto.CountryId)
 		if err != nil {
@@ -177,6 +262,26 @@ func (s *Service) PatchUpdateTeam(ctx context.Context, userId int64, globalRoles
 			return errors.New("invalid country")
 		}
 		t.CountryId = *dto.CountryId
+	}
+	if dto.Logo != nil {
+		filename, err := s.saveTeamImage(ctx, dto.Logo, storage.FolderTeamsLogo, "logo")
+		if err != nil {
+			return err
+		}
+		t.LogoKey = filename
+		if current.Team.LogoKey != "" {
+			_ = s.storage.Delete(ctx, storage.FolderTeamsLogo, current.Team.LogoKey)
+		}
+	}
+	if dto.Banner != nil {
+		filename, err := s.saveTeamImage(ctx, dto.Banner, storage.FolderTeamsBanner, "banner")
+		if err != nil {
+			return err
+		}
+		t.BannerKey = filename
+		if current.Team.BannerKey != "" {
+			_ = s.storage.Delete(ctx, storage.FolderTeamsBanner, current.Team.BannerKey)
+		}
 	}
 
 	t.UpdatedBy = userId
@@ -363,11 +468,17 @@ func (s *Service) GetMyTeams(ctx context.Context, userId int64, globalRoles []st
 
 	var result []MyTeamListItemDto
 	for _, t := range teams {
+		var logo *string
+		if t.LogoKey != nil {
+			u := s.storage.URL(storage.FolderTeamsLogo, *t.LogoKey)
+			logo = &u
+		}
 		result = append(result, MyTeamListItemDto{
-			ID:   t.ID,
-			Name: t.Name,
-			Tag:  t.Tag,
-			Logo: t.LogoPath,
+			ID:         t.ID,
+			Name:       t.Name,
+			Tag:        t.Tag,
+			Logo:       logo,
+			MemberRole: t.MemberRole,
 		})
 	}
 	return result, nil

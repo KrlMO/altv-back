@@ -904,7 +904,7 @@ const docTemplate = `{
                 ],
                 "description": "Create a new team",
                 "consumes": [
-                    "application/json"
+                    "multipart/form-data"
                 ],
                 "produces": [
                     "application/json"
@@ -915,23 +915,50 @@ const docTemplate = `{
                 "summary": "Create a new team",
                 "parameters": [
                     {
-                        "description": "Team info",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/internal_domain_teams.RegisterTeamRequest"
-                        }
+                        "type": "string",
+                        "description": "Team name",
+                        "name": "name",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Team tag",
+                        "name": "tag",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Team description",
+                        "name": "description",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Country ID",
+                        "name": "country_id",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "file",
+                        "description": "Team logo image",
+                        "name": "logo",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "Team banner image",
+                        "name": "banner",
+                        "in": "formData"
                     }
                 ],
                 "responses": {
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/arena_pkg_response.ResponseOk-internal_domain_teams_TeamResponse"
                         }
                     },
                     "400": {
@@ -988,7 +1015,7 @@ const docTemplate = `{
                 ],
                 "description": "Updates the details of an existing team",
                 "consumes": [
-                    "application/json"
+                    "multipart/form-data"
                 ],
                 "produces": [
                     "application/json"
@@ -1006,13 +1033,40 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Updated team info",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/internal_domain_teams.PatchUpdateTeamRequest"
-                        }
+                        "type": "string",
+                        "description": "Team name",
+                        "name": "name",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Team tag",
+                        "name": "tag",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Team description",
+                        "name": "description",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Country ID",
+                        "name": "country_id",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "Team logo image",
+                        "name": "logo",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "Team banner image",
+                        "name": "banner",
+                        "in": "formData"
                     }
                 ],
                 "responses": {
@@ -1267,6 +1321,50 @@ const docTemplate = `{
                             "additionalProperties": {
                                 "type": "string"
                             }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/teams/{id}/team-games": {
+            "get": {
+                "description": "Get the list of team games belonging to a team",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Team Games"
+                ],
+                "summary": "List Team Games by Team",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Team ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseOk-array_internal_domain_team_games_TeamGameListItemResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
                         }
                     }
                 }
@@ -1884,6 +1982,20 @@ const docTemplate = `{
                 }
             }
         },
+        "arena_pkg_response.ResponseOk-array_internal_domain_team_games_TeamGameListItemResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_domain_team_games.TeamGameListItemResponse"
+                    }
+                },
+                "msg": {
+                    "type": "string"
+                }
+            }
+        },
         "arena_pkg_response.ResponseOk-array_internal_domain_users_UserSearchResult": {
             "type": "object",
             "properties": {
@@ -1914,6 +2026,17 @@ const docTemplate = `{
             "properties": {
                 "data": {
                     "$ref": "#/definitions/internal_domain_auth.VerifyEmailVerificationResponse"
+                },
+                "msg": {
+                    "type": "string"
+                }
+            }
+        },
+        "arena_pkg_response.ResponseOk-internal_domain_teams_TeamResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/internal_domain_teams.TeamResponse"
                 },
                 "msg": {
                     "type": "string"
@@ -2126,13 +2249,16 @@ const docTemplate = `{
                 "created_at": {
                     "type": "string"
                 },
+                "game_id": {
+                    "type": "integer"
+                },
                 "game_name": {
                     "type": "string"
                 },
                 "id": {
                     "type": "integer"
                 },
-                "logo_path": {
+                "logo": {
                     "type": "string"
                 },
                 "region_iso": {
@@ -2225,22 +2351,28 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_domain_teams.PatchUpdateTeamRequest": {
+        "internal_domain_teams.TeamResponse": {
             "type": "object",
             "properties": {
-                "banner_path": {
+                "active": {
+                    "type": "boolean"
+                },
+                "banner": {
                     "type": "string"
                 },
-                "country_id": {
-                    "type": "integer"
+                "country": {
+                    "$ref": "#/definitions/arena_pkg_dto.CountryResponse"
                 },
                 "description": {
                     "type": "string"
+                },
+                "id": {
+                    "type": "integer"
                 },
                 "is_virtual": {
                     "type": "boolean"
                 },
-                "logo_path": {
+                "logo": {
                     "type": "string"
                 },
                 "name": {
@@ -2248,39 +2380,6 @@ const docTemplate = `{
                 },
                 "tag": {
                     "type": "string"
-                }
-            }
-        },
-        "internal_domain_teams.RegisterTeamRequest": {
-            "type": "object",
-            "required": [
-                "country_id",
-                "name",
-                "tag"
-            ],
-            "properties": {
-                "banner_path": {
-                    "type": "string"
-                },
-                "country_id": {
-                    "type": "integer"
-                },
-                "description": {
-                    "type": "string",
-                    "maxLength": 500
-                },
-                "logo_path": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string",
-                    "maxLength": 50,
-                    "minLength": 3
-                },
-                "tag": {
-                    "type": "string",
-                    "maxLength": 15,
-                    "minLength": 2
                 }
             }
         },

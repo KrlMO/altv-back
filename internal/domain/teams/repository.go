@@ -19,25 +19,30 @@ func NewRepository(db *pgxpool.Pool) *Repository {
 	return &Repository{db: db}
 }
 
-func (r *Repository) CreateTeam(ctx context.Context, t Team) error {
+func (r *Repository) CreateTeam(ctx context.Context, t Team) (int64, error) {
 	tx, err := r.db.Begin(ctx)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	defer tx.Rollback(ctx)
 
 	err = tx.QueryRow(ctx, `
 		INSERT INTO al_team
-		(name, tag, description, logo_path, banner_path, country_id, active, created_by, updated_by, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW()) returning id
-	`, t.Name, t.Tag, t.Description, t.LogoPath, t.BannerPath, t.CountryId, t.Active, t.CreatedBy, t.UpdatedBy).Scan(&t.ID)
+		(name, tag, description, logo_key, banner_key, country_id, active, created_by, updated_by, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW()) returning id
+	`, t.Name, t.Tag, t.Description, t.LogoKey, t.BannerKey, t.CountryId, t.Active, t.CreatedBy, t.UpdatedBy).Scan(&t.ID)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	const teamRole = identity.RoleTeamOwner
-	err = r.InsertUserTeamRole(ctx, tx, t.CreatedBy, t.ID, t.CreatedBy, teamRole)
+	if err := r.InsertUserTeamRole(ctx, tx, t.CreatedBy, t.ID, t.CreatedBy, teamRole); err != nil {
+		return 0, err
+	}
 
-	return tx.Commit(ctx)
+	if err := tx.Commit(ctx); err != nil {
+		return 0, err
+	}
+	return t.ID, nil
 }
 
 func (r *Repository) InsertUserTeamRole(
@@ -86,8 +91,8 @@ func (r *Repository) GetTeamByID(ctx context.Context, teamID string) (*TeamReadM
 
 	err := r.db.QueryRow(ctx, `
 		SELECT
-			at.id, at.name, at.tag, at.description, at.logo_path, at.banner_path,
-			at.country_id, at.is_virtual, at.active,
+			at.id, at.name, at.tag, at.description, at.logo_key, at.banner_key,
+			at.country_id, at.active,
 			ac.id, ac.name, ac.iso_code, ac.flag_path
 		FROM al_team at
 		JOIN al_country ac ON at.country_id = ac.id
@@ -97,8 +102,8 @@ func (r *Repository) GetTeamByID(ctx context.Context, teamID string) (*TeamReadM
 		&t.Team.Name,
 		&t.Team.Tag,
 		&t.Team.Description,
-		&t.Team.LogoPath,
-		&t.Team.BannerPath,
+		&t.Team.LogoKey,
+		&t.Team.BannerKey,
 		&t.Team.CountryId,
 		&t.Team.Active,
 		&t.Country.ID,
@@ -119,9 +124,9 @@ func (r *Repository) GetTeams(ctx context.Context, filter TeamFilter) ([]TeamRea
 			t.name,
 			t.tag,
 			t.description,
-			t.logo_path,
+			t.logo_key,
+			t.banner_key,
 			t.country_id,
-			t.is_virtual,
 			t.active,
 
 			ac.id        AS country_id,
@@ -173,7 +178,8 @@ func (r *Repository) GetTeams(ctx context.Context, filter TeamFilter) ([]TeamRea
 			&t.Team.Name,
 			&t.Team.Tag,
 			&t.Team.Description,
-			&t.Team.LogoPath,
+			&t.Team.LogoKey,
+			&t.Team.BannerKey,
 			&t.Team.CountryId,
 			&t.Team.Active,
 
@@ -201,8 +207,8 @@ func (r *Repository) UpdateTeam(ctx context.Context, t Team) error {
 	b.AddConditionalField("name", t.Name, t.Name != "")
 	b.AddConditionalField("tag", t.Tag, t.Tag != "")
 	b.AddConditionalField("description", t.Description, t.Description != "")
-	b.AddConditionalField("logo_path", t.LogoPath, t.LogoPath != "")
-	b.AddConditionalField("banner_path", t.BannerPath, t.BannerPath != "")
+	b.AddConditionalField("logo_key", t.LogoKey, t.LogoKey != "")
+	b.AddConditionalField("banner_key", t.BannerKey, t.BannerKey != "")
 	b.AddConditionalField("country_id", t.CountryId, t.CountryId != 0)
 	b.AddField("updated_by", t.UpdatedBy)
 
@@ -406,7 +412,7 @@ func (r *Repository) GetMyTeams(ctx context.Context, userId int64, globalRoles [
 			t.id,
 			t.name,
 			t.tag,
-			t.logo_path,
+			t.logo_key,
 			tr.name AS member_role
 		FROM al_team t
 		JOIN al_user_team_role utr ON utr.team_id = t.id
@@ -428,7 +434,7 @@ func (r *Repository) GetMyTeams(ctx context.Context, userId int64, globalRoles [
 	var teams []MyTeamListItem
 	for rows.Next() {
 		var t MyTeamListItem
-		if err := rows.Scan(&t.ID, &t.Name, &t.Tag, &t.LogoPath, &t.MemberRole); err != nil {
+		if err := rows.Scan(&t.ID, &t.Name, &t.Tag, &t.LogoKey, &t.MemberRole); err != nil {
 			return nil, err
 		}
 		teams = append(teams, t)
@@ -439,6 +445,21 @@ func (r *Repository) GetMyTeams(ctx context.Context, userId int64, globalRoles [
 	}
 
 	return teams, nil
+}
+
+func (r *Repository) GetUserTeamCount(ctx context.Context, userId int64) (int, error) {
+	query := `
+		SELECT COUNT(*)
+		FROM al_team
+		WHERE created_by = $1
+	`
+
+	var count int
+	if err := r.db.QueryRow(ctx, query, userId).Scan(&count); err != nil {
+		return 0, err
+	}
+
+	return count, nil
 }
 
 func (r *Repository) CreateTeamGame(

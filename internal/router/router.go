@@ -12,6 +12,7 @@ import (
 	"arena/internal/infrastructure/mail"
 	"arena/internal/shared"
 	"arena/pkg/middleware"
+	"arena/pkg/storage"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -36,6 +37,11 @@ func SetupRouter(db *pgxpool.Pool, cfg *config.Config) *gin.Engine {
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
+	// LOCAL MEDIA
+	if cfg.StorageDriver == storage.DriverLocal && cfg.MediaRoot != "" {
+		r.Static("/media", cfg.MediaRoot)
+	}
+
 	// SHARED
 	sharedRepo := shared.NewSharedRepository(db)
 
@@ -47,13 +53,17 @@ func SetupRouter(db *pgxpool.Pool, cfg *config.Config) *gin.Engine {
 
 	//TEAMS
 	teamsRepo := teams.NewRepository(db)
-	teamsService := teams.NewService(teamsRepo, sharedRepo)
+	mediaStorage, err := storage.New(cfg.StorageDriver, cfg.MediaURL, cfg.MediaRoot)
+	if err != nil {
+		panic("invalid storage configuration: " + err.Error())
+	}
+	teamsService := teams.NewService(teamsRepo, sharedRepo, mediaStorage)
 	teamsModule := teams.NewModule(teamsService)
 	teamsModule.RegisterRoutes(r, cfg.JWTSecret)
 
 	//TEAM GAMES
 	teamGamesRepo := teamgames.NewRepository(db, sharedRepo)
-	teamGamesService := teamgames.NewService(teamGamesRepo)
+	teamGamesService := teamgames.NewService(teamGamesRepo, mediaStorage)
 	teamGamesModule := teamgames.NewModule(teamGamesService)
 	teamGamesModule.RegisterRoutes(r, cfg.JWTSecret)
 

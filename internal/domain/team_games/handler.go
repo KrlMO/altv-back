@@ -26,6 +26,11 @@ func (m *Module) RegisterRoutes(r *gin.Engine, jwtSecret string) {
 			auth.POST("/:id/leave", m.LeaveTeamGame)
 		}
 	}
+
+	teamsTeamGames := r.Group("/api/v1/teams/:id/team-games")
+	{
+		teamsTeamGames.GET("", m.ListTeamGamesByTeam)
+	}
 }
 
 // ListTeamGames godoc
@@ -101,6 +106,33 @@ func (m *Module) ListTeamGames(c *gin.Context) {
 
 	c.JSON(http.StatusOK, response.ResponseOk[dto.PaginatedResponse[TeamGameListItemResponse]]{
 		Data: result,
+	})
+}
+
+// ListTeamGamesByTeam godoc
+// @Summary      List Team Games by Team
+// @Description  Get the list of team games belonging to a team
+// @Tags         Team Games
+// @Accept       json
+// @Produce      json
+// @Param        id   path      string  true  "Team ID"
+// @Success      200  {object}  response.ResponseOk[[]TeamGameListItemResponse]
+// @Failure      400  {object}  response.ResponseError
+// @Failure      500  {object}  response.ResponseError
+// @Router /api/v1/teams/{id}/team-games [get]
+func (m *Module) ListTeamGamesByTeam(c *gin.Context) {
+	teamId := c.Param("id")
+
+	resp, err := m.service.ListTeamGamesByTeam(c.Request.Context(), teamId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, response.ResponseError{
+			Error: err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, response.ResponseOk[[]TeamGameListItemResponse]{
+		Data: resp,
 	})
 }
 

@@ -47,7 +47,7 @@ func LoadAdminConfig() *AdminConfig {
 		Nickname:  nickname,
 		FirstName: firstName,
 		LastName:  lastName,
-		CountryID: 173,
+		CountryID: 174,
 	}
 }
 

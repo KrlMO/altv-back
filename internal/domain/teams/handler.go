@@ -17,10 +17,10 @@ func (m *Module) RegisterRoutes(r *gin.Engine, jwtSecret string) {
 	teams := v1.Group("/teams")
 	{
 		teams.GET("/:id", m.GetTeamByID)
-		teams.GET("/", m.GetTeams)
-		auth := teams.Group("/", middleware.Auth(jwtSecret))
+		teams.GET("", m.GetTeams)
+		auth := teams.Group("", middleware.Auth(jwtSecret))
 		{
-			auth.POST("/", m.Register)
+			auth.POST("", m.Register)
 			auth.PATCH("/:id", m.PatchUpdateTeam)
 			auth.POST("/:id/members", m.AddMemberToTeam)
 			auth.PATCH("/:id/members/:userId", m.UpdateTeamMemberRole)
@@ -31,36 +31,44 @@ func (m *Module) RegisterRoutes(r *gin.Engine, jwtSecret string) {
 	}
 }
 
-// AddMemberToTeam godoc
+// Register godoc
 // @Summary Create a new team
 // @Description Create a new team
 // @Tags Teams
-// @Accept json
+// @Accept multipart/form-data
 // @Produce json
 // @Security BearerAuth
-// @Param request body RegisterTeamRequest true "Team info"
-// @Success 201 {object} map[string]string
+// @Param name formData string true "Team name"
+// @Param tag formData string true "Team tag"
+// @Param description formData string false "Team description"
+// @Param country_id formData int true "Country ID"
+// @Param logo formData file false "Team logo image"
+// @Param banner formData file false "Team banner image"
+// @Success 201 {object} response.ResponseOk[TeamResponse]
 // @Failure 400 {object} map[string]string
 // @Router /api/v1/teams [post]
 func (m *Module) Register(c *gin.Context) {
 	userID := c.MustGet(middleware.ContextUserID).(int64)
 	globalRoles := c.MustGet(middleware.ContextRoles).([]string)
-	req := RegisterTeamRequest{}
-	if err := c.ShouldBindJSON(&req); err != nil {
+	req := CreateTeamRequestDto{}
+	if err := c.ShouldBind(&req); err != nil {
 		c.JSON(400, response.ResponseError{
 			Error: "invalid request: " + err.Error(),
 		})
 		return
 	}
 
-	if err := m.service.RegisterTeam(c.Request.Context(), userID, globalRoles, req); err != nil {
+	team, err := m.service.RegisterTeam(c.Request.Context(), userID, globalRoles, &req)
+	if err != nil {
 		c.JSON(400, response.ResponseError{
 			Error: "Internal error: " + err.Error(),
 		})
 		return
 	}
 
-	c.JSON(201, gin.H{"message": "team registered"})
+	c.JSON(201, response.ResponseOk[TeamResponse]{
+		Data: *team,
+	})
 }
 
 func (m *Module) GetMyTeams(c *gin.Context) {
@@ -194,11 +202,16 @@ func (m *Module) GetTeams(c *gin.Context) {
 // @Summary Update team details
 // @Description Updates the details of an existing team
 // @Tags Teams
-// @Accept json
+// @Accept multipart/form-data
 // @Produce json
 // @Security BearerAuth
 // @Param id path string true "Team ID"
-// @Param request body PatchUpdateTeamRequest true "Updated team info"
+// @Param name formData string false "Team name"
+// @Param tag formData string false "Team tag"
+// @Param description formData string false "Team description"
+// @Param country_id formData int false "Country ID"
+// @Param logo formData file false "Team logo image"
+// @Param banner formData file false "Team banner image"
 // @Success 200 {object} map[string]string
 // @Failure 400 {object} map[string]string
 // @Router /api/v1/teams/{id} [patch]
@@ -207,7 +220,7 @@ func (m *Module) PatchUpdateTeam(c *gin.Context) {
 	globalRoles := c.MustGet(middleware.ContextRoles).([]string)
 	teamID := c.Param("id")
 	req := PatchUpdateTeamRequest{}
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.ShouldBind(&req); err != nil {
 		c.JSON(400, response.ResponseError{
 			Error: "invalid request: " + err.Error(),
 		})

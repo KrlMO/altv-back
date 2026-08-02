@@ -5,16 +5,18 @@ import (
 	"arena/internal/domain/team_games/rules"
 	"arena/pkg/dto"
 	grules "arena/pkg/global_rules"
+	"arena/pkg/storage"
 	"context"
 	"strconv"
 )
 
 type Service struct {
-	repo *Repository
+	repo    *Repository
+	storage storage.Storage
 }
 
-func NewService(repo *Repository) *Service {
-	return &Service{repo: repo}
+func NewService(repo *Repository, mediaStorage storage.Storage) *Service {
+	return &Service{repo: repo, storage: mediaStorage}
 }
 
 func (s *Service) GetTeamGameMembers(
@@ -186,6 +188,32 @@ func (s *Service) RemoveTeamGameRoleFromMember(
 	return teamGameName, nil
 }
 
+func (s *Service) toTeamGameListItemResponse(item TeamGameListItem) TeamGameListItemResponse {
+	resp := TeamGameListItemResponse{
+		ID:       item.ID,
+		GameID:   item.GameID,
+		TeamName: item.TeamName,
+		GameName: item.GameName,
+	}
+	if item.LogoKey.Valid {
+		u := s.storage.URL(storage.FolderTeamsLogo, item.LogoKey.String)
+		resp.Logo = &u
+	}
+	if item.RegionName.Valid {
+		resp.RegionName = &item.RegionName.String
+	}
+	if item.RegionISO.Valid {
+		resp.RegionISO = &item.RegionISO.String
+	}
+	if item.CountryName.Valid {
+		resp.CountryName = &item.CountryName.String
+	}
+	if item.CreatedAt.Valid {
+		resp.CreatedAt = &item.CreatedAt.Time
+	}
+	return resp
+}
+
 func (s *Service) ListTeamGames(
 	ctx context.Context,
 	filter TeamGameListFilter,
@@ -204,27 +232,7 @@ func (s *Service) ListTeamGames(
 
 	response := make([]TeamGameListItemResponse, 0, len(items))
 	for _, item := range items {
-		resp := TeamGameListItemResponse{
-			ID:       item.ID,
-			TeamName: item.TeamName,
-			GameName: item.GameName,
-		}
-		if item.LogoPath.Valid {
-			resp.LogoPath = &item.LogoPath.String
-		}
-		if item.RegionName.Valid {
-			resp.RegionName = &item.RegionName.String
-		}
-		if item.RegionISO.Valid {
-			resp.RegionISO = &item.RegionISO.String
-		}
-		if item.CountryName.Valid {
-			resp.CountryName = &item.CountryName.String
-		}
-		if item.CreatedAt.Valid {
-			resp.CreatedAt = &item.CreatedAt.Time
-		}
-		response = append(response, resp)
+		response = append(response, s.toTeamGameListItemResponse(item))
 	}
 
 	return dto.PaginatedResponse[TeamGameListItemResponse]{
@@ -235,6 +243,25 @@ func (s *Service) ListTeamGames(
 			Offset: offset,
 		},
 	}, nil
+}
+
+func (s *Service) ListTeamGamesByTeam(ctx context.Context, teamId string) ([]TeamGameListItemResponse, error) {
+	parsedTeamID, err := strconv.ParseInt(teamId, 10, 64)
+	if err != nil {
+		return nil, rules.ErrBadIdTeamGame
+	}
+
+	items, err := s.repo.GetTeamGamesByTeam(ctx, parsedTeamID)
+	if err != nil {
+		return nil, err
+	}
+
+	response := make([]TeamGameListItemResponse, 0, len(items))
+	for _, item := range items {
+		response = append(response, s.toTeamGameListItemResponse(item))
+	}
+
+	return response, nil
 }
 
 func (s *Service) AddTeamGameRoleToMember(

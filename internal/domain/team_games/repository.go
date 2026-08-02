@@ -567,7 +567,7 @@ func (r *Repository) FilterTeamGames(
 	page, limit int,
 ) ([]TeamGameListItem, int64, error) {
 	where := []string{"tg.active = true"}
-	args := []interface{}{}
+	args := []any{}
 	argIdx := 1
 
 	if filter.Name != nil && *filter.Name != "" {
@@ -624,7 +624,8 @@ func (r *Repository) FilterTeamGames(
 	query := fmt.Sprintf(`
 		SELECT
 			tg.id,
-			t.logo_path,
+			tg.game_id,
+			t.logo_key,
 			t.name AS team_name,
 			g.name AS game_name,
 			r.name AS region_name,
@@ -654,7 +655,8 @@ func (r *Repository) FilterTeamGames(
 		var item TeamGameListItem
 		if err := rows.Scan(
 			&item.ID,
-			&item.LogoPath,
+			&item.GameID,
+			&item.LogoKey,
 			&item.TeamName,
 			&item.GameName,
 			&item.RegionName,
@@ -668,4 +670,57 @@ func (r *Repository) FilterTeamGames(
 	}
 
 	return items, total, rows.Err()
+}
+
+func (r *Repository) GetTeamGamesByTeam(ctx context.Context, teamId int64) ([]TeamGameListItem, error) {
+	query := `
+		SELECT
+			tg.id,
+			tg.game_id,
+			t.logo_key,
+			t.name AS team_name,
+			g.name AS game_name,
+			r.name AS region_name,
+			r.iso_code AS region_iso,
+			c.name AS country_name,
+			tg.created_at
+		FROM al_team_game tg
+		JOIN al_team t ON tg.team_id = t.id
+		JOIN al_game g ON tg.game_id = g.id
+		LEFT JOIN al_region r ON tg.region_id = r.id
+		LEFT JOIN al_country c ON tg.country_id = c.id
+		WHERE tg.active = true AND tg.team_id = $1
+		ORDER BY tg.created_at DESC
+	`
+
+	rows, err := r.db.Query(ctx, query, teamId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var items []TeamGameListItem
+	for rows.Next() {
+		var item TeamGameListItem
+		if err := rows.Scan(
+			&item.ID,
+			&item.GameID,
+			&item.LogoKey,
+			&item.TeamName,
+			&item.GameName,
+			&item.RegionName,
+			&item.RegionISO,
+			&item.CountryName,
+			&item.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, item)
+	}
+
+	if items == nil {
+		items = []TeamGameListItem{}
+	}
+
+	return items, rows.Err()
 }

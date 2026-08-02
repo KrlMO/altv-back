@@ -1,23 +1,18 @@
 package teams
 
-import "arena/pkg/dto"
+import (
+	"mime/multipart"
 
-type RegisterTeamRequest struct {
-	Name        string `json:"name" binding:"required,min=3,max=50"`
-	Tag         string `json:"tag" binding:"required,min=2,max=15"`
-	Description string `json:"description" binding:"omitempty,max=500"`
-	LogoPath    string `json:"logo_path" binding:"omitempty"`
-	BannerPath  string `json:"banner_path" binding:"omitempty"`
-	CountryId   int32  `json:"country_id" binding:"required"`
-}
+	"arena/pkg/dto"
+)
 
 type TeamResponse struct {
 	ID          int64               `json:"id"`
 	Name        string              `json:"name"`
 	Tag         string              `json:"tag"`
 	Description string              `json:"description"`
-	LogoPath    string              `json:"logo_path"`
-	BannerPath  string              `json:"banner_path"`
+	Logo        string              `json:"logo"`
+	Banner      string              `json:"banner"`
 	Country     dto.CountryResponse `json:"country"`
 	IsVirtual   bool                `json:"is_virtual"`
 	Active      bool                `json:"active"`
@@ -34,13 +29,13 @@ type TeamFilter struct {
 }
 
 type PatchUpdateTeamRequest struct {
-	Name        *string `json:"name"`
-	Tag         *string `json:"tag"`
-	Description *string `json:"description"`
-	LogoPath    *string `json:"logo_path"`
-	BannerPath  *string `json:"banner_path"`
-	CountryId   *int32  `json:"country_id"`
-	IsVirtual   *bool   `json:"is_virtual"`
+	Name        *string               `form:"name"`
+	Tag         *string               `form:"tag"`
+	Description *string               `form:"description"`
+	Logo        *multipart.FileHeader `form:"logo"`
+	Banner      *multipart.FileHeader `form:"banner"`
+	CountryId   *int32                `form:"country_id"`
+	IsVirtual   *bool                 `form:"is_virtual"`
 }
 
 type AddMemberRequest struct {
@@ -69,11 +64,13 @@ type MyTeamListItemDto struct {
 }
 
 type CreateTeamRequestDto struct {
-	Name        string            `json:"name" binding:"required,min=3,max=50"`
-	Tag         string            `json:"tag" binding:"required,min=2,max=15"`
-	Description *string           `json:"description" binding:"omitempty,max=500"`
-	CountryId   int32             `json:"country_id" binding:"required"`
-	Roasters    []RoasterEntryDto `json:"roasters" binding:"omitempty,dive"`
+	Name        string                `form:"name" binding:"required,min=3,max=50"`
+	Tag         string                `form:"tag" binding:"required,min=2,max=15"`
+	Description *string               `form:"description" binding:"omitempty,max=500"`
+	CountryId   int32                 `form:"country_id" binding:"required"`
+	Logo        *multipart.FileHeader `form:"logo" binding:"omitempty"`
+	Banner      *multipart.FileHeader `form:"banner" binding:"omitempty"`
+	Roasters    []RoasterEntryDto     `form:"roasters" binding:"omitempty,dive"`
 }
 
 type RoasterEntryDto struct {
