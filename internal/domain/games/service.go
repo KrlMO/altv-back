@@ -25,6 +25,7 @@ func (s *Service) ListGames(ctx context.Context, name string) ([]GameListItemRes
 		response = append(response, GameListItemResponse{
 			ID:       g.ID,
 			Name:     g.Name,
+			Slug:     g.Slug,
 			ColorHex: colorHex,
 		})
 	}

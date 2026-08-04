@@ -20,3 +20,15 @@ type TeamGameMember struct {
 	TransferType sql.NullString `db:"transfer_type"`
 	PlayerImage  sql.NullString `db:"player_jersey_image_path"`
 }
+
+type TeamGameManageMember struct {
+	UserID       int64          `db:"user_id"`
+	Username     string         `db:"nickname"`
+	FirstName    string         `db:"first_name"`
+	LastName     string         `db:"last_name"`
+	ProfilePhoto sql.NullString `db:"profile_photo"`
+	BirthDate    sql.NullTime   `db:"birth_date"`
+	Country      model.Country  `db:"country"`
+	TeamRole     string         `db:"team_game_role"`
+	JerseyImage  sql.NullString `db:"player_jersey_image_path"`
+}

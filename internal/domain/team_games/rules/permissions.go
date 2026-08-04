@@ -31,6 +31,30 @@ func CanLeaveTeamGame(ctx TeamGameActionContext) error {
 	return nil
 }
 
+func CanDeactivateTeamGame(ctx TeamGameActionContext) error {
+	if identity.IsIluvatarOrAinur(ctx.Actor.ActorGlobalRoles) {
+		return nil
+	}
+
+	if !trules.IsTeamOwnerOrManager(ctx.Actor.ActorTeamRoles) {
+		return errors.New("user does not have permission to deactivate this team game")
+	}
+
+	return nil
+}
+
+func CanActivateTeamGame(ctx TeamGameActionContext) error {
+	if identity.IsIluvatarOrAinur(ctx.Actor.ActorGlobalRoles) {
+		return nil
+	}
+
+	if !trules.IsTeamOwnerOrManager(ctx.Actor.ActorTeamRoles) {
+		return errors.New("user does not have permission to activate this team game")
+	}
+
+	return nil
+}
+
 func CanRemoveMembersFromTeamGame(ctx TeamGameActionContext) error {
 	if identity.IsIluvatarOrAinur(ctx.Actor.ActorGlobalRoles) {
 		return nil

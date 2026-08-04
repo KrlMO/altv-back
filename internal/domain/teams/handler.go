@@ -372,7 +372,8 @@ func (m *Module) CreateTeamGame(c *gin.Context) {
 		})
 		return
 	}
-	if err := m.service.AddTeamGame(c.Request.Context(), paramTeamId, userID, globalRole, req); err != nil {
+	teamGameId, err := m.service.AddTeamGame(c.Request.Context(), paramTeamId, userID, globalRole, req)
+	if err != nil {
 		if errors.Is(err, rules.ErrUserNotMember) {
 			c.JSON(http.StatusNotFound, response.ResponseError{
 				Error: err.Error(),
@@ -386,6 +387,7 @@ func (m *Module) CreateTeamGame(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
-		"message": "Team Game " + req.Name + " has been added succesfuly, game: " + req.GameSlug,
+		"id":      teamGameId,
+		"message": "Team Game for game: " + req.GameSlug + " has been added succesfuly",
 	})
 }

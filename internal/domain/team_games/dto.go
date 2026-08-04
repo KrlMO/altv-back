@@ -15,13 +15,13 @@ type TeamGameMembersRoleUpdate struct {
 }
 
 type TeamGameRoleDto struct {
-	ID   int32
-	Name string
+	ID   int32  `json:"id"`
+	Name string `json:"name"`
 }
 
 type TeamGameMemberDto struct {
-	UserID int64
-	Roles  []TeamGameRoleDto
+	UserID int64             `json:"user_id"`
+	Roles  []TeamGameRoleDto `json:"roles"`
 }
 
 type TeamGameListFilter struct {
@@ -41,6 +41,7 @@ type TeamGameListItemResponse struct {
 	RegionName  *string    `json:"region_name"`
 	RegionISO   *string    `json:"region_iso"`
 	CountryName *string    `json:"country_name"`
+	Active      bool       `json:"active"`
 	CreatedAt   *time.Time `json:"created_at"`
 }
 

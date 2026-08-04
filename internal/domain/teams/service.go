@@ -32,7 +32,7 @@ type TeamRepository interface {
 	GetUserTeamRole(ctx context.Context, userId, teamId int64) (string, error)
 	DeleteUserFromTeam(ctx context.Context, userId, teamId, assignedBy int64) error
 	GetGameBySlug(ctx context.Context, gameSlug string) (int32, error)
-	CreateTeamGame(ctx context.Context, teamId, createdBy int64, gameId int32, nameTeamGame, logoPath, bannerPath string) error
+	CreateTeamGame(ctx context.Context, teamId, createdBy int64, gameId int32) (int64, error)
 	GetMyTeams(ctx context.Context, userId int64, globalRoles []string) ([]MyTeamListItem, error)
 	GetUserTeamCount(ctx context.Context, userId int64) (int, error)
 }
@@ -420,22 +420,22 @@ func (s *Service) AddTeamGame(
 	currentUserId int64,
 	currentUserGlobalRoles []string,
 	dto CreateTeamGameRequest,
-) error {
+) (int64, error) {
 	if err := identity.CanInteractWithTeams(currentUserGlobalRoles); err != nil {
-		return err
+		return 0, err
 	}
 	parsedTeamID, err := strconv.ParseInt(teamId, 10, 64)
 	if err != nil {
-		return errors.New("invalid team ID")
+		return 0, errors.New("invalid team ID")
 	}
 	teamRoles, err := s.sharedRepo.GetUserTeamRoles(ctx, currentUserId, parsedTeamID)
 	if err != nil {
-		return errors.New("Error fetching user team roles: " + err.Error())
+		return 0, errors.New("Error fetching user team roles: " + err.Error())
 	}
 
 	gameId, err := s.repo.GetGameBySlug(ctx, dto.GameSlug)
 	if err != nil {
-		return errors.New("Error, game does not exist: " + err.Error())
+		return 0, errors.New("Error, game does not exist: " + err.Error())
 	}
 
 	tgc := rules.TeamGameContext{
@@ -448,9 +448,9 @@ func (s *Service) AddTeamGame(
 	}
 
 	if err := rules.CanCreateTeamGame(tgc); err != nil {
-		return errors.New("Error creating Team Game: " + err.Error())
+		return 0, errors.New("Error creating Team Game: " + err.Error())
 	}
-	return s.repo.CreateTeamGame(ctx, parsedTeamID, tgc.Actor.ActorID, tgc.GameId, dto.Name, *dto.LogoPath, *dto.BannerPath)
+	return s.repo.CreateTeamGame(ctx, parsedTeamID, tgc.Actor.ActorID, tgc.GameId)
 }
 
 func (s *Service) GetMyTeams(ctx context.Context, userId int64, globalRoles []string) ([]MyTeamListItemDto, error) {

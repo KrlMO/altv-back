@@ -5,6 +5,7 @@ import (
 	"arena/internal/shared"
 	"arena/pkg/utils"
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 	"time"
@@ -107,50 +108,199 @@ func (r *Repository) GetTeamGamePublicMembers(
 	return members, nil
 }
 
+var manageRolePriority = map[string]int{
+	"TEAM_CAPTAIN": 1,
+	"COACH":        2,
+	"ANALYST":      3,
+	"STAFF":        4,
+	"PLAYER":       5,
+}
+
+func primaryManageRole(roles []string) string {
+	best := ""
+	bestPriority := 1 << 30
+	for _, r := range roles {
+		if p, ok := manageRolePriority[r]; ok && p < bestPriority {
+			best = r
+			bestPriority = p
+		}
+	}
+	if best == "" && len(roles) > 0 {
+		return roles[0]
+	}
+	return best
+}
+
+type manageMemberAcc struct {
+	member TeamGameManageMember
+	roles  []string
+}
+
+func (r *Repository) GetTeamGameManageMembers(
+	ctx context.Context,
+	teamGameId int64,
+) ([]TeamGameManageMember, error) {
+	rows, err := r.db.Query(ctx, `
+		SELECT
+			au.id AS user_id,
+			au.nickname,
+			au.first_name,
+			au.last_name,
+			au.profile_photo,
+			au.birth_date,
+			ac.id AS country_id,
+			ac.name AS country_name,
+			ac.flag_path,
+			ac.iso_code,
+			atgr.name AS team_game_role,
+			atgpi.player_jersey_image_path
+		FROM al_user au
+		JOIN al_user_team_game_role autgr
+			ON autgr.user_id = au.id
+			AND autgr.team_game_id = $1
+		JOIN al_team_game_role atgr
+			ON autgr.role_id = atgr.id
+		JOIN al_country ac
+			ON au.country_id = ac.id
+		LEFT JOIN al_team_game_player_image atgpi
+			ON atgpi.user_id = au.id
+			AND atgpi.team_game_id = $1
+			AND atgpi.is_current = TRUE
+		ORDER BY au.id
+	`, teamGameId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	accs := map[int64]*manageMemberAcc{}
+	order := []int64{}
+
+	for rows.Next() {
+		var m TeamGameManageMember
+		var role string
+		if err := rows.Scan(
+			&m.UserID,
+			&m.Username,
+			&m.FirstName,
+			&m.LastName,
+			&m.ProfilePhoto,
+			&m.BirthDate,
+			&m.Country.ID,
+			&m.Country.Name,
+			&m.Country.FlagPath,
+			&m.Country.IsoCode,
+			&role,
+			&m.JerseyImage,
+		); err != nil {
+			return nil, err
+		}
+		acc, ok := accs[m.UserID]
+		if !ok {
+			acc = &manageMemberAcc{member: m}
+			accs[m.UserID] = acc
+			order = append(order, m.UserID)
+		}
+		acc.roles = append(acc.roles, role)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	result := make([]TeamGameManageMember, 0, len(order))
+	for _, id := range order {
+		acc := accs[id]
+		acc.member.TeamRole = primaryManageRole(acc.roles)
+		result = append(result, acc.member)
+	}
+	return result, nil
+}
+
+func (r *Repository) GetTeamGameRoleIDByName(ctx context.Context, roleName string) (int32, error) {
+	var roleID int32
+	err := r.db.QueryRow(ctx, `
+		SELECT id
+		FROM al_team_game_role
+		WHERE name = $1
+	`, roleName).Scan(&roleID)
+	if err != nil {
+		return 0, err
+	}
+	return roleID, nil
+}
+
+func (r *Repository) UpsertTeamGamePlayerImage(
+	ctx context.Context,
+	userID, teamGameID, createdBy int64,
+	jerseyImagePath string,
+) error {
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	if _, err := tx.Exec(ctx, `
+		UPDATE al_team_game_player_image
+		SET is_current = FALSE
+		WHERE user_id = $1 AND team_game_id = $2
+	`, userID, teamGameID); err != nil {
+		return err
+	}
+
+	if _, err := tx.Exec(ctx, `
+		INSERT INTO al_team_game_player_image
+			(user_id, team_game_id, player_jersey_image_path, is_current, created_by)
+		VALUES ($1, $2, $3, TRUE, $4)
+	`, userID, teamGameID, jerseyImagePath, createdBy); err != nil {
+		return err
+	}
+
+	return tx.Commit(ctx)
+}
+
 func (r *Repository) GetUserTeamAndTeamGameRoles(
 	ctx context.Context,
 	userId, teamGameId int64,
-) (string, []string, []string, error) {
+) ([]string, []string, error) {
 	teamRoles := []string{}
 	teamGameRoles := []string{}
 	teamId, err := r.GetTeamIdFromTeamGameId(ctx, teamGameId)
 	if err != nil {
-		return "", nil, nil, err
+		return nil, nil, err
 	}
 	teamRoles, err = r.sharedRepo.GetUserTeamRoles(ctx, userId, teamId)
 	if err != nil {
-		return "", nil, nil, err
+		return nil, nil, err
 	}
-	teamGameName, teamGameRoles, err := r.GetUserTeamGameRoles(ctx, userId, teamGameId)
+	teamGameRoles, err = r.GetUserTeamGameRoles(ctx, userId, teamGameId)
 	if err != nil {
-		return "", nil, nil, err
+		return nil, nil, err
 	}
-	return teamGameName, teamRoles, teamGameRoles, nil
+	return teamRoles, teamGameRoles, nil
 }
 
-func (r *Repository) GetUserTeamGameRoles(ctx context.Context, userID, teamGameID int64) (string, []string, error) {
+func (r *Repository) GetUserTeamGameRoles(ctx context.Context, userID, teamGameID int64) ([]string, error) {
 	roles := []string{}
-	teamGameName := ""
 	rows, err := r.db.Query(ctx, `
-		SELECT tr.name, atg.name
+		SELECT tr.name
 		FROM al_user_team_game_role utr
 		JOIN al_team_game_role tr ON utr.role_id = tr.id
-		JOIN al_team_game atg ON utr.team_game_id = atg.id
 		WHERE utr.user_id = $1 AND utr.team_game_id = $2
 	`, userID, teamGameID)
 	if err != nil {
-		return "", nil, err
+		return nil, err
 	}
 	defer rows.Close()
 
 	for rows.Next() {
 		var roleName string
-		if err := rows.Scan(&roleName, &teamGameName); err != nil {
-			return "", nil, err
+		if err := rows.Scan(&roleName); err != nil {
+			return nil, err
 		}
 		roles = append(roles, roleName)
 	}
-	return teamGameName, roles, nil
+	return roles, rows.Err()
 }
 
 func (r *Repository) GetTeamIdFromTeamGameId(ctx context.Context, teamGameId int64) (int64, error) {
@@ -210,7 +360,101 @@ func (r *Repository) AddMembersToTeamGame(
 		return err
 	}
 
+	if err := r.recomputeTeamGameCountryRegion(ctx, tx, teamGameId); err != nil {
+		return err
+	}
+
 	return tx.Commit(ctx)
+}
+
+func (r *Repository) GetGameIdBySlug(ctx context.Context, gameSlug string) (int32, error) {
+	var gameId int32
+	err := r.db.QueryRow(ctx, `
+		SELECT id
+		FROM al_game
+		WHERE slug = $1
+	`, gameSlug).Scan(&gameId)
+	if err != nil {
+		return 0, err
+	}
+	return gameId, nil
+}
+
+func (r *Repository) GetUserTeamRoles(ctx context.Context, userId, teamId int64) ([]string, error) {
+	return r.sharedRepo.GetUserTeamRoles(ctx, userId, teamId)
+}
+
+func (r *Repository) CreateTeamGameWithMembers(
+	ctx context.Context,
+	teamId, createdBy int64,
+	gameID int32,
+	members []ReqTeamGameMember,
+	jerseyPaths map[int64]string,
+) (int64, error) {
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback(ctx)
+
+	var teamGameId int64
+	if err := tx.QueryRow(ctx, `
+		INSERT INTO al_team_game(team_id, game_id, created_by, updated_by)
+		VALUES ($1, $2, $3, $4)
+		RETURNING id
+	`, teamId, gameID, createdBy, createdBy).Scan(&teamGameId); err != nil {
+		return 0, err
+	}
+
+	if len(members) > 0 {
+		var (
+			roleValues []string
+			roleArgs   []any
+		)
+		for i, m := range members {
+			base := i * 4
+			roleValues = append(roleValues,
+				fmt.Sprintf("($%d,$%d,$%d,NOW(),$%d)", base+1, base+2, base+3, base+4),
+			)
+			roleArgs = append(roleArgs, m.UserID, teamGameId, m.TeamGameRoleID, createdBy)
+		}
+		if _, err := tx.Exec(ctx, `
+			INSERT INTO al_user_team_game_role
+				(user_id, team_game_id, role_id, assigned_at, assigned_by)
+			VALUES `+strings.Join(roleValues, ","), roleArgs...); err != nil {
+			return 0, err
+		}
+
+		if err := r.AddMembershipHistory(ctx, tx, teamGameId, gameID, "SIGNED", createdBy, members); err != nil {
+			return 0, err
+		}
+	}
+
+	for userID, path := range jerseyPaths {
+		if _, err := tx.Exec(ctx, `
+			UPDATE al_team_game_player_image
+			SET is_current = FALSE
+			WHERE user_id = $1 AND team_game_id = $2
+		`, userID, teamGameId); err != nil {
+			return 0, err
+		}
+		if _, err := tx.Exec(ctx, `
+			INSERT INTO al_team_game_player_image
+				(user_id, team_game_id, player_jersey_image_path, is_current, created_by)
+			VALUES ($1, $2, $3, TRUE, $4)
+		`, userID, teamGameId, path, createdBy); err != nil {
+			return 0, err
+		}
+	}
+
+	if err := r.recomputeTeamGameCountryRegion(ctx, tx, teamGameId); err != nil {
+		return 0, err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return 0, err
+	}
+	return teamGameId, nil
 }
 
 func (r *Repository) AddMembershipHistory(
@@ -231,7 +475,7 @@ func (r *Repository) AddMembershipHistory(
 	for i, m := range members {
 		base := i * 5
 		historyValues = append(historyValues,
-			fmt.Sprintf("($%d,$%d,$%d,NOW(),$%d,$%d,NOW(),NOW())", base+1, base+2, base+3, base+4, base+5),
+			fmt.Sprintf("($%d,$%d,$%d,NOW(),$%d,$%d,NOW())", base+1, base+2, base+3, base+4, base+5),
 		)
 		historyArgs = append(historyArgs,
 			m.UserID,
@@ -244,7 +488,7 @@ func (r *Repository) AddMembershipHistory(
 
 	queryHistory := `
 		INSERT INTO al_team_membership_history
-			(user_id, team_game_id, game_id, joined_at, added_by, transfer_type, created_at, updated_at)
+			(user_id, team_game_id, game_id, joined_at, added_by, transfer_type, created_at)
 		VALUES ` + strings.Join(historyValues, ",")
 
 	_, err := tx.Exec(ctx, queryHistory, historyArgs...)
@@ -280,6 +524,10 @@ func (r *Repository) LeaveTeamGame(ctx context.Context, userID, teamGameID int64
 	}
 
 	if err := r.InsertMembershipHistory(ctx, tx, []MembershipHistoryParams{history}); err != nil {
+		return err
+	}
+
+	if err := r.recomputeTeamGameCountryRegion(ctx, tx, teamGameID); err != nil {
 		return err
 	}
 
@@ -458,6 +706,11 @@ func (r *Repository) RemoveMembersFromTeamGame(
 	if err := r.InsertMembershipHistory(ctx, tx, membershipHistories); err != nil {
 		return err
 	}
+
+	if err := r.recomputeTeamGameCountryRegion(ctx, tx, teamGameId); err != nil {
+		return err
+	}
+
 	return tx.Commit(ctx)
 }
 
@@ -507,6 +760,11 @@ func (r *Repository) RemoveTeamGameRoleFromMember(
 	if err != nil {
 		return err
 	}
+
+	if err := r.recomputeTeamGameCountryRegion(ctx, tx, teamId); err != nil {
+		return err
+	}
+
 	return tx.Commit(ctx)
 }
 
@@ -558,6 +816,11 @@ func (r *Repository) AddTeamGameRoleToMember(
 	if err != nil {
 		return err
 	}
+
+	if err := r.recomputeTeamGameCountryRegion(ctx, tx, teamId); err != nil {
+		return err
+	}
+
 	return tx.Commit(ctx)
 }
 
@@ -631,6 +894,7 @@ func (r *Repository) FilterTeamGames(
 			r.name AS region_name,
 			r.iso_code AS region_iso,
 			c.name AS country_name,
+			tg.active,
 			tg.created_at
 		FROM al_team_game tg
 		JOIN al_team t ON tg.team_id = t.id
@@ -662,6 +926,7 @@ func (r *Repository) FilterTeamGames(
 			&item.RegionName,
 			&item.RegionISO,
 			&item.CountryName,
+			&item.Active,
 			&item.CreatedAt,
 		); err != nil {
 			return nil, 0, err
@@ -670,6 +935,117 @@ func (r *Repository) FilterTeamGames(
 	}
 
 	return items, total, rows.Err()
+}
+
+func (r *Repository) DeactivateTeamGame(ctx context.Context, teamGameID, updatedBy int64) error {
+	tag, err := r.db.Exec(ctx, `
+		UPDATE al_team_game
+		SET active = false, updated_at = NOW(), updated_by = $2
+		WHERE id = $1 AND active = true
+	`, teamGameID, updatedBy)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return rules.ErrBadIdTeamGame
+	}
+	return nil
+}
+
+func (r *Repository) ActivateTeamGame(ctx context.Context, teamGameID, updatedBy int64) error {
+	tag, err := r.db.Exec(ctx, `
+		UPDATE al_team_game
+		SET active = true, updated_at = NOW(), updated_by = $2
+		WHERE id = $1 AND active = false
+	`, teamGameID, updatedBy)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return rules.ErrBadIdTeamGame
+	}
+	return nil
+}
+
+// recomputeTeamGameCountryRegion determines the team game (roster) country
+// and/or region based on the majority of its players (PLAYER + TEAM_CAPTAIN):
+//   - if more than half of the players share a country -> country_id is set
+//   - otherwise, if more than half share a region -> region_id is set
+//   - otherwise both are left NULL
+func (r *Repository) recomputeTeamGameCountryRegion(ctx context.Context, tx pgx.Tx, teamGameID int64) error {
+	rows, err := tx.Query(ctx, `
+		SELECT au.country_id, ac.region_id
+		FROM al_user au
+		JOIN al_user_team_game_role utgr ON utgr.user_id = au.id
+		JOIN al_team_game_role tgr ON utgr.role_id = tgr.id
+		LEFT JOIN al_country ac ON ac.id = au.country_id
+		WHERE utgr.team_game_id = $1
+		  AND tgr.name IN ('PLAYER', 'TEAM_CAPTAIN')
+	`, teamGameID)
+	if err != nil {
+		return err
+	}
+
+	countryCounts := map[int64]int{}
+	regionCounts := map[int64]int{}
+	for rows.Next() {
+		var countryID, regionID sql.NullInt64
+		if err := rows.Scan(&countryID, &regionID); err != nil {
+			rows.Close()
+			return err
+		}
+		if countryID.Valid {
+			countryCounts[countryID.Int64]++
+		}
+		if regionID.Valid {
+			regionCounts[regionID.Int64]++
+		}
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return err
+	}
+	rows.Close()
+
+	total := 0
+	for _, count := range countryCounts {
+		total += count
+	}
+
+	countryID, regionID := resolveMajorityCountryRegion(countryCounts, regionCounts, total)
+
+	_, err = tx.Exec(ctx, `
+		UPDATE al_team_game
+		SET country_id = $2, region_id = $3, updated_at = NOW()
+		WHERE id = $1
+	`, teamGameID, countryID, regionID)
+	return err
+}
+
+// resolveMajorityCountryRegion decides the roster flag:
+//   - if a country has more than half of the players -> country wins
+//   - otherwise, if a region has more than half -> region wins
+//   - otherwise both stay NULL
+func resolveMajorityCountryRegion(countryCounts, regionCounts map[int64]int, total int) (sql.NullInt64, sql.NullInt64) {
+	var countryID, regionID sql.NullInt64
+	if total <= 0 {
+		return countryID, regionID
+	}
+	if id, ok := majorityKey(countryCounts, total); ok {
+		countryID = sql.NullInt64{Int64: id, Valid: true}
+	} else if id, ok := majorityKey(regionCounts, total); ok {
+		regionID = sql.NullInt64{Int64: id, Valid: true}
+	}
+	return countryID, regionID
+}
+
+func majorityKey(counts map[int64]int, total int) (int64, bool) {
+	for id, count := range counts {
+		if count*2 > total {
+			return id, true
+		}
+	}
+	return 0, false
 }
 
 func (r *Repository) GetTeamGamesByTeam(ctx context.Context, teamId int64) ([]TeamGameListItem, error) {
@@ -683,13 +1059,14 @@ func (r *Repository) GetTeamGamesByTeam(ctx context.Context, teamId int64) ([]Te
 			r.name AS region_name,
 			r.iso_code AS region_iso,
 			c.name AS country_name,
+			tg.active,
 			tg.created_at
 		FROM al_team_game tg
 		JOIN al_team t ON tg.team_id = t.id
 		JOIN al_game g ON tg.game_id = g.id
 		LEFT JOIN al_region r ON tg.region_id = r.id
 		LEFT JOIN al_country c ON tg.country_id = c.id
-		WHERE tg.active = true AND tg.team_id = $1
+		WHERE tg.team_id = $1
 		ORDER BY tg.created_at DESC
 	`
 
@@ -711,6 +1088,7 @@ func (r *Repository) GetTeamGamesByTeam(ctx context.Context, teamId int64) ([]Te
 			&item.RegionName,
 			&item.RegionISO,
 			&item.CountryName,
+			&item.Active,
 			&item.CreatedAt,
 		); err != nil {
 			return nil, err

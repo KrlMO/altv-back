@@ -56,6 +56,15 @@ definitions:
       meta:
         $ref: '#/definitions/arena_pkg_dto.PaginationMeta'
     type: object
+  arena_pkg_dto.PaginatedResponse-internal_domain_tournaments_TournamentListItemResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/internal_domain_tournaments.TournamentListItemResponse'
+        type: array
+      meta:
+        $ref: '#/definitions/arena_pkg_dto.PaginationMeta'
+    type: object
   arena_pkg_dto.PaginationMeta:
     properties:
       limit:
@@ -105,6 +114,24 @@ definitions:
       msg:
         type: string
     type: object
+  arena_pkg_response.ResponseOk-array_internal_domain_team_games_TeamGameManageMemberResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/internal_domain_team_games.TeamGameManageMemberResponse'
+        type: array
+      msg:
+        type: string
+    type: object
+  arena_pkg_response.ResponseOk-array_internal_domain_tournament_types_TournamentTypeListItemResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/internal_domain_tournament_types.TournamentTypeListItemResponse'
+        type: array
+      msg:
+        type: string
+    type: object
   arena_pkg_response.ResponseOk-array_internal_domain_users_UserSearchResult:
     properties:
       data:
@@ -132,6 +159,13 @@ definitions:
     properties:
       data:
         $ref: '#/definitions/internal_domain_teams.TeamResponse'
+      msg:
+        type: string
+    type: object
+  arena_pkg_response.ResponseOk-map_string_string:
+    properties:
+      data:
+        $ref: '#/definitions/map_string_string'
       msg:
         type: string
     type: object
@@ -198,6 +232,8 @@ definitions:
         type: integer
       name:
         type: string
+      slug:
+        type: string
     type: object
   internal_domain_regions.RegionResponse:
     properties:
@@ -210,13 +246,23 @@ definitions:
       name:
         type: string
     type: object
+  internal_domain_team_games.AddTeamGameMemberRequestItem:
+    properties:
+      role:
+        type: string
+      user_id:
+        type: integer
+    required:
+    - role
+    - user_id
+    type: object
   internal_domain_team_games.AddTeamGameMembersRequest:
     properties:
       game_id:
         type: integer
       members:
         items:
-          $ref: '#/definitions/internal_domain_team_games.ReqTeamGameMember'
+          $ref: '#/definitions/internal_domain_team_games.AddTeamGameMemberRequestItem'
         maxItems: 50
         minItems: 1
         type: array
@@ -257,17 +303,10 @@ definitions:
     required:
     - users
     type: object
-  internal_domain_team_games.ReqTeamGameMember:
-    properties:
-      teamGameRoleID:
-        format: int32
-        type: integer
-      userID:
-        format: int64
-        type: integer
-    type: object
   internal_domain_team_games.TeamGameListItemResponse:
     properties:
+      active:
+        type: boolean
       country_name:
         type: string
       created_at:
@@ -294,20 +333,41 @@ definitions:
       msg:
         type: string
     type: object
+  internal_domain_team_games.TeamGameManageMemberResponse:
+    properties:
+      avatar:
+        type: string
+      birth_date:
+        type: string
+      country:
+        $ref: '#/definitions/arena_pkg_dto.CountryResponse'
+      country_code:
+        type: string
+      first_name:
+        type: string
+      jersey_photo:
+        type: string
+      last_name:
+        type: string
+      team_role:
+        type: string
+      user_id:
+        type: integer
+      username:
+        type: string
+    type: object
   internal_domain_team_games.TeamGameMemberDto:
     properties:
       roles:
         items:
           $ref: '#/definitions/internal_domain_team_games.TeamGameRoleDto'
         type: array
-      userID:
-        format: int64
+      user_id:
         type: integer
     type: object
   internal_domain_team_games.TeamGameRoleDto:
     properties:
       id:
-        format: int32
         type: integer
       name:
         type: string
@@ -326,19 +386,10 @@ definitions:
     properties:
       active:
         type: boolean
-      banner_path:
-        type: string
       game_slug:
-        type: string
-      logo_path:
-        type: string
-      name:
-        maxLength: 150
-        minLength: 3
         type: string
     required:
     - game_slug
-    - name
     type: object
   internal_domain_teams.TeamResponse:
     properties:
@@ -367,6 +418,57 @@ definitions:
         type: string
     required:
     - role
+    type: object
+  internal_domain_tournament_types.TournamentTypeListItemResponse:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  internal_domain_tournaments.TournamentListItemResponse:
+    properties:
+      country_name:
+        type: string
+      created_at:
+        type: string
+      end_at:
+        type: string
+      game_id:
+        type: integer
+      game_name:
+        type: string
+      id:
+        type: integer
+      logo:
+        type: string
+      name:
+        type: string
+      organization:
+        type: string
+      organization_id:
+        type: integer
+      organizer_type:
+        type: string
+      region_iso:
+        type: string
+      region_name:
+        type: string
+      start_at:
+        type: string
+      status:
+        type: string
+      type_id:
+        type: integer
+      type_name:
+        type: string
+    type: object
+  internal_domain_tournaments.TournamentListSuccessResponse:
+    properties:
+      data:
+        $ref: '#/definitions/arena_pkg_dto.PaginatedResponse-internal_domain_tournaments_TournamentListItemResponse'
+      msg:
+        type: string
     type: object
   internal_domain_users.FastRegisterUserRequest:
     properties:
@@ -493,6 +595,10 @@ definitions:
         type: string
       profile_photo:
         type: string
+    type: object
+  map_string_string:
+    additionalProperties:
+      type: string
     type: object
 info:
   contact: {}
@@ -803,6 +909,68 @@ paths:
       summary: List Team Games
       tags:
       - Team Games
+  /api/v1/team-games/{id}/activate:
+    patch:
+      consumes:
+      - application/json
+      description: Sets the active flag of a team game to true
+      parameters:
+      - description: Team Game ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseOk-map_string_string'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+      security:
+      - BearerAuth: []
+      summary: Activate Team Game
+      tags:
+      - Team Games
+  /api/v1/team-games/{id}/deactivate:
+    patch:
+      consumes:
+      - application/json
+      description: Sets the active flag of a team game to false
+      parameters:
+      - description: Team Game ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseOk-map_string_string'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+      security:
+      - BearerAuth: []
+      summary: Deactivate Team Game
+      tags:
+      - Team Games
   /api/v1/team-games/{id}/leave:
     post:
       consumes:
@@ -949,6 +1117,71 @@ paths:
       security:
       - BearerAuth: []
       summary: Add Members to Team Game
+      tags:
+      - Team Games
+  /api/v1/team-games/{id}/members/jersey:
+    post:
+      consumes:
+      - multipart/form-data
+      description: 'Upload the jersey photo for a team game member (multipart form:
+        user_id + file)'
+      parameters:
+      - description: Team Game ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Member User ID
+        in: formData
+        name: user_id
+        required: true
+        type: string
+      - description: Jersey image file
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseOk-map_string_string'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+      security:
+      - BearerAuth: []
+      summary: Upload a member jersey image
+      tags:
+      - Team Games
+  /api/v1/team-games/{id}/members/manage:
+    get:
+      consumes:
+      - application/json
+      description: Get all members of a team game with roles and jersey info for management
+      parameters:
+      - description: Team Game ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseOk-array_internal_domain_team_games_TeamGameManageMemberResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+      security:
+      - BearerAuth: []
+      summary: List Team Game Manage Members
       tags:
       - Team Games
   /api/v1/team-games/{id}/members/roles:
@@ -1383,6 +1616,128 @@ paths:
       summary: List Team Games by Team
       tags:
       - Team Games
+    post:
+      consumes:
+      - multipart/form-data
+      description: |-
+        Creates a team game for a team and adds all its members with their roles in one request.
+        Multipart form: game_slug (text), members (JSON text: [{"user_id":1,"role":"PLAYER"}]) and one jersey file per member named "jersey_<user_id>".
+      parameters:
+      - description: Team ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Game slug
+        in: formData
+        name: game_slug
+        required: true
+        type: string
+      - description: 'Members JSON: [{\'
+        in: formData
+        name: members
+        required: true
+        type: string
+      - description: Jersey image for user 1
+        in: formData
+        name: jersey_1
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseOk-map_string_string'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+      security:
+      - BearerAuth: []
+      summary: Create a team game (roster) with members and jerseys
+      tags:
+      - Team Games
+  /api/v1/tournament-types:
+    get:
+      consumes:
+      - application/json
+      description: Get the list of active tournament types
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseOk-array_internal_domain_tournament_types_TournamentTypeListItemResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+      summary: List Tournament Types
+      tags:
+      - Tournament Types
+  /api/v1/tournaments:
+    get:
+      consumes:
+      - application/json
+      description: Get a paginated list of tournaments with optional filters
+      parameters:
+      - description: Filter by tournament name
+        in: query
+        name: name
+        type: string
+      - description: Filter by region ID
+        in: query
+        name: region_id
+        type: integer
+      - description: Filter by country ID
+        in: query
+        name: country_id
+        type: integer
+      - description: Filter by game ID
+        in: query
+        name: game_id
+        type: integer
+      - description: 'Filter by organizer type: OFFICIAL, COMMUNITY, INDEPENDENT'
+        in: query
+        name: organizer_type
+        type: string
+      - description: Filter by tournament type ID
+        in: query
+        name: type_id
+        type: integer
+      - description: 'Filter by time window: active, upcoming, finished'
+        in: query
+        name: status
+        type: string
+      - description: 'Sort order: start_date_asc, start_date_desc, name_asc, name_desc,
+          newest'
+        in: query
+        name: sort_by
+        type: string
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_domain_tournaments.TournamentListSuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+      summary: List Tournaments
+      tags:
+      - Tournaments
   /api/v1/users/{id}:
     delete:
       description: Soft-deletes a user by ID. Only ILUVATAR or AINUR roles allowed.

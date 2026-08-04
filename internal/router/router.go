@@ -8,6 +8,8 @@ import (
 	"arena/internal/domain/regions"
 	teamgames "arena/internal/domain/team_games"
 	"arena/internal/domain/teams"
+	tournamenttypes "arena/internal/domain/tournament_types"
+	"arena/internal/domain/tournaments"
 	"arena/internal/domain/users"
 	"arena/internal/infrastructure/mail"
 	"arena/internal/shared"
@@ -84,6 +86,18 @@ func SetupRouter(db *pgxpool.Pool, cfg *config.Config) *gin.Engine {
 	regionsService := regions.NewService(regionsRepo)
 	regionsModule := regions.NewModule(regionsService)
 	regionsModule.RegisterRoutes(r)
+
+	// TOURNAMENT TYPES
+	tournamentTypesRepo := tournamenttypes.NewRepository(db)
+	tournamentTypesService := tournamenttypes.NewService(tournamentTypesRepo)
+	tournamentTypesModule := tournamenttypes.NewModule(tournamentTypesService)
+	tournamentTypesModule.RegisterRoutes(r)
+
+	// TOURNAMENTS
+	tournamentsRepo := tournaments.NewRepository(db)
+	tournamentsService := tournaments.NewService(tournamentsRepo)
+	tournamentsModule := tournaments.NewModule(tournamentsService)
+	tournamentsModule.RegisterRoutes(r)
 
 	mailer := mail.NewSMTPMailer(
 		cfg.SMTPHost,

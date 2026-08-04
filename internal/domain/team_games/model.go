@@ -11,5 +11,6 @@ type TeamGameListItem struct {
 	RegionName  sql.NullString `db:"region_name"`
 	RegionISO   sql.NullString `db:"region_iso"`
 	CountryName sql.NullString `db:"country_name"`
+	Active      bool           `db:"active"`
 	CreatedAt   sql.NullTime   `db:"created_at"`
 }

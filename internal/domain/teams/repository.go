@@ -466,19 +466,20 @@ func (r *Repository) CreateTeamGame(
 	ctx context.Context,
 	teamId, createdBy int64,
 	gameId int32,
-	nameTeamGame, logoPath, bannerPath string,
-) error {
+) (int64, error) {
 	tx, err := r.db.Begin(ctx)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	defer tx.Rollback(ctx)
 	query := `
-		INSERT INTO al_team_game(team_id, game_id, name, logo_path, banner_path, created_by, updated_by)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		INSERT INTO al_team_game(team_id, game_id, created_by, updated_by)
+		VALUES ($1, $2, $3, $4)
+		RETURNING id
 	`
-	if _, err := tx.Exec(ctx, query, teamId, gameId, nameTeamGame, logoPath, bannerPath, createdBy, createdBy); err != nil {
-		return err
+	var teamGameId int64
+	if err := tx.QueryRow(ctx, query, teamId, gameId, createdBy, createdBy).Scan(&teamGameId); err != nil {
+		return 0, err
 	}
-	return tx.Commit(ctx)
+	return teamGameId, tx.Commit(ctx)
 }

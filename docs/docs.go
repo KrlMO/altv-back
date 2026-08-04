@@ -476,6 +476,104 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/team-games/{id}/activate": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Sets the active flag of a team game to true",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Team Games"
+                ],
+                "summary": "Activate Team Game",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Team Game ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseOk-map_string_string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/team-games/{id}/deactivate": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Sets the active flag of a team game to false",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Team Games"
+                ],
+                "summary": "Deactivate Team Game",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Team Game ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseOk-map_string_string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/team-games/{id}/leave": {
             "post": {
                 "security": [
@@ -698,6 +796,106 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/team-games/{id}/members/jersey": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Upload the jersey photo for a team game member (multipart form: user_id + file)",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Team Games"
+                ],
+                "summary": "Upload a member jersey image",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Team Game ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Member User ID",
+                        "name": "user_id",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "file",
+                        "description": "Jersey image file",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseOk-map_string_string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/team-games/{id}/members/manage": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get all members of a team game with roles and jersey info for management",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Team Games"
+                ],
+                "summary": "List Team Game Manage Members",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Team Game ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseOk-array_internal_domain_team_games_TeamGameManageMemberResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/arena_pkg_response.ResponseError"
                         }
@@ -1368,6 +1566,187 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Creates a team game for a team and adds all its members with their roles in one request.\nMultipart form: game_slug (text), members (JSON text: [{\"user_id\":1,\"role\":\"PLAYER\"}]) and one jersey file per member named \"jersey_\u003cuser_id\u003e\".",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Team Games"
+                ],
+                "summary": "Create a team game (roster) with members and jerseys",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Team ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Game slug",
+                        "name": "game_slug",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Members JSON: [{\\",
+                        "name": "members",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "file",
+                        "description": "Jersey image for user 1",
+                        "name": "jersey_1",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseOk-map_string_string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/tournament-types": {
+            "get": {
+                "description": "Get the list of active tournament types",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Tournament Types"
+                ],
+                "summary": "List Tournament Types",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseOk-array_internal_domain_tournament_types_TournamentTypeListItemResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/tournaments": {
+            "get": {
+                "description": "Get a paginated list of tournaments with optional filters",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Tournaments"
+                ],
+                "summary": "List Tournaments",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter by tournament name",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Filter by region ID",
+                        "name": "region_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Filter by country ID",
+                        "name": "country_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Filter by game ID",
+                        "name": "game_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by organizer type: OFFICIAL, COMMUNITY, INDEPENDENT",
+                        "name": "organizer_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Filter by tournament type ID",
+                        "name": "type_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by time window: active, upcoming, finished",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Sort order: start_date_asc, start_date_desc, name_asc, name_desc, newest",
+                        "name": "sort_by",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_domain_tournaments.TournamentListSuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    }
+                }
             }
         },
         "/api/v1/users/fast-register": {
@@ -1920,6 +2299,20 @@ const docTemplate = `{
                 }
             }
         },
+        "arena_pkg_dto.PaginatedResponse-internal_domain_tournaments_TournamentListItemResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_domain_tournaments.TournamentListItemResponse"
+                    }
+                },
+                "meta": {
+                    "$ref": "#/definitions/arena_pkg_dto.PaginationMeta"
+                }
+            }
+        },
         "arena_pkg_dto.PaginationMeta": {
             "type": "object",
             "properties": {
@@ -1996,6 +2389,34 @@ const docTemplate = `{
                 }
             }
         },
+        "arena_pkg_response.ResponseOk-array_internal_domain_team_games_TeamGameManageMemberResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_domain_team_games.TeamGameManageMemberResponse"
+                    }
+                },
+                "msg": {
+                    "type": "string"
+                }
+            }
+        },
+        "arena_pkg_response.ResponseOk-array_internal_domain_tournament_types_TournamentTypeListItemResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_domain_tournament_types.TournamentTypeListItemResponse"
+                    }
+                },
+                "msg": {
+                    "type": "string"
+                }
+            }
+        },
         "arena_pkg_response.ResponseOk-array_internal_domain_users_UserSearchResult": {
             "type": "object",
             "properties": {
@@ -2037,6 +2458,17 @@ const docTemplate = `{
             "properties": {
                 "data": {
                     "$ref": "#/definitions/internal_domain_teams.TeamResponse"
+                },
+                "msg": {
+                    "type": "string"
+                }
+            }
+        },
+        "arena_pkg_response.ResponseOk-map_string_string": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/map_string_string"
                 },
                 "msg": {
                     "type": "string"
@@ -2139,6 +2571,9 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                },
+                "slug": {
+                    "type": "string"
                 }
             }
         },
@@ -2159,6 +2594,21 @@ const docTemplate = `{
                 }
             }
         },
+        "internal_domain_team_games.AddTeamGameMemberRequestItem": {
+            "type": "object",
+            "required": [
+                "role",
+                "user_id"
+            ],
+            "properties": {
+                "role": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
         "internal_domain_team_games.AddTeamGameMembersRequest": {
             "type": "object",
             "required": [
@@ -2174,7 +2624,7 @@ const docTemplate = `{
                     "maxItems": 50,
                     "minItems": 1,
                     "items": {
-                        "$ref": "#/definitions/internal_domain_team_games.ReqTeamGameMember"
+                        "$ref": "#/definitions/internal_domain_team_games.AddTeamGameMemberRequestItem"
                     }
                 }
             }
@@ -2227,22 +2677,12 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_domain_team_games.ReqTeamGameMember": {
-            "type": "object",
-            "properties": {
-                "teamGameRoleID": {
-                    "type": "integer",
-                    "format": "int32"
-                },
-                "userID": {
-                    "type": "integer",
-                    "format": "int64"
-                }
-            }
-        },
         "internal_domain_team_games.TeamGameListItemResponse": {
             "type": "object",
             "properties": {
+                "active": {
+                    "type": "boolean"
+                },
                 "country_name": {
                     "type": "string"
                 },
@@ -2283,6 +2723,41 @@ const docTemplate = `{
                 }
             }
         },
+        "internal_domain_team_games.TeamGameManageMemberResponse": {
+            "type": "object",
+            "properties": {
+                "avatar": {
+                    "type": "string"
+                },
+                "birth_date": {
+                    "type": "string"
+                },
+                "country": {
+                    "$ref": "#/definitions/arena_pkg_dto.CountryResponse"
+                },
+                "country_code": {
+                    "type": "string"
+                },
+                "first_name": {
+                    "type": "string"
+                },
+                "jersey_photo": {
+                    "type": "string"
+                },
+                "last_name": {
+                    "type": "string"
+                },
+                "team_role": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
         "internal_domain_team_games.TeamGameMemberDto": {
             "type": "object",
             "properties": {
@@ -2292,9 +2767,8 @@ const docTemplate = `{
                         "$ref": "#/definitions/internal_domain_team_games.TeamGameRoleDto"
                     }
                 },
-                "userID": {
-                    "type": "integer",
-                    "format": "int64"
+                "user_id": {
+                    "type": "integer"
                 }
             }
         },
@@ -2302,8 +2776,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "id": {
-                    "type": "integer",
-                    "format": "int32"
+                    "type": "integer"
                 },
                 "name": {
                     "type": "string"
@@ -2328,26 +2801,14 @@ const docTemplate = `{
         "internal_domain_teams.CreateTeamGameRequest": {
             "type": "object",
             "required": [
-                "game_slug",
-                "name"
+                "game_slug"
             ],
             "properties": {
                 "active": {
                     "type": "boolean"
                 },
-                "banner_path": {
-                    "type": "string"
-                },
                 "game_slug": {
                     "type": "string"
-                },
-                "logo_path": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string",
-                    "maxLength": 150,
-                    "minLength": 3
                 }
             }
         },
@@ -2390,6 +2851,84 @@ const docTemplate = `{
             ],
             "properties": {
                 "role": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_domain_tournament_types.TournamentTypeListItemResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_domain_tournaments.TournamentListItemResponse": {
+            "type": "object",
+            "properties": {
+                "country_name": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "end_at": {
+                    "type": "string"
+                },
+                "game_id": {
+                    "type": "integer"
+                },
+                "game_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "logo": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "organization": {
+                    "type": "string"
+                },
+                "organization_id": {
+                    "type": "integer"
+                },
+                "organizer_type": {
+                    "type": "string"
+                },
+                "region_iso": {
+                    "type": "string"
+                },
+                "region_name": {
+                    "type": "string"
+                },
+                "start_at": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "type_id": {
+                    "type": "integer"
+                },
+                "type_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_domain_tournaments.TournamentListSuccessResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/arena_pkg_dto.PaginatedResponse-internal_domain_tournaments_TournamentListItemResponse"
+                },
+                "msg": {
                     "type": "string"
                 }
             }
@@ -2580,6 +3119,12 @@ const docTemplate = `{
                 "profile_photo": {
                     "type": "string"
                 }
+            }
+        },
+        "map_string_string": {
+            "type": "object",
+            "additionalProperties": {
+                "type": "string"
             }
         }
     },

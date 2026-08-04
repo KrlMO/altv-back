@@ -48,11 +48,8 @@ type UpdateTeamMemberRoleRequest struct {
 }
 
 type CreateTeamGameRequest struct {
-	GameSlug   string  `json:"game_slug" binding:"required"`
-	Name       string  `json:"name" binding:"required,min=3,max=150"`
-	LogoPath   *string `json:"logo_path" binding:"omitempty"`
-	BannerPath *string `json:"banner_path" binding:"omitempty"`
-	Active     bool    `json:"active" binding:"omitempty"`
+	GameSlug string `json:"game_slug" binding:"required"`
+	Active   bool   `json:"active" binding:"omitempty"`
 }
 
 type MyTeamListItemDto struct {
