@@ -28,23 +28,23 @@ func TestIsTeamOwnerOrManager(t *testing.T) {
 	}
 }
 
-func TestCanAddMember_IluvatarBypass(t *testing.T) {
+func TestCanAddMember_SuperAdminBypass(t *testing.T) {
 	ctx := TeamActionContext{
 		Actor: grules.ActorContext{
-			ActorGlobalRoles: []string{"ILUVATAR"},
+			ActorGlobalRoles: []string{"SUPER_ADMIN"},
 		},
 		TargetRole: "PLAYER",
 	}
 
 	if err := CanAddMember(ctx); err != nil {
-		t.Errorf("ILUVATAR should bypass permission check, got error: %v", err)
+		t.Errorf("SUPER_ADMIN should bypass permission check, got error: %v", err)
 	}
 }
 
 func TestCanAddMember_OwnerCanAddPlayer(t *testing.T) {
 	ctx := TeamActionContext{
 		Actor: grules.ActorContext{
-			ActorGlobalRoles: []string{"HUMAN"},
+			ActorGlobalRoles: []string{"USER"},
 			ActorTeamRoles:   []string{"TEAM_OWNER"},
 		},
 		TargetRole: "PLAYER",
@@ -58,7 +58,7 @@ func TestCanAddMember_OwnerCanAddPlayer(t *testing.T) {
 func TestCanAddMember_OwnerCannotAddOwner(t *testing.T) {
 	ctx := TeamActionContext{
 		Actor: grules.ActorContext{
-			ActorGlobalRoles: []string{"HUMAN"},
+			ActorGlobalRoles: []string{"USER"},
 			ActorTeamRoles:   []string{"TEAM_OWNER"},
 		},
 		TargetRole: "TEAM_OWNER",
@@ -72,7 +72,7 @@ func TestCanAddMember_OwnerCannotAddOwner(t *testing.T) {
 func TestCanAddMember_ManagerCannotAddManager(t *testing.T) {
 	ctx := TeamActionContext{
 		Actor: grules.ActorContext{
-			ActorGlobalRoles: []string{"HUMAN"},
+			ActorGlobalRoles: []string{"USER"},
 			ActorTeamRoles:   []string{"TEAM_MANAGER"},
 		},
 		TargetRole: "TEAM_MANAGER",
@@ -86,7 +86,7 @@ func TestCanAddMember_ManagerCannotAddManager(t *testing.T) {
 func TestCanAddMember_PlayerCannotAdd(t *testing.T) {
 	ctx := TeamActionContext{
 		Actor: grules.ActorContext{
-			ActorGlobalRoles: []string{"HUMAN"},
+			ActorGlobalRoles: []string{"USER"},
 			ActorTeamRoles:   []string{"PLAYER"},
 		},
 		TargetRole: "PLAYER",
@@ -97,23 +97,23 @@ func TestCanAddMember_PlayerCannotAdd(t *testing.T) {
 	}
 }
 
-func TestCanDeleteMemberFromTeam_IluvatarBypass(t *testing.T) {
+func TestCanDeleteMemberFromTeam_SuperAdminBypass(t *testing.T) {
 	ctx := TeamActionContext{
 		Actor: grules.ActorContext{
-			ActorGlobalRoles: []string{"ILUVATAR"},
+			ActorGlobalRoles: []string{"SUPER_ADMIN"},
 		},
 		TargetRole: "TEAM_OWNER",
 	}
 
 	if err := CanDeleteMemberFromTeam(ctx); err != nil {
-		t.Errorf("ILUVATAR should bypass permission check, got error: %v", err)
+		t.Errorf("SUPER_ADMIN should bypass permission check, got error: %v", err)
 	}
 }
 
 func TestCanDeleteMemberFromTeam_OwnerCannotDeleteOwner(t *testing.T) {
 	ctx := TeamActionContext{
 		Actor: grules.ActorContext{
-			ActorGlobalRoles: []string{"HUMAN"},
+			ActorGlobalRoles: []string{"USER"},
 			ActorTeamRoles:   []string{"TEAM_OWNER"},
 		},
 		TargetRole: "TEAM_OWNER",
@@ -124,22 +124,22 @@ func TestCanDeleteMemberFromTeam_OwnerCannotDeleteOwner(t *testing.T) {
 	}
 }
 
-func TestCanCreateTeamGame_IluvatarBypass(t *testing.T) {
+func TestCanCreateTeamGame_SuperAdminBypass(t *testing.T) {
 	ctx := TeamGameContext{
 		Actor: grules.ActorContext{
-			ActorGlobalRoles: []string{"ILUVATAR"},
+			ActorGlobalRoles: []string{"SUPER_ADMIN"},
 		},
 	}
 
 	if err := CanCreateTeamGame(ctx); err != nil {
-		t.Errorf("ILUVATAR should bypass permission check, got error: %v", err)
+		t.Errorf("SUPER_ADMIN should bypass permission check, got error: %v", err)
 	}
 }
 
 func TestCanCreateTeamGame_PlayerCannotCreate(t *testing.T) {
 	ctx := TeamGameContext{
 		Actor: grules.ActorContext{
-			ActorGlobalRoles: []string{"HUMAN"},
+			ActorGlobalRoles: []string{"USER"},
 			ActorTeamRoles:   []string{"PLAYER"},
 		},
 	}

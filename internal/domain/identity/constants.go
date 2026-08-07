@@ -1,12 +1,10 @@
 package identity
 
 const (
-	RoleIluvatar  = "ILUVATAR"
-	RoleAinur     = "AINUR"
-	RoleMaiar     = "MAIAR"
-	RoleElf       = "ELF"
-	RoleHuman     = "HUMAN"
-	RoleOrc       = "ORC"
+	RoleSuperAdmin = "SUPER_ADMIN"
+	RoleStaff      = "STAFF"
+	RoleUser       = "USER"
+	RoleBanned     = "BANNED"
 	RoleTeamOwner   = "TEAM_OWNER"
 	RoleTeamManager = "TEAM_MANAGER"
 	RoleTeamStaff   = "TEAM_STAFF"

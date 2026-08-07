@@ -1740,7 +1740,7 @@ paths:
       - Tournaments
   /api/v1/users/{id}:
     delete:
-      description: Soft-deletes a user by ID. Only ILUVATAR or AINUR roles allowed.
+      description: Soft-deletes a user by ID. Only SUPER_ADMIN or STAFF roles allowed.
       parameters:
       - description: User ID
         in: path
@@ -1773,7 +1773,7 @@ paths:
       - Users
   /api/v1/users/{id}/activate:
     patch:
-      description: Activates a deactivated user by ID. Only ILUVATAR or AINUR roles
+      description: Activates a deactivated user by ID. Only SUPER_ADMIN or STAFF roles
         allowed.
       parameters:
       - description: User ID
@@ -1803,7 +1803,7 @@ paths:
       - Users
   /api/v1/users/{id}/deactivate:
     patch:
-      description: Deactivates a user by ID. Only ILUVATAR or AINUR roles allowed.
+      description: Deactivates a user by ID. Only SUPER_ADMIN or STAFF roles allowed.
       parameters:
       - description: User ID
         in: path

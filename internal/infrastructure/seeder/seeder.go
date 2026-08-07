@@ -95,7 +95,7 @@ func SeedAdmin(db *pgxpool.Pool, cfg *AdminConfig) error {
 		INSERT INTO al_user_global_role (user_id, role_id, assigned_at, assigned_by)
 		SELECT $1, r.id, NOW(), $1
 		FROM al_global_role r
-		WHERE r.name = 'ILUVATAR'
+		WHERE r.name = 'SUPER_ADMIN'
 	`, userID)
 	if err != nil {
 		return err
@@ -118,6 +118,6 @@ func SeedAdmin(db *pgxpool.Pool, cfg *AdminConfig) error {
 		return err
 	}
 
-	log.Printf("[seeder] admin user created: %s (id: %d, role: ILUVATAR)\n", cfg.Email, userID)
+	log.Printf("[seeder] admin user created: %s (id: %d, role: SUPER_ADMIN)\n", cfg.Email, userID)
 	return nil
 }

@@ -50,15 +50,15 @@ func (r *Repository) CreateUser(ctx context.Context, u User, provider string) er
 		return err
 	}
 
-	const humanRole = identity.RoleHuman
+	const userRole = identity.RoleUser
 
-	iluvatarId, err := r.FindIluvatarId(ctx, tx)
+	superAdminId, err := r.FindSuperAdminId(ctx, tx)
 
 	if err != nil {
 		return err
 	}
 
-	err = r.InsertUserGlobalRole(ctx, tx, userID, iluvatarId, humanRole)
+	err = r.InsertUserGlobalRole(ctx, tx, userID, superAdminId, userRole)
 
 	if err != nil {
 		return err
@@ -91,18 +91,18 @@ func (r *Repository) InsertUserAuth(
 	return err
 }
 
-func (r *Repository) FindIluvatarId(ctx context.Context, tx pgx.Tx) (int64, error) {
-	var iluvatarId int64
+func (r *Repository) FindSuperAdminId(ctx context.Context, tx pgx.Tx) (int64, error) {
+	var superAdminId int64
 
 	err := tx.QueryRow(ctx, `
 		SELECT id FROM al_global_role WHERE name = $1
-	`, identity.RoleIluvatar).Scan(&iluvatarId)
+	`, identity.RoleSuperAdmin).Scan(&superAdminId)
 
 	if err != nil {
 		return 0, err
 	}
 
-	return iluvatarId, nil
+	return superAdminId, nil
 }
 
 func (r *Repository) InsertUserGlobalRole(
@@ -295,13 +295,7 @@ func (r *Repository) GetUserProfileByID(ctx context.Context, userID int64) (*Use
 }
 
 func (r *Repository) UpdateUser(ctx context.Context, u User) error {
-	tx, err := r.db.Begin(ctx)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback(ctx)
-
-	_, err = tx.Exec(ctx, `
+	_, err := r.db.Exec(ctx, `
 		update al_user set
 			first_name = $1,
 			last_name = $2,
@@ -314,11 +308,7 @@ func (r *Repository) UpdateUser(ctx context.Context, u User) error {
 		where id = $8
 	`, u.FirstName, u.LastName, u.NickName, u.ProfilePhoto, u.BannerPhoto, u.BirthDate, u.CountryId, u.ID)
 
-	if err != nil {
-		return err
-	}
-
-	return tx.Commit(ctx)
+	return err
 }
 
 func (r *Repository) PatchUser(ctx context.Context, u User) error {
@@ -335,21 +325,11 @@ func (r *Repository) PatchUser(ctx context.Context, u User) error {
 		return errors.New("nothing to update")
 	}
 
-	tx, err := r.db.Begin(ctx)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback(ctx)
-
 	query, args := b.Build("al_user", "id", u.ID)
 
-	_, err = tx.Exec(ctx, query, args...)
+	_, err := r.db.Exec(ctx, query, args...)
 
-	if err != nil {
-		return err
-	}
-
-	return tx.Commit(ctx)
+	return err
 }
 
 func (r *Repository) GetUserByID(
@@ -466,7 +446,7 @@ func (r *Repository) SearchUsers(ctx context.Context, query string) ([]UserSearc
 		JOIN al_country ac ON au.country_id = ac.id
 		JOIN al_user_global_role ugr ON ugr.user_id = au.id
 		JOIN al_global_role agr ON agr.id = ugr.role_id
-		WHERE (au.first_name ILIKE $1 OR au.last_name ILIKE $1 OR au.nickname ILIKE $1) AND agr.name = 'HUMAN'
+		WHERE (au.first_name ILIKE $1 OR au.last_name ILIKE $1 OR au.nickname ILIKE $1) AND agr.name = 'USER'
 		LIMIT 5
 	`, "%"+query+"%")
 	if err != nil {

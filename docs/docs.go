@@ -2077,7 +2077,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Soft-deletes a user by ID. Only ILUVATAR or AINUR roles allowed.",
+                "description": "Soft-deletes a user by ID. Only SUPER_ADMIN or STAFF roles allowed.",
                 "tags": [
                     "Users"
                 ],
@@ -2129,7 +2129,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Activates a deactivated user by ID. Only ILUVATAR or AINUR roles allowed.",
+                "description": "Activates a deactivated user by ID. Only SUPER_ADMIN or STAFF roles allowed.",
                 "tags": [
                     "Users"
                 ],
@@ -2175,7 +2175,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Deactivates a user by ID. Only ILUVATAR or AINUR roles allowed.",
+                "description": "Deactivates a user by ID. Only SUPER_ADMIN or STAFF roles allowed.",
                 "tags": [
                     "Users"
                 ],

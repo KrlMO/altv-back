@@ -199,7 +199,7 @@ func (m *Module) SelfDelete(c *gin.Context) {
 
 // AdminDeleteUser godoc
 // @Summary Delete a user (admin)
-// @Description Soft-deletes a user by ID. Only ILUVATAR or AINUR roles allowed.
+// @Description Soft-deletes a user by ID. Only SUPER_ADMIN or STAFF roles allowed.
 // @Tags Users
 // @Security BearerAuth
 // @Param id path string true "User ID"
@@ -210,7 +210,7 @@ func (m *Module) SelfDelete(c *gin.Context) {
 // @Router /api/v1/users/{id} [delete]
 func (m *Module) AdminDeleteUser(c *gin.Context) {
 	roles := c.MustGet(middleware.ContextRoles).([]string)
-	if !identity.IsIluvatarOrAinur(roles) {
+	if !identity.IsStaffOrSuperAdmin(roles) {
 		c.JSON(http.StatusForbidden, response.ResponseError{
 			Error: "only administrators can delete users",
 		})
@@ -238,7 +238,7 @@ func (m *Module) AdminDeleteUser(c *gin.Context) {
 
 // AdminActivateUser godoc
 // @Summary Activate a user (admin)
-// @Description Activates a deactivated user by ID. Only ILUVATAR or AINUR roles allowed.
+// @Description Activates a deactivated user by ID. Only SUPER_ADMIN or STAFF roles allowed.
 // @Tags Users
 // @Security BearerAuth
 // @Param id path string true "User ID"
@@ -248,7 +248,7 @@ func (m *Module) AdminDeleteUser(c *gin.Context) {
 // @Router /api/v1/users/{id}/activate [patch]
 func (m *Module) AdminActivateUser(c *gin.Context) {
 	roles := c.MustGet(middleware.ContextRoles).([]string)
-	if !identity.IsIluvatarOrAinur(roles) {
+	if !identity.IsStaffOrSuperAdmin(roles) {
 		c.JSON(http.StatusForbidden, response.ResponseError{
 			Error: "only administrators can activate users",
 		})
@@ -276,7 +276,7 @@ func (m *Module) AdminActivateUser(c *gin.Context) {
 
 // AdminDeactivateUser godoc
 // @Summary Deactivate a user (admin)
-// @Description Deactivates a user by ID. Only ILUVATAR or AINUR roles allowed.
+// @Description Deactivates a user by ID. Only SUPER_ADMIN or STAFF roles allowed.
 // @Tags Users
 // @Security BearerAuth
 // @Param id path string true "User ID"
@@ -286,7 +286,7 @@ func (m *Module) AdminActivateUser(c *gin.Context) {
 // @Router /api/v1/users/{id}/deactivate [patch]
 func (m *Module) AdminDeactivateUser(c *gin.Context) {
 	roles := c.MustGet(middleware.ContextRoles).([]string)
-	if !identity.IsIluvatarOrAinur(roles) {
+	if !identity.IsStaffOrSuperAdmin(roles) {
 		c.JSON(http.StatusForbidden, response.ResponseError{
 			Error: "only administrators can deactivate users",
 		})

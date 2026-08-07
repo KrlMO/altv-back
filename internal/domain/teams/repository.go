@@ -216,20 +216,11 @@ func (r *Repository) UpdateTeam(ctx context.Context, t Team) error {
 		return errors.New("nothing to update")
 	}
 
-	tx, err := r.db.Begin(ctx)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback(ctx)
-
 	query, args := b.Build("al_team", "id", t.ID)
 
-	_, err = tx.Exec(ctx, query, args...)
-	if err != nil {
-		return err
-	}
+	_, err := r.db.Exec(ctx, query, args...)
 
-	return tx.Commit(ctx)
+	return err
 }
 
 func (r *Repository) AddMemberToTeam(
@@ -467,19 +458,14 @@ func (r *Repository) CreateTeamGame(
 	teamId, createdBy int64,
 	gameId int32,
 ) (int64, error) {
-	tx, err := r.db.Begin(ctx)
-	if err != nil {
-		return 0, err
-	}
-	defer tx.Rollback(ctx)
 	query := `
 		INSERT INTO al_team_game(team_id, game_id, created_by, updated_by)
 		VALUES ($1, $2, $3, $4)
 		RETURNING id
 	`
 	var teamGameId int64
-	if err := tx.QueryRow(ctx, query, teamId, gameId, createdBy, createdBy).Scan(&teamGameId); err != nil {
+	if err := r.db.QueryRow(ctx, query, teamId, gameId, createdBy, createdBy).Scan(&teamGameId); err != nil {
 		return 0, err
 	}
-	return teamGameId, tx.Commit(ctx)
+	return teamGameId, nil
 }

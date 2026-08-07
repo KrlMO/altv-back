@@ -119,11 +119,11 @@ func (s *Service) toTeamResponse(t *TeamReadModel) *TeamResponse {
 }
 
 func (s *Service) RegisterTeam(ctx context.Context, userID int64, globalRoles []string, dto *CreateTeamRequestDto) (*TeamResponse, error) {
-	if identity.IsOrc(globalRoles) {
+	if identity.IsBanned(globalRoles) {
 		return nil, errors.New("User cannot create a team, user is banned from creating teams")
 	}
 
-	if !identity.IsIluvatarOrAinur(globalRoles) {
+	if !identity.IsStaffOrSuperAdmin(globalRoles) {
 		teamCount, err := s.repo.GetUserTeamCount(ctx, userID)
 		if err != nil {
 			return nil, err
@@ -218,7 +218,7 @@ func (s *Service) GetTeams(ctx context.Context, filter TeamFilter) (dto.Paginate
 }
 
 func (s *Service) PatchUpdateTeam(ctx context.Context, userId int64, globalRoles []string, teamId string, dto PatchUpdateTeamRequest) error {
-	if identity.IsOrc(globalRoles) {
+	if identity.IsBanned(globalRoles) {
 		return errors.New("User cannot update a team, user is banned from updating teams")
 	}
 	parsedID, err := strconv.ParseInt(teamId, 10, 64)
@@ -231,7 +231,7 @@ func (s *Service) PatchUpdateTeam(ctx context.Context, userId int64, globalRoles
 	if err != nil {
 		return errors.New("Error fetching user team roles: " + err.Error())
 	}
-	if !rules.IsTeamOwnerOrManager(teamRoles) && !identity.IsIluvatarOrAinur(globalRoles) {
+	if !rules.IsTeamOwnerOrManager(teamRoles) && !identity.IsStaffOrSuperAdmin(globalRoles) {
 		return errors.New("user does not have permission to update this team or is not an administrator")
 	}
 

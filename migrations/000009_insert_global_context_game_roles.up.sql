@@ -3,12 +3,10 @@
 -- ============================================
 
 INSERT INTO al_global_role (name) VALUES
-('ILUVATAR'),
-('AINUR'),
-('MAIAR'),
-('ELF'),
-('HUMAN'),
-('ORC');
+('SUPER_ADMIN'),
+('STAFF'),
+('USER'),
+('BANNED');
 
 -- ============================================
 -- TEAM ROLES

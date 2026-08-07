@@ -7,7 +7,7 @@ import (
 )
 
 func CanAddMembersToTeamGame(ctx TeamGameActionContext) error {
-	if identity.IsIluvatarOrAinur(ctx.Actor.ActorGlobalRoles) {
+	if identity.IsStaffOrSuperAdmin(ctx.Actor.ActorGlobalRoles) {
 		return nil
 	}
 
@@ -19,7 +19,7 @@ func CanAddMembersToTeamGame(ctx TeamGameActionContext) error {
 }
 
 func CanLeaveTeamGame(ctx TeamGameActionContext) error {
-	if identity.IsIluvatarOrAinur(ctx.Actor.ActorGlobalRoles) {
+	if identity.IsStaffOrSuperAdmin(ctx.Actor.ActorGlobalRoles) {
 		return nil
 	}
 	if !IsTeamGameMember(ctx.BelongsToTeam) {
@@ -32,7 +32,7 @@ func CanLeaveTeamGame(ctx TeamGameActionContext) error {
 }
 
 func CanDeactivateTeamGame(ctx TeamGameActionContext) error {
-	if identity.IsIluvatarOrAinur(ctx.Actor.ActorGlobalRoles) {
+	if identity.IsStaffOrSuperAdmin(ctx.Actor.ActorGlobalRoles) {
 		return nil
 	}
 
@@ -44,7 +44,7 @@ func CanDeactivateTeamGame(ctx TeamGameActionContext) error {
 }
 
 func CanActivateTeamGame(ctx TeamGameActionContext) error {
-	if identity.IsIluvatarOrAinur(ctx.Actor.ActorGlobalRoles) {
+	if identity.IsStaffOrSuperAdmin(ctx.Actor.ActorGlobalRoles) {
 		return nil
 	}
 
@@ -56,7 +56,7 @@ func CanActivateTeamGame(ctx TeamGameActionContext) error {
 }
 
 func CanRemoveMembersFromTeamGame(ctx TeamGameActionContext) error {
-	if identity.IsIluvatarOrAinur(ctx.Actor.ActorGlobalRoles) {
+	if identity.IsStaffOrSuperAdmin(ctx.Actor.ActorGlobalRoles) {
 		return nil
 	}
 
@@ -68,7 +68,7 @@ func CanRemoveMembersFromTeamGame(ctx TeamGameActionContext) error {
 }
 
 func CanUpdateTeamGameMemberRole(ctx TeamGameActionContext) error {
-	if identity.IsIluvatarOrAinur(ctx.Actor.ActorGlobalRoles) {
+	if identity.IsStaffOrSuperAdmin(ctx.Actor.ActorGlobalRoles) {
 		return nil
 	}
 
@@ -80,7 +80,7 @@ func CanUpdateTeamGameMemberRole(ctx TeamGameActionContext) error {
 }
 
 func CanRemoveTeamGameRoleFromMember(ctx TeamGameActionContext) error {
-	if identity.IsIluvatarOrAinur(ctx.Actor.ActorGlobalRoles) {
+	if identity.IsStaffOrSuperAdmin(ctx.Actor.ActorGlobalRoles) {
 		return nil
 	}
 
@@ -96,7 +96,7 @@ func CanRemoveTeamGameRoleFromMember(ctx TeamGameActionContext) error {
 }
 
 func CanAddTeamGameRoleToMember(ctx TeamGameActionContext) error {
-	if identity.IsIluvatarOrAinur(ctx.Actor.ActorGlobalRoles) {
+	if identity.IsStaffOrSuperAdmin(ctx.Actor.ActorGlobalRoles) {
 		return nil
 	}
 

@@ -158,7 +158,7 @@ func (s *Service) CreateTeamGameWithMembers(
 	if err != nil {
 		return 0, errors.New("error fetching user team roles: " + err.Error())
 	}
-	if !identity.IsIluvatarOrAinur(currentUserGlobalRoles) && !trules.IsTeamOwnerOrManager(teamRoles) {
+	if !identity.IsStaffOrSuperAdmin(currentUserGlobalRoles) && !trules.IsTeamOwnerOrManager(teamRoles) {
 		return 0, errors.New("user does not have permission to create a team game")
 	}
 
