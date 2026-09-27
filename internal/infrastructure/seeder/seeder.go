@@ -1,21 +1,25 @@
 package seeder
 
 import (
+	"arena/internal/domain/users"
 	"arena/pkg/utils"
 	"context"
+	"errors"
+	"fmt"
 	"log"
 	"os"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type AdminConfig struct {
-	Email     string
-	Password  string
-	Nickname  string
-	FirstName string
-	LastName  string
-	CountryID int32
+	Email      string
+	Password   string
+	Nickname   string
+	FirstName  string
+	LastName   string
+	CountryISO string
 }
 
 func LoadAdminConfig() *AdminConfig {
@@ -41,23 +45,48 @@ func LoadAdminConfig() *AdminConfig {
 		lastName = "System"
 	}
 
+	countryISO := os.Getenv("ADMIN_COUNTRY_ISO")
+	if countryISO == "" {
+		countryISO = "PE"
+	}
+
 	return &AdminConfig{
-		Email:     email,
-		Password:  password,
-		Nickname:  nickname,
-		FirstName: firstName,
-		LastName:  lastName,
-		CountryID: 174,
+		Email:      email,
+		Password:   password,
+		Nickname:   nickname,
+		FirstName:  firstName,
+		LastName:   lastName,
+		CountryISO: countryISO,
 	}
 }
 
-func SeedAdmin(db *pgxpool.Pool, cfg *AdminConfig) error {
+func resolveCountryID(ctx context.Context, q interface {
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+}, isoCode string) (int, error) {
+	var id int
+
+	err := q.QueryRow(ctx, `
+		SELECT id FROM al_country WHERE iso_code = $1
+	`, isoCode).Scan(&id)
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return 0, fmt.Errorf("ADMIN_COUNTRY_ISO %q does not match any al_country.iso_code", isoCode)
+		}
+		return 0, err
+	}
+
+	return id, nil
+}
+
+func SeedAdmin(db *pgxpool.Pool, cfg *AdminConfig) (int64, error) {
 	if cfg == nil {
 		log.Println("[seeder] ADMIN_EMAIL/ADMIN_PASSWORD not set, skipping admin seed")
-		return nil
+		return 0, nil
 	}
 
 	ctx := context.Background()
+	repo := users.NewRepository(db)
 
 	var exists bool
 	err := db.QueryRow(ctx, `
@@ -67,28 +96,39 @@ func SeedAdmin(db *pgxpool.Pool, cfg *AdminConfig) error {
 		)
 	`, cfg.Email).Scan(&exists)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	if exists {
 		log.Printf("[seeder] admin user %s already exists, skipping\n", cfg.Email)
-		return nil
+
+		superAdminID, err := repo.FindSuperAdminId(ctx, db)
+		if err != nil {
+			return 0, err
+		}
+
+		return superAdminID, nil
+	}
+
+	countryID, err := resolveCountryID(ctx, db, cfg.CountryISO)
+	if err != nil {
+		return 0, err
 	}
 
 	tx, err := db.Begin(ctx)
 	if err != nil {
-		return err
+		return 0, err
 	}
-	defer tx.Rollback(ctx)
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	var userID int64
 	err = tx.QueryRow(ctx, `
 		INSERT INTO al_user (first_name, last_name, nickname, birth_date, country_id, active)
 		VALUES ($1, $2, $3, '1990-01-01', $4, true)
 		RETURNING id
-	`, cfg.FirstName, cfg.LastName, cfg.Nickname, cfg.CountryID).Scan(&userID)
+	`, cfg.FirstName, cfg.LastName, cfg.Nickname, countryID).Scan(&userID)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	_, err = tx.Exec(ctx, `
@@ -98,12 +138,12 @@ func SeedAdmin(db *pgxpool.Pool, cfg *AdminConfig) error {
 		WHERE r.name = 'SUPER_ADMIN'
 	`, userID)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	passwordHash, err := utils.HashPassword(cfg.Password)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	_, err = tx.Exec(ctx, `
@@ -111,13 +151,13 @@ func SeedAdmin(db *pgxpool.Pool, cfg *AdminConfig) error {
 		VALUES ($1, 'local', $2, $3, $1, $1, true)
 	`, userID, cfg.Email, passwordHash)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		return err
+		return 0, err
 	}
 
 	log.Printf("[seeder] admin user created: %s (id: %d, role: SUPER_ADMIN)\n", cfg.Email, userID)
-	return nil
+	return userID, nil
 }

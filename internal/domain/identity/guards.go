@@ -15,3 +15,10 @@ func CanInteractWithTeamGames(roles []string) error {
 	}
 	return nil
 }
+
+func CanInteractWithOrganizations(roles []string) error {
+	if IsBanned(roles) {
+		return ErrBannedFromOrganizations
+	}
+	return nil
+}

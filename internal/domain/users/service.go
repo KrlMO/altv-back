@@ -130,7 +130,7 @@ func (s *Service) GetUser(ctx context.Context, providerUID, provider string) (*U
 		return nil, nil, err
 	}
 
-	if u.Active == false {
+	if !u.Active {
 		return nil, nil, errors.New("user does not exist")
 	}
 

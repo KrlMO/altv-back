@@ -1,6 +1,9 @@
 package identity
 
-import "testing"
+import (
+	"errors"
+	"testing"
+)
 
 func TestHasRole(t *testing.T) {
 	tests := []struct {
@@ -64,5 +67,35 @@ func TestCanInteractWithTeams(t *testing.T) {
 				t.Errorf("CanInteractWithTeams(%v) error = %v, wantErr %v", tt.roles, err, tt.wantErr)
 			}
 		})
+	}
+}
+
+func TestCanInteractWithOrganizations(t *testing.T) {
+	tests := []struct {
+		name    string
+		roles   []string
+		wantErr bool
+	}{
+		{"user can interact", []string{"USER"}, false},
+		{"banned cannot interact", []string{"BANNED"}, true},
+		{"banned among other roles cannot interact", []string{"USER", "BANNED"}, true},
+		{"empty roles can interact", []string{}, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := CanInteractWithOrganizations(tt.roles)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("CanInteractWithOrganizations(%v) error = %v, wantErr %v", tt.roles, err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestCanInteractWithOrganizations_ReturnsSentinelError(t *testing.T) {
+	err := CanInteractWithOrganizations([]string{"BANNED"})
+
+	if !errors.Is(err, ErrBannedFromOrganizations) {
+		t.Errorf("CanInteractWithOrganizations([BANNED]) error = %v, want %v", err, ErrBannedFromOrganizations)
 	}
 }

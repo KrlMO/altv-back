@@ -96,6 +96,15 @@ definitions:
       msg:
         type: string
     type: object
+  arena_pkg_response.ResponseOk-array_internal_domain_organizations_OrganizationRoleGroupDto:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/internal_domain_organizations.OrganizationRoleGroupDto'
+        type: array
+      msg:
+        type: string
+    type: object
   arena_pkg_response.ResponseOk-array_internal_domain_regions_RegionResponse:
     properties:
       data:
@@ -233,6 +242,45 @@ definitions:
       name:
         type: string
       slug:
+        type: string
+    type: object
+  internal_domain_organizations.MyOrganizationDto:
+    properties:
+      active:
+        example: true
+        type: boolean
+      banner:
+        type: string
+        x-nullable: true
+      description:
+        example: The Acmes competitive division
+        type: string
+      id:
+        example: 1
+        type: integer
+      logo:
+        type: string
+        x-nullable: true
+      name:
+        example: Acme Esports
+        type: string
+      permissions:
+        items:
+          type: string
+        type: array
+      roles:
+        items:
+          type: string
+        type: array
+    type: object
+  internal_domain_organizations.OrganizationRoleGroupDto:
+    properties:
+      organizations:
+        items:
+          $ref: '#/definitions/internal_domain_organizations.MyOrganizationDto'
+        type: array
+      role:
+        example: OWNER
         type: string
     type: object
   internal_domain_regions.RegionResponse:
@@ -842,6 +890,38 @@ paths:
       summary: List Games
       tags:
       - Games
+  /api/v1/organizations/my:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves every organization the authenticated user belongs to,
+        grouped by the organization role the user holds in each one. Each organization
+        also reports the permission codes granted by its currently valid plans. BANNED
+        users are rejected.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseOk-array_internal_domain_organizations_OrganizationRoleGroupDto'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+      security:
+      - BearerAuth: []
+      summary: List the organizations of the authenticated user
+      tags:
+      - Organizations
   /api/v1/regions:
     get:
       consumes:

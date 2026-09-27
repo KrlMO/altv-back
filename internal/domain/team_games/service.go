@@ -9,6 +9,7 @@ import (
 	"arena/pkg/storage"
 	"context"
 	"errors"
+	"log"
 	"mime/multipart"
 	"net/http"
 	"strconv"
@@ -197,7 +198,9 @@ func (s *Service) CreateTeamGameWithMembers(
 	teamGameID, err := s.repo.CreateTeamGameWithMembers(ctx, parsedTeamID, currentUserId, gameID, resolved, jerseyPaths)
 	if err != nil {
 		for _, name := range savedFilenames {
-			s.storage.Delete(ctx, storage.FolderTeamGameJersey, name)
+			if err := s.storage.Delete(ctx, storage.FolderTeamGameJersey, name); err != nil {
+				log.Printf("failed to clean up jersey %s: %v", name, err)
+			}
 		}
 		return 0, err
 	}

@@ -120,7 +120,7 @@ func (s *Service) toTeamResponse(t *TeamReadModel) *TeamResponse {
 
 func (s *Service) RegisterTeam(ctx context.Context, userID int64, globalRoles []string, dto *CreateTeamRequestDto) (*TeamResponse, error) {
 	if identity.IsBanned(globalRoles) {
-		return nil, errors.New("User cannot create a team, user is banned from creating teams")
+		return nil, errors.New("user cannot create a team, user is banned from creating teams")
 	}
 
 	if !identity.IsStaffOrSuperAdmin(globalRoles) {
@@ -129,7 +129,7 @@ func (s *Service) RegisterTeam(ctx context.Context, userID int64, globalRoles []
 			return nil, err
 		}
 		if teamCount >= 1 {
-			return nil, errors.New("User already has a team, cannot create another one")
+			return nil, errors.New("user already has a team, cannot create another one")
 		}
 	}
 
@@ -147,7 +147,7 @@ func (s *Service) RegisterTeam(ctx context.Context, userID int64, globalRoles []
 		return nil, err
 	}
 	if !exists {
-		return nil, errors.New("Country does not exist")
+		return nil, errors.New("country does not exist")
 	}
 
 	t := Team{
@@ -219,7 +219,7 @@ func (s *Service) GetTeams(ctx context.Context, filter TeamFilter) (dto.Paginate
 
 func (s *Service) PatchUpdateTeam(ctx context.Context, userId int64, globalRoles []string, teamId string, dto PatchUpdateTeamRequest) error {
 	if identity.IsBanned(globalRoles) {
-		return errors.New("User cannot update a team, user is banned from updating teams")
+		return errors.New("user cannot update a team, user is banned from updating teams")
 	}
 	parsedID, err := strconv.ParseInt(teamId, 10, 64)
 	if err != nil {

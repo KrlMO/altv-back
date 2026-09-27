@@ -263,17 +263,15 @@ func (r *Repository) GetUserTeamAndTeamGameRoles(
 	ctx context.Context,
 	userId, teamGameId int64,
 ) ([]string, []string, error) {
-	teamRoles := []string{}
-	teamGameRoles := []string{}
 	teamId, err := r.GetTeamIdFromTeamGameId(ctx, teamGameId)
 	if err != nil {
 		return nil, nil, err
 	}
-	teamRoles, err = r.sharedRepo.GetUserTeamRoles(ctx, userId, teamId)
+	teamRoles, err := r.sharedRepo.GetUserTeamRoles(ctx, userId, teamId)
 	if err != nil {
 		return nil, nil, err
 	}
-	teamGameRoles, err = r.GetUserTeamGameRoles(ctx, userId, teamGameId)
+	teamGameRoles, err := r.GetUserTeamGameRoles(ctx, userId, teamGameId)
 	if err != nil {
 		return nil, nil, err
 	}

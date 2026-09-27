@@ -370,6 +370,52 @@
                 }
             }
         },
+        "/api/v1/organizations/my": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieves every organization the authenticated user belongs to, grouped by the organization role the user holds in each one. Each organization also reports the permission codes granted by its currently valid plans. BANNED users are rejected.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Organizations"
+                ],
+                "summary": "List the organizations of the authenticated user",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseOk-array_internal_domain_organizations_OrganizationRoleGroupDto"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/regions": {
             "get": {
                 "description": "Retrieves a list of all registered regions",
@@ -2357,6 +2403,20 @@
                 }
             }
         },
+        "arena_pkg_response.ResponseOk-array_internal_domain_organizations_OrganizationRoleGroupDto": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_domain_organizations.OrganizationRoleGroupDto"
+                    }
+                },
+                "msg": {
+                    "type": "string"
+                }
+            }
+        },
         "arena_pkg_response.ResponseOk-array_internal_domain_regions_RegionResponse": {
             "type": "object",
             "properties": {
@@ -2570,6 +2630,62 @@
                 },
                 "slug": {
                     "type": "string"
+                }
+            }
+        },
+        "internal_domain_organizations.MyOrganizationDto": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "banner": {
+                    "type": "string",
+                    "x-nullable": true
+                },
+                "description": {
+                    "type": "string",
+                    "example": "The Acmes competitive division"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "logo": {
+                    "type": "string",
+                    "x-nullable": true
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Acme Esports"
+                },
+                "permissions": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "roles": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "internal_domain_organizations.OrganizationRoleGroupDto": {
+            "type": "object",
+            "properties": {
+                "organizations": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_domain_organizations.MyOrganizationDto"
+                    }
+                },
+                "role": {
+                    "type": "string",
+                    "example": "OWNER"
                 }
             }
         },

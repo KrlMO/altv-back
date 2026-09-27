@@ -5,6 +5,7 @@ import (
 	"arena/internal/domain/auth"
 	"arena/internal/domain/countries"
 	"arena/internal/domain/games"
+	"arena/internal/domain/organizations"
 	"arena/internal/domain/regions"
 	teamgames "arena/internal/domain/team_games"
 	"arena/internal/domain/teams"
@@ -62,6 +63,12 @@ func SetupRouter(db *pgxpool.Pool, cfg *config.Config) *gin.Engine {
 	teamsService := teams.NewService(teamsRepo, sharedRepo, mediaStorage)
 	teamsModule := teams.NewModule(teamsService)
 	teamsModule.RegisterRoutes(r, cfg.JWTSecret)
+
+	// ORGANIZATIONS
+	organizationsRepo := organizations.NewRepository(db)
+	organizationsService := organizations.NewService(organizationsRepo, mediaStorage)
+	organizationsModule := organizations.NewModule(organizationsService)
+	organizationsModule.RegisterRoutes(r, cfg.JWTSecret)
 
 	//TEAM GAMES
 	teamGamesRepo := teamgames.NewRepository(db, sharedRepo)

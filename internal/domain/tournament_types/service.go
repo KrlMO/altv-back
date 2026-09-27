@@ -18,10 +18,7 @@ func (s *Service) ListTournamentTypes(ctx context.Context) ([]TournamentTypeList
 
 	response := make([]TournamentTypeListItemResponse, 0, len(types))
 	for _, t := range types {
-		response = append(response, TournamentTypeListItemResponse{
-			ID:   t.ID,
-			Name: t.Name,
-		})
+		response = append(response, TournamentTypeListItemResponse(t))
 	}
 
 	return response, nil

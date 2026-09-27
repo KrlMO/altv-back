@@ -14,9 +14,11 @@ const (
 )
 
 const (
-	FolderTeamsLogo   = "teams/logo"
-	FolderTeamsBanner = "teams/banner"
+	FolderTeamsLogo      = "teams/logo"
+	FolderTeamsBanner    = "teams/banner"
 	FolderTeamGameJersey = "team_games/jersey"
+	FolderOrgsLogo       = "organizations/logo"
+	FolderOrgsBanner     = "organizations/banner"
 )
 
 var ErrNotImplemented = errors.New("storage driver not implemented yet")

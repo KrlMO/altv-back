@@ -289,7 +289,9 @@ func (r *Repository) UpdateUserTeamRole(
 		return err
 	}
 
-	err = r.InsertUserTeamRoleHistory(ctx, tx, userId, teamId, assigned_by, idTeamRole, "UPDATED")
+	if err := r.InsertUserTeamRoleHistory(ctx, tx, userId, teamId, assigned_by, idTeamRole, "UPDATED"); err != nil {
+		return err
+	}
 
 	return tx.Commit(ctx)
 }

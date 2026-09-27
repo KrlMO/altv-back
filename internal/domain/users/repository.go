@@ -91,11 +91,21 @@ func (r *Repository) InsertUserAuth(
 	return err
 }
 
-func (r *Repository) FindSuperAdminId(ctx context.Context, tx pgx.Tx) (int64, error) {
+type rowQuerier interface {
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+}
+
+func (r *Repository) FindSuperAdminId(ctx context.Context, q rowQuerier) (int64, error) {
 	var superAdminId int64
 
-	err := tx.QueryRow(ctx, `
-		SELECT id FROM al_global_role WHERE name = $1
+	err := q.QueryRow(ctx, `
+		SELECT u.id
+		FROM al_user u
+		JOIN al_user_global_role ugr ON ugr.user_id = u.id
+		JOIN al_global_role gr ON gr.id = ugr.role_id
+		WHERE gr.name = $1
+		ORDER BY ugr.assigned_at
+		LIMIT 1
 	`, identity.RoleSuperAdmin).Scan(&superAdminId)
 
 	if err != nil {

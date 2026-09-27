@@ -31,7 +31,7 @@ func (r *Repository) FilterTournaments(
 		argIdx++
 	}
 	if filter.RegionID != nil {
-		where = append(where, fmt.Sprintf("at.region_id = $%d", argIdx))
+		where = append(where, fmt.Sprintf("ac.region_id = $%d", argIdx))
 		args = append(args, *filter.RegionID)
 		argIdx++
 	}
@@ -71,6 +71,7 @@ func (r *Repository) FilterTournaments(
 	countQuery := fmt.Sprintf(`
 		SELECT COUNT(*)
 		FROM al_tournament at
+		LEFT JOIN al_country ac ON at.country_id = ac.id
 		WHERE %s
 	`, whereClause)
 
@@ -119,8 +120,8 @@ func (r *Repository) FilterTournaments(
 		JOIN al_game g ON at.game_id = g.id
 		LEFT JOIN al_organization ao ON at.organization_id = ao.id
 		LEFT JOIN al_tournament_type att ON at.type_id = att.id
-		LEFT JOIN al_region ar ON at.region_id = ar.id
 		LEFT JOIN al_country ac ON at.country_id = ac.id
+		LEFT JOIN al_region ar ON ac.region_id = ar.id
 		WHERE %s
 		ORDER BY %s
 		LIMIT $%d OFFSET $%d
