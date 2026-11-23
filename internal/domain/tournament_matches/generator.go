@@ -10,6 +10,7 @@ type Generator interface {
 
 var generators = map[string]Generator{
 	rulesFormatSingleElimination: SingleEliminationGenerator{},
+	rulesFormatDoubleElimination: DoubleEliminationGenerator{},
 	rulesFormatSwiss:             SwissGenerator{},
 }
 

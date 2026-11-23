@@ -145,26 +145,76 @@ func (s *Service) SetMatchResult(
 		return err
 	}
 
-	// Propagate through single elimination brackets: the winner fills the
-	// next round slot. Swiss has no propagation.
+	// Propagate through the bracket: single elimination moves the winner;
+	// double elimination also drops the loser to the lower bracket.
 	stage, err := s.repo.GetStageInfo(ctx, m.StageID)
 	if err != nil {
 		return err
 	}
-	if stage.FormatCode == "SINGLE_ELIMINATION" {
-		return s.propagate(ctx, m, winner)
+	switch stage.FormatCode {
+	case "SINGLE_ELIMINATION":
+		return s.propagate(ctx, m, winner, nil)
+	case "DOUBLE_ELIMINATION":
+		var loser int64
+		if winner == teamA {
+			loser = teamB
+		} else {
+			loser = teamA
+		}
+		return s.propagate(ctx, m, winner, &loser)
 	}
 	return nil
 }
 
-// propagate writes the winner into the next bracket slot; if the next match
-// already had both teams, it stays PENDING for the organizer to start.
-func (s *Service) propagate(ctx context.Context, m *Match, winner int64) error {
-	next, slot, err := s.repo.GetNextBracketSlot(ctx, m)
+// propagate writes the winner into the next bracket slot; in double
+// elimination it also writes the loser into the lower bracket slot.
+func (s *Service) propagate(ctx context.Context, m *Match, winner int64, loser *int64) error {
+	size, err := s.deSize(ctx, m.StageID)
 	if err != nil {
-		return nil // final round: nowhere to propagate
+		return err
 	}
-	return s.repo.SetBracketSlot(ctx, next.ID, slot, winner)
+
+	round, matchNumber, slot, ok := deNextWinner(size, m.RoundNumber, m.MatchNumber)
+	if ok {
+		next, err := s.repo.GetMatchByRoundAndNumber(ctx, m.StageID, int64(round), int64(matchNumber))
+		if err == nil {
+			if err := s.repo.SetBracketSlot(ctx, next.ID, slot, winner); err != nil {
+				return err
+			}
+		}
+	}
+
+	if loser != nil {
+		lRound, lMatch, lSlot, ok := deNextLoser(size, m.RoundNumber, m.MatchNumber)
+		if ok {
+			lb, err := s.repo.GetMatchByRoundAndNumber(ctx, m.StageID, int64(lRound), int64(lMatch))
+			if err == nil {
+				if err := s.repo.SetBracketSlot(ctx, lb.ID, lSlot, *loser); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
+// deSize derives the padded bracket size from the stage's round-1 match count
+// (a DE bracket of size S has S/2 first-round matches).
+func (s *Service) deSize(ctx context.Context, stageID int64) (int, error) {
+	matches, err := s.repo.ListStageMatches(ctx, stageID)
+	if err != nil {
+		return 0, err
+	}
+	firstRound := 0
+	for _, m := range matches {
+		if m.RoundNumber == 1 {
+			firstRound++
+		}
+	}
+	if firstRound == 0 {
+		return 0, rules.ErrMatchesExist
+	}
+	return firstRound * 2, nil
 }
 
 // NextSwissRound pairs the active participants by record for the next round.
