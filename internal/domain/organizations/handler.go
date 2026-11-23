@@ -45,6 +45,10 @@ func (m *Module) CreateOrganization(c *gin.Context) {
 
 	orgID, err := m.createService.CreateOrganization(c.Request.Context(), userID, globalRoles, req.Name, req.Description)
 	if err != nil {
+		if errors.Is(err, ErrOrganizationLimitReached) {
+			c.JSON(http.StatusConflict, response.ResponseError{Error: err.Error()})
+			return
+		}
 		c.JSON(http.StatusBadRequest, response.ResponseError{Error: err.Error()})
 		return
 	}

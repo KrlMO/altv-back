@@ -22,6 +22,20 @@ func NewCreateRepository(db *pgxpool.Pool) *CreateRepository {
 	return &CreateRepository{db}
 }
 
+// CountOwnedOrganizations returns how many active organizations the user owns.
+func (r *CreateRepository) CountOwnedOrganizations(ctx context.Context, userID int64) (int, error) {
+	var n int
+	err := r.db.QueryRow(ctx, `
+		SELECT count(*)
+		FROM al_user_organization_role uor
+		JOIN al_organization_role r ON r.id = uor.role_id
+		JOIN al_organization o ON o.id = uor.organization_id
+		WHERE uor.user_id = $1 AND r.name = $2
+		  AND COALESCE(uor.active, true) AND COALESCE(o.active, true)
+	`, userID, RoleOwner).Scan(&n)
+	return n, err
+}
+
 // CreateOrganization creates the organization, assigns the OWNER role to the
 // creator and attaches the free organizer membership — all in one transaction.
 func (r *CreateRepository) CreateOrganization(
