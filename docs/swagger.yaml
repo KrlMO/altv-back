@@ -132,6 +132,33 @@ definitions:
       msg:
         type: string
     type: object
+  arena_pkg_response.ResponseOk-array_internal_domain_tournament_registrations_RegistrationResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/internal_domain_tournament_registrations.RegistrationResponse'
+        type: array
+      msg:
+        type: string
+    type: object
+  arena_pkg_response.ResponseOk-array_internal_domain_tournament_registrations_RosterMemberResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/internal_domain_tournament_registrations.RosterMemberResponse'
+        type: array
+      msg:
+        type: string
+    type: object
+  arena_pkg_response.ResponseOk-array_internal_domain_tournament_stages_StageResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/internal_domain_tournament_stages.StageResponse'
+        type: array
+      msg:
+        type: string
+    type: object
   arena_pkg_response.ResponseOk-array_internal_domain_tournament_types_TournamentTypeListItemResponse:
     properties:
       data:
@@ -147,6 +174,13 @@ definitions:
         items:
           $ref: '#/definitions/internal_domain_users.UserSearchResult'
         type: array
+      msg:
+        type: string
+    type: object
+  arena_pkg_response.ResponseOk-bool:
+    properties:
+      data:
+        type: boolean
       msg:
         type: string
     type: object
@@ -168,6 +202,20 @@ definitions:
     properties:
       data:
         $ref: '#/definitions/internal_domain_teams.TeamResponse'
+      msg:
+        type: string
+    type: object
+  arena_pkg_response.ResponseOk-internal_domain_tournament_registrations_RegistrationResponse:
+    properties:
+      data:
+        $ref: '#/definitions/internal_domain_tournament_registrations.RegistrationResponse'
+      msg:
+        type: string
+    type: object
+  arena_pkg_response.ResponseOk-internal_domain_tournament_stages_StageResponse:
+    properties:
+      data:
+        $ref: '#/definitions/internal_domain_tournament_stages.StageResponse'
       msg:
         type: string
     type: object
@@ -466,6 +514,136 @@ definitions:
         type: string
     required:
     - role
+    type: object
+  internal_domain_tournament_registrations.AddRosterMemberRequest:
+    properties:
+      is_starter:
+        type: boolean
+      user_id:
+        type: integer
+    required:
+    - user_id
+    type: object
+  internal_domain_tournament_registrations.CreateRegistrationRequest:
+    properties:
+      team_game_id:
+        type: integer
+    required:
+    - team_game_id
+    type: object
+  internal_domain_tournament_registrations.RegistrationResponse:
+    properties:
+      created_at:
+        type: string
+      game_name:
+        type: string
+      id:
+        type: integer
+      registered_by:
+        type: integer
+      reviewed_at:
+        type: string
+      reviewed_by:
+        type: integer
+      status:
+        type: string
+      team_game_id:
+        type: integer
+      team_name:
+        type: string
+      tournament_id:
+        type: integer
+    type: object
+  internal_domain_tournament_registrations.ReviewRegistrationRequest:
+    properties:
+      decision:
+        enum:
+        - ACCEPT
+        - REJECT
+        type: string
+    required:
+    - decision
+    type: object
+  internal_domain_tournament_registrations.RosterMemberResponse:
+    properties:
+      added_at:
+        type: string
+      first_name:
+        type: string
+      is_starter:
+        type: boolean
+      jersey_photo:
+        type: string
+      last_name:
+        type: string
+      nickname:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  internal_domain_tournament_stages.CreateStageRequest:
+    properties:
+      config:
+        additionalProperties: true
+        type: object
+      format_code:
+        type: string
+      name:
+        maxLength: 150
+        type: string
+      stage_order:
+        minimum: 1
+        type: integer
+    required:
+    - format_code
+    - name
+    - stage_order
+    type: object
+  internal_domain_tournament_stages.StageResponse:
+    properties:
+      config:
+        additionalProperties: true
+        type: object
+      created_at:
+        type: string
+      format_code:
+        type: string
+      format_name:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      stage_order:
+        type: integer
+      status:
+        type: string
+      tournament_id:
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  internal_domain_tournament_stages.UpdateStageRequest:
+    properties:
+      config:
+        additionalProperties: true
+        type: object
+      name:
+        maxLength: 150
+        type: string
+      stage_order:
+        minimum: 1
+        type: integer
+    type: object
+  internal_domain_tournament_stages.UpdateStageStatusRequest:
+    properties:
+      status:
+        enum:
+        - IN_PROGRESS
+        - COMPLETED
+        type: string
+    required:
+    - status
     type: object
   internal_domain_tournament_types.TournamentTypeListItemResponse:
     properties:
@@ -941,6 +1119,293 @@ paths:
       summary: Get all regions
       tags:
       - Regions
+  /api/v1/registrations/{id}:
+    delete:
+      description: 'Cancels a registration. Allowed: the user who registered it, the
+        roster''s team owner/manager, or global staff. The registration is deleted
+        and its roster is freed.'
+      parameters:
+      - description: Registration ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseOk-bool'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+      security:
+      - BearerAuth: []
+      summary: Cancel a registration
+      tags:
+      - TournamentRegistrations
+  /api/v1/registrations/{id}/review:
+    post:
+      consumes:
+      - application/json
+      description: 'Reviews a pending registration. Allowed: organization OWNER/ADMIN,
+        tournament TOURNAMENT_OWNER/TOURNAMENT_ADMIN, or global staff. Rejecting deletes
+        the registration and frees its roster players.'
+      parameters:
+      - description: Registration ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Review decision (ACCEPT | REJECT)
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_domain_tournament_registrations.ReviewRegistrationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseOk-bool'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+      security:
+      - BearerAuth: []
+      summary: Accept or reject a registration
+      tags:
+      - TournamentRegistrations
+  /api/v1/registrations/{id}/roster:
+    get:
+      description: Returns the players competing through a registration (starters
+        first).
+      parameters:
+      - description: Registration ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseOk-array_internal_domain_tournament_registrations_RosterMemberResponse'
+      summary: List the roster of a registration
+      tags:
+      - TournamentRegistrations
+    post:
+      consumes:
+      - application/json
+      description: Adds a member of the roster to the registration's tournament roster.
+        A user can only be in one roster per tournament.
+      parameters:
+      - description: Registration ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Roster member payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_domain_tournament_registrations.AddRosterMemberRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseOk-bool'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+      security:
+      - BearerAuth: []
+      summary: Add a player to a registration's roster
+      tags:
+      - TournamentRegistrations
+  /api/v1/registrations/{id}/roster/{userId}:
+    delete:
+      description: Removes a player from the registration's tournament roster.
+      parameters:
+      - description: Registration ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: User ID
+        in: path
+        name: userId
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseOk-bool'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+      security:
+      - BearerAuth: []
+      summary: Remove a player from a registration's roster
+      tags:
+      - TournamentRegistrations
+  /api/v1/stages/{id}:
+    delete:
+      description: Soft-deletes a stage. Only allowed while the stage is PENDING.
+      parameters:
+      - description: Stage ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseOk-bool'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+      security:
+      - BearerAuth: []
+      summary: Delete a pending stage
+      tags:
+      - TournamentStages
+    patch:
+      consumes:
+      - application/json
+      description: Patches the name, order or config of a stage. Only allowed while
+        the stage is PENDING. Config must remain valid for the stage's format.
+      parameters:
+      - description: Stage ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Stage patch
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_domain_tournament_stages.UpdateStageRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseOk-bool'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+      security:
+      - BearerAuth: []
+      summary: Update a pending stage
+      tags:
+      - TournamentStages
+  /api/v1/stages/{id}/status:
+    patch:
+      consumes:
+      - application/json
+      description: Transitions a stage's status (PENDING -> IN_PROGRESS -> COMPLETED).
+        A stage cannot start while earlier stages are not completed.
+      parameters:
+      - description: Stage ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: New status
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_domain_tournament_stages.UpdateStageStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseOk-bool'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+      security:
+      - BearerAuth: []
+      summary: Advance a stage's status
+      tags:
+      - TournamentStages
   /api/v1/team-games:
     get:
       consumes:
@@ -1818,6 +2283,130 @@ paths:
       summary: List Tournaments
       tags:
       - Tournaments
+  /api/v1/tournaments/{id}/registrations:
+    get:
+      description: Lists the registrations of a tournament. Anonymous and non-privileged
+        users only see ACCEPTED registrations; organizers and staff see all of them.
+      parameters:
+      - description: Tournament ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseOk-array_internal_domain_tournament_registrations_RegistrationResponse'
+      summary: List the registrations of a tournament
+      tags:
+      - TournamentRegistrations
+    post:
+      consumes:
+      - application/json
+      description: Registers a team_game (roster) to a tournament. Only the team owner/manager
+        of the roster's team can register it. The roster's game must match the tournament's
+        game.
+      parameters:
+      - description: Tournament ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Registration payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_domain_tournament_registrations.CreateRegistrationRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseOk-internal_domain_tournament_registrations_RegistrationResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+      security:
+      - BearerAuth: []
+      summary: Register a roster to a tournament
+      tags:
+      - TournamentRegistrations
+  /api/v1/tournaments/{id}/stages:
+    get:
+      description: Returns the stages of a tournament ordered by stage_order. Public
+        endpoint for visualization.
+      parameters:
+      - description: Tournament ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseOk-array_internal_domain_tournament_stages_StageResponse'
+      summary: List the stages of a tournament
+      tags:
+      - TournamentStages
+    post:
+      consumes:
+      - application/json
+      description: 'Creates a stage for a tournament. Allowed: organization OWNER/ADMIN,
+        tournament TOURNAMENT_OWNER/TOURNAMENT_ADMIN, or global staff. The config
+        is validated against the stage format.'
+      parameters:
+      - description: Tournament ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Stage payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_domain_tournament_stages.CreateStageRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseOk-internal_domain_tournament_stages_StageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+      security:
+      - BearerAuth: []
+      summary: Create a tournament stage
+      tags:
+      - TournamentStages
   /api/v1/users/{id}:
     delete:
       description: Soft-deletes a user by ID. Only SUPER_ADMIN or STAFF roles allowed.
