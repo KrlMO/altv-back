@@ -1,9 +1,10 @@
 package organizations
 
 type Module struct {
-	service *Service
+	service       *Service
+	createService *CreateOrganizationService
 }
 
-func NewModule(service *Service) *Module {
-	return &Module{service: service}
+func NewModuleWithCreate(service *Service, createService *CreateOrganizationService) *Module {
+	return &Module{service, createService}
 }

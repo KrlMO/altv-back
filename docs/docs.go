@@ -514,6 +514,51 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/organizations": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Lets any authenticated user create an organization. The creator becomes OWNER and the organization starts on the free organizer plan.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Organizations"
+                ],
+                "summary": "Create an organization",
+                "parameters": [
+                    {
+                        "description": "Organization payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_domain_organizations.CreateOrganizationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseOk-bool"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/organizations/my": {
             "get": {
                 "security": [
@@ -2556,6 +2601,61 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Creates a DRAFT tournament for an organization. Requires the CREATE_TOURNAMENT permission from the organization's active membership, plus the OWNER/ADMIN/CREATOR role. OFFICIAL tournaments need CREATE_OFFICIAL_TOURNAMENT. Free plans can only keep one active tournament.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Tournaments"
+                ],
+                "summary": "Create a tournament",
+                "parameters": [
+                    {
+                        "description": "Tournament payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_domain_tournaments.CreateTournamentBody"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseOk-bool"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    }
+                }
             }
         },
         "/api/v1/tournaments/{id}": {
@@ -3731,6 +3831,20 @@ const docTemplate = `{
                 }
             }
         },
+        "internal_domain_organizations.CreateOrganizationRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
         "internal_domain_organizations.MyOrganizationDto": {
             "type": "object",
             "properties": {
@@ -4387,6 +4501,53 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                }
+            }
+        },
+        "internal_domain_tournaments.CreateTournamentBody": {
+            "type": "object",
+            "required": [
+                "game_id",
+                "name",
+                "organization_id",
+                "organizer_type",
+                "start_at"
+            ],
+            "properties": {
+                "color_hex": {
+                    "type": "string"
+                },
+                "country_id": {
+                    "type": "integer"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "end_at": {
+                    "type": "string"
+                },
+                "game_id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 150
+                },
+                "organization_id": {
+                    "type": "integer"
+                },
+                "organizer_type": {
+                    "type": "string",
+                    "enum": [
+                        "COMMUNITY",
+                        "OFFICIAL"
+                    ]
+                },
+                "start_at": {
+                    "type": "string"
+                },
+                "type_id": {
+                    "type": "integer"
                 }
             }
         },

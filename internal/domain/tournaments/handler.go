@@ -4,8 +4,11 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"time"
 
+	"arena/internal/domain/tournaments/rules"
 	"arena/pkg/dto"
+	"arena/pkg/middleware"
 	"arena/pkg/response"
 
 	"github.com/gin-gonic/gin"
@@ -14,6 +17,80 @@ import (
 func (m *Module) RegisterRoutes(r *gin.Engine) {
 	r.GET("/api/v1/tournaments", m.ListTournaments)
 	r.GET("/api/v1/tournaments/:id", m.GetTournamentByID)
+
+	auth := r.Group("/api/v1/tournaments", middleware.Auth(m.jwtSecret))
+	{
+		auth.POST("", m.CreateTournament)
+	}
+}
+
+// CreateTournament godoc
+// @Summary Create a tournament
+// @Description Creates a DRAFT tournament for an organization. Requires the CREATE_TOURNAMENT permission from the organization's active membership, plus the OWNER/ADMIN/CREATOR role. OFFICIAL tournaments need CREATE_OFFICIAL_TOURNAMENT. Free plans can only keep one active tournament.
+// @Tags Tournaments
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param body body CreateTournamentBody true "Tournament payload"
+// @Success 201 {object} response.ResponseOk[bool]
+// @Failure 400 {object} response.ResponseError
+// @Failure 403 {object} response.ResponseError
+// @Failure 409 {object} response.ResponseError
+// @Router /api/v1/tournaments [post]
+func (m *Module) CreateTournament(c *gin.Context) {
+	userID := c.GetInt64(middleware.ContextUserID)
+	globalRoles := c.GetStringSlice(middleware.ContextRoles)
+
+	var body CreateTournamentBody
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, response.ResponseError{Error: "invalid request: " + err.Error()})
+		return
+	}
+
+	req := CreateTournamentRequest{
+		OrganizationID: body.OrganizationID,
+		GameID:         body.GameID,
+		Name:           body.Name,
+		Description:    body.Description,
+		ColorHex:       body.ColorHex,
+		CountryID:      body.CountryID,
+		TypeID:         body.TypeID,
+		OrganizerType:  body.OrganizerType,
+	}
+	startAt, err := time.Parse(time.RFC3339, body.StartAt)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, response.ResponseError{Error: "start_at must be RFC3339"})
+		return
+	}
+	req.StartAt = startAt
+	if body.EndAt != "" {
+		endAt, err := time.Parse(time.RFC3339, body.EndAt)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, response.ResponseError{Error: "end_at must be RFC3339"})
+			return
+		}
+		req.EndAt = &endAt
+	}
+
+	id, err := m.service.CreateTournament(c.Request.Context(), userID, globalRoles, req)
+	if err != nil {
+		switch {
+		case errors.Is(err, ErrTournamentNotFound):
+			c.JSON(http.StatusNotFound, response.ResponseError{Error: "organization or game not found"})
+		case errors.Is(err, rules.ErrNoPermission),
+			errors.Is(err, rules.ErrOrgNoCreatePermission),
+			errors.Is(err, rules.ErrOfficialNotAllowed):
+			c.JSON(http.StatusForbidden, response.ResponseError{Error: err.Error()})
+		case errors.Is(err, rules.ErrActiveLimitReached),
+			errors.Is(err, rules.ErrOfficialLimitReached):
+			c.JSON(http.StatusConflict, response.ResponseError{Error: err.Error()})
+		default:
+			c.JSON(http.StatusBadRequest, response.ResponseError{Error: err.Error()})
+		}
+		return
+	}
+
+	c.JSON(http.StatusCreated, response.ResponseOk[gin.H]{Data: gin.H{"id": id}})
 }
 
 // GetTournamentByID godoc

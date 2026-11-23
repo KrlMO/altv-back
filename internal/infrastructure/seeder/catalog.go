@@ -69,6 +69,34 @@ var permissions = []permission{
 	{Code: "CREATE_MULTIPLE_OFFICIAL_TOURNAMENTS", Description: "Permission to create multiple official tournaments"},
 }
 
+// membershipPermissions maps organizer membership slugs to the permissions
+// their organizations get. Free plans get the basics; paid plans unlock
+// volume, official tournaments, analytics and customization.
+var membershipPermissions = map[string][]string{
+	"organizer-basic": {
+		"CREATE_TOURNAMENT",
+	},
+	"organizer-pro": {
+		"CREATE_TOURNAMENT",
+		"CREATE_MULTIPLE_TOURNAMENTS",
+		"CREATE_OFFICIAL_TOURNAMENT",
+		"VIEW_ADVANCED_ANALYTICS",
+		"CUSTOM_BANNER",
+		"CUSTOM_BADGE",
+		"CUSTOM_THEME",
+	},
+	"organizer-enterprise": {
+		"CREATE_TOURNAMENT",
+		"CREATE_MULTIPLE_TOURNAMENTS",
+		"CREATE_OFFICIAL_TOURNAMENT",
+		"CREATE_MULTIPLE_OFFICIAL_TOURNAMENTS",
+		"VIEW_ADVANCED_ANALYTICS",
+		"CUSTOM_BANNER",
+		"CUSTOM_BADGE",
+		"CUSTOM_THEME",
+	},
+}
+
 func SeedCatalog(db *pgxpool.Pool, adminUserID int64) error {
 	if adminUserID == 0 {
 		log.Println("[seeder] no super admin available, skipping catalog seed")
@@ -129,6 +157,24 @@ func SeedCatalog(db *pgxpool.Pool, adminUserID int64) error {
 
 		if err != nil {
 			return err
+		}
+	}
+
+	// Map organizer memberships to their permission sets.
+	for slug, codes := range membershipPermissions {
+		for _, code := range codes {
+			_, err = tx.Exec(ctx, `
+				INSERT INTO al_membership_permission
+					(membership_id, permission_id, created_by, updated_by)
+				SELECT m.id, p.id, $3, $3
+				FROM al_membership m, al_permission p
+				WHERE m.slug = $1 AND p.code = $2
+				ON CONFLICT (membership_id, permission_id) DO NOTHING
+			`, slug, code, adminUserID)
+
+			if err != nil {
+				return err
+			}
 		}
 	}
 

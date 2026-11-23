@@ -1,9 +1,10 @@
 package tournaments
 
 type Module struct {
-	service *Service
+	service   *Service
+	jwtSecret string
 }
 
-func NewModule(service *Service) *Module {
-	return &Module{service: service}
+func NewModuleWithAuth(service *Service, jwtSecret string) *Module {
+	return &Module{service, jwtSecret}
 }

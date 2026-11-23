@@ -317,6 +317,15 @@ definitions:
       slug:
         type: string
     type: object
+  internal_domain_organizations.CreateOrganizationRequest:
+    properties:
+      description:
+        type: string
+      name:
+        type: string
+    required:
+    - name
+    type: object
   internal_domain_organizations.MyOrganizationDto:
     properties:
       active:
@@ -760,6 +769,39 @@ definitions:
         type: integer
       name:
         type: string
+    type: object
+  internal_domain_tournaments.CreateTournamentBody:
+    properties:
+      color_hex:
+        type: string
+      country_id:
+        type: integer
+      description:
+        type: string
+      end_at:
+        type: string
+      game_id:
+        type: integer
+      name:
+        maxLength: 150
+        type: string
+      organization_id:
+        type: integer
+      organizer_type:
+        enum:
+        - COMMUNITY
+        - OFFICIAL
+        type: string
+      start_at:
+        type: string
+      type_id:
+        type: integer
+    required:
+    - game_id
+    - name
+    - organization_id
+    - organizer_type
+    - start_at
     type: object
   internal_domain_tournaments.TournamentListItemResponse:
     properties:
@@ -1273,6 +1315,35 @@ paths:
       summary: Assign teams to a match manually
       tags:
       - TournamentMatches
+  /api/v1/organizations:
+    post:
+      consumes:
+      - application/json
+      description: Lets any authenticated user create an organization. The creator
+        becomes OWNER and the organization starts on the free organizer plan.
+      parameters:
+      - description: Organization payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_domain_organizations.CreateOrganizationRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseOk-bool'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+      security:
+      - BearerAuth: []
+      summary: Create an organization
+      tags:
+      - Organizations
   /api/v1/organizations/my:
     get:
       consumes:
@@ -2612,6 +2683,44 @@ paths:
           schema:
             $ref: '#/definitions/arena_pkg_response.ResponseError'
       summary: List Tournaments
+      tags:
+      - Tournaments
+    post:
+      consumes:
+      - application/json
+      description: Creates a DRAFT tournament for an organization. Requires the CREATE_TOURNAMENT
+        permission from the organization's active membership, plus the OWNER/ADMIN/CREATOR
+        role. OFFICIAL tournaments need CREATE_OFFICIAL_TOURNAMENT. Free plans can
+        only keep one active tournament.
+      parameters:
+      - description: Tournament payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_domain_tournaments.CreateTournamentBody'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseOk-bool'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+      security:
+      - BearerAuth: []
+      summary: Create a tournament
       tags:
       - Tournaments
   /api/v1/tournaments/{id}:
