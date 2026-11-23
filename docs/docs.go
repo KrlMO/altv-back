@@ -2558,6 +2558,41 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/tournaments/{id}": {
+            "get": {
+                "description": "Get a single tournament by id.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Tournaments"
+                ],
+                "summary": "Tournament detail",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Tournament ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseOk-internal_domain_tournaments_TournamentListItemResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/tournaments/{id}/registrations": {
             "get": {
                 "description": "Lists the registrations of a tournament. Anonymous and non-privileged users only see ACCEPTED registrations; organizers and staff see all of them.",
@@ -3566,6 +3601,17 @@ const docTemplate = `{
             "properties": {
                 "data": {
                     "$ref": "#/definitions/internal_domain_tournament_stages.StageResponse"
+                },
+                "msg": {
+                    "type": "string"
+                }
+            }
+        },
+        "arena_pkg_response.ResponseOk-internal_domain_tournaments_TournamentListItemResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/internal_domain_tournaments.TournamentListItemResponse"
                 },
                 "msg": {
                     "type": "string"

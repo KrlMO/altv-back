@@ -44,6 +44,15 @@ func (s *Service) ListTournaments(
 	}, nil
 }
 
+// GetTournamentByID returns a tournament by id.
+func (s *Service) GetTournamentByID(ctx context.Context, id int64) (TournamentListItemResponse, error) {
+	item, err := s.repo.GetTournamentByID(ctx, id)
+	if err != nil {
+		return TournamentListItemResponse{}, err
+	}
+	return s.toListItemResponse(*item), nil
+}
+
 func (s *Service) toListItemResponse(item TournamentListItem) TournamentListItemResponse {
 	resp := TournamentListItemResponse{
 		ID:        item.ID,

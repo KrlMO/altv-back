@@ -237,6 +237,13 @@ definitions:
       msg:
         type: string
     type: object
+  arena_pkg_response.ResponseOk-internal_domain_tournaments_TournamentListItemResponse:
+    properties:
+      data:
+        $ref: '#/definitions/internal_domain_tournaments.TournamentListItemResponse'
+      msg:
+        type: string
+    type: object
   arena_pkg_response.ResponseOk-map_string_string:
     properties:
       data:
@@ -2605,6 +2612,29 @@ paths:
           schema:
             $ref: '#/definitions/arena_pkg_response.ResponseError'
       summary: List Tournaments
+      tags:
+      - Tournaments
+  /api/v1/tournaments/{id}:
+    get:
+      description: Get a single tournament by id.
+      parameters:
+      - description: Tournament ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseOk-internal_domain_tournaments_TournamentListItemResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+      summary: Tournament detail
       tags:
       - Tournaments
   /api/v1/tournaments/{id}/registrations:

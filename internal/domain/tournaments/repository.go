@@ -2,11 +2,15 @@ package tournaments
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+var ErrTournamentNotFound = errors.New("the tournament does not exist")
 
 type Repository struct {
 	db *pgxpool.Pool
@@ -163,4 +167,62 @@ func (r *Repository) FilterTournaments(
 	}
 
 	return items, total, rows.Err()
+}
+
+// GetTournamentByID returns a single tournament with the same shape as the
+// list items.
+func (r *Repository) GetTournamentByID(ctx context.Context, id int64) (*TournamentListItem, error) {
+	var item TournamentListItem
+	err := r.db.QueryRow(ctx, `
+		SELECT
+			at.id,
+			at.name,
+			at.logo_path,
+			at.game_id,
+			g.name AS game_name,
+			at.organizer_type,
+			at.organization_id,
+			ao.name AS organization_name,
+			at.type_id,
+			att.name AS type_name,
+			ar.name AS region_name,
+			ar.iso_code AS region_iso,
+			ac.name AS country_name,
+			at.start_at,
+			at.end_at,
+			at.status,
+			at.created_at
+		FROM al_tournament at
+		JOIN al_game g ON at.game_id = g.id
+		LEFT JOIN al_organization ao ON at.organization_id = ao.id
+		LEFT JOIN al_tournament_type att ON at.type_id = att.id
+		LEFT JOIN al_country ac ON at.country_id = ac.id
+		LEFT JOIN al_region ar ON ac.region_id = ar.id
+		WHERE at.id = $1
+	`, id).Scan(
+		&item.ID,
+		&item.Name,
+		&item.LogoKey,
+		&item.GameID,
+		&item.GameName,
+		&item.OrganizerType,
+		&item.OrganizationID,
+		&item.Organization,
+		&item.TypeID,
+		&item.TypeName,
+		&item.RegionName,
+		&item.RegionISO,
+		&item.CountryName,
+		&item.StartAt,
+		&item.EndAt,
+		&item.Status,
+		&item.CreatedAt,
+	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrTournamentNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &item, nil
 }

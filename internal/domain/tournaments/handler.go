@@ -1,16 +1,48 @@
 package tournaments
 
 import (
-	"arena/pkg/dto"
-	"arena/pkg/response"
+	"errors"
 	"net/http"
 	"strconv"
+
+	"arena/pkg/dto"
+	"arena/pkg/response"
 
 	"github.com/gin-gonic/gin"
 )
 
 func (m *Module) RegisterRoutes(r *gin.Engine) {
 	r.GET("/api/v1/tournaments", m.ListTournaments)
+	r.GET("/api/v1/tournaments/:id", m.GetTournamentByID)
+}
+
+// GetTournamentByID godoc
+// @Summary      Tournament detail
+// @Description  Get a single tournament by id.
+// @Tags         Tournaments
+// @Produce      json
+// @Param        id   path  int  true  "Tournament ID"
+// @Success      200  {object}  response.ResponseOk[TournamentListItemResponse]
+// @Failure      404  {object}  response.ResponseError
+// @Router       /api/v1/tournaments/{id} [get]
+func (m *Module) GetTournamentByID(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, response.ResponseError{Error: "invalid tournament id"})
+		return
+	}
+
+	tournament, err := m.service.GetTournamentByID(c.Request.Context(), id)
+	if err != nil {
+		if errors.Is(err, ErrTournamentNotFound) {
+			c.JSON(http.StatusNotFound, response.ResponseError{Error: err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, response.ResponseError{Error: "internal error"})
+		return
+	}
+
+	c.JSON(http.StatusOK, response.ResponseOk[TournamentListItemResponse]{Data: tournament})
 }
 
 // ListTournaments godoc
