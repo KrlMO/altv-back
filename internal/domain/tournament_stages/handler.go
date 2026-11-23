@@ -14,6 +14,8 @@ import (
 func (m *Module) RegisterRoutes(r *gin.Engine, jwtSecret string) {
 	v1 := r.Group("/api/v1")
 
+	r.GET("/api/v1/stage-formats", m.ListStageFormats)
+
 	tournaments := v1.Group("/tournaments")
 	{
 		// Public: stage visualization for users (HLTV-like structure view).

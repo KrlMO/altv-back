@@ -888,6 +888,26 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/stage-formats": {
+            "get": {
+                "description": "Returns the active stage formats of the catalog, for stage creation forms.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TournamentStages"
+                ],
+                "summary": "List the available stage formats",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseOk-array_internal_domain_tournament_stages_StageFormatDTO"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/stages/{id}": {
             "delete": {
                 "security": [
@@ -3599,6 +3619,20 @@ const docTemplate = `{
                 }
             }
         },
+        "arena_pkg_response.ResponseOk-array_internal_domain_tournament_stages_StageFormatDTO": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_domain_tournament_stages.StageFormatDTO"
+                    }
+                },
+                "msg": {
+                    "type": "string"
+                }
+            }
+        },
         "arena_pkg_response.ResponseOk-array_internal_domain_tournament_stages_StageResponse": {
             "type": "object",
             "properties": {
@@ -4422,6 +4456,23 @@ const docTemplate = `{
                 "stage_order": {
                     "type": "integer",
                     "minimum": 1
+                }
+            }
+        },
+        "internal_domain_tournament_stages.StageFormatDTO": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
                 }
             }
         },

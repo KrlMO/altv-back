@@ -168,6 +168,15 @@ definitions:
       msg:
         type: string
     type: object
+  arena_pkg_response.ResponseOk-array_internal_domain_tournament_stages_StageFormatDTO:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/internal_domain_tournament_stages.StageFormatDTO'
+        type: array
+      msg:
+        type: string
+    type: object
   arena_pkg_response.ResponseOk-array_internal_domain_tournament_stages_StageResponse:
     properties:
       data:
@@ -716,6 +725,17 @@ definitions:
     - format_code
     - name
     - stage_order
+    type: object
+  internal_domain_tournament_stages.StageFormatDTO:
+    properties:
+      code:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
     type: object
   internal_domain_tournament_stages.StageResponse:
     properties:
@@ -1564,6 +1584,20 @@ paths:
       summary: Remove a player from a registration's roster
       tags:
       - TournamentRegistrations
+  /api/v1/stage-formats:
+    get:
+      description: Returns the active stage formats of the catalog, for stage creation
+        forms.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseOk-array_internal_domain_tournament_stages_StageFormatDTO'
+      summary: List the available stage formats
+      tags:
+      - TournamentStages
   /api/v1/stages/{id}:
     delete:
       description: Soft-deletes a stage. Only allowed while the stage is PENDING.

@@ -214,3 +214,8 @@ func (s *Service) DeleteStage(
 func ParseID(raw string) (int64, error) {
 	return strconv.ParseInt(raw, 10, 64)
 }
+
+// ListStageFormats returns the active stage formats of the catalog.
+func (s *Service) ListStageFormats(ctx context.Context) ([]StageFormatDTO, error) {
+	return s.repo.ListStageFormats(ctx)
+}
