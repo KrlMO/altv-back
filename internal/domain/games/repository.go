@@ -20,7 +20,7 @@ func NewRepository(db *pgxpool.Pool) *Repository {
 
 func (r *Repository) ListGames(ctx context.Context, name string) ([]Game, error) {
 	query := `
-		SELECT id, name, color_hex
+		SELECT id, name, slug, color_hex
 		FROM al_game
 		WHERE active = true
 	`
@@ -42,7 +42,7 @@ func (r *Repository) ListGames(ctx context.Context, name string) ([]Game, error)
 	var games []Game
 	for rows.Next() {
 		var g Game
-		if err := rows.Scan(&g.ID, &g.Name, &g.ColorHex); err != nil {
+		if err := rows.Scan(&g.ID, &g.Name, &g.Slug, &g.ColorHex); err != nil {
 			return nil, err
 		}
 		games = append(games, g)

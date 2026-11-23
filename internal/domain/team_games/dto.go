@@ -15,13 +15,13 @@ type TeamGameMembersRoleUpdate struct {
 }
 
 type TeamGameRoleDto struct {
-	ID   int32
-	Name string
+	ID   int32  `json:"id"`
+	Name string `json:"name"`
 }
 
 type TeamGameMemberDto struct {
-	UserID int64
-	Roles  []TeamGameRoleDto
+	UserID int64             `json:"user_id"`
+	Roles  []TeamGameRoleDto `json:"roles"`
 }
 
 type TeamGameListFilter struct {
@@ -30,17 +30,18 @@ type TeamGameListFilter struct {
 	CountryID *int32  `form:"country_id"`
 	GameID    *int32  `form:"game_id"`
 	SortBy    *string `form:"sort_by"`
-	Page      *int    `form:"page"`
 }
 
 type TeamGameListItemResponse struct {
 	ID          int64      `json:"id"`
-	LogoPath    *string    `json:"logo_path"`
+	GameID      int32      `json:"game_id"`
+	Logo        *string    `json:"logo"`
 	TeamName    string     `json:"team_name"`
 	GameName    string     `json:"game_name"`
 	RegionName  *string    `json:"region_name"`
 	RegionISO   *string    `json:"region_iso"`
 	CountryName *string    `json:"country_name"`
+	Active      bool       `json:"active"`
 	CreatedAt   *time.Time `json:"created_at"`
 }
 

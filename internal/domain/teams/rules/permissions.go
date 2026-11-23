@@ -6,7 +6,7 @@ import (
 )
 
 func CanAddMember(ctx TeamActionContext) error {
-	if identity.IsIluvatarOrAinur(ctx.Actor.ActorGlobalRoles) {
+	if identity.IsStaffOrSuperAdmin(ctx.Actor.ActorGlobalRoles) {
 		return nil
 	}
 
@@ -27,7 +27,7 @@ func CanAddMember(ctx TeamActionContext) error {
 }
 
 func CanUpdateMemberRole(ctx TeamActionContext) error {
-	if identity.IsIluvatarOrAinur(ctx.Actor.ActorGlobalRoles) {
+	if identity.IsStaffOrSuperAdmin(ctx.Actor.ActorGlobalRoles) {
 		return nil
 	}
 
@@ -48,7 +48,7 @@ func CanUpdateMemberRole(ctx TeamActionContext) error {
 }
 
 func CanDeleteMemberFromTeam(ctx TeamActionContext) error {
-	if identity.IsIluvatarOrAinur(ctx.Actor.ActorGlobalRoles) {
+	if identity.IsStaffOrSuperAdmin(ctx.Actor.ActorGlobalRoles) {
 		return nil
 	}
 	if !IsTeamOwnerOrManager(ctx.Actor.ActorTeamRoles) {
@@ -65,7 +65,7 @@ func CanDeleteMemberFromTeam(ctx TeamActionContext) error {
 }
 
 func CanCreateTeamGame(ctx TeamGameContext) error {
-	if identity.IsIluvatarOrAinur(ctx.Actor.ActorGlobalRoles) {
+	if identity.IsStaffOrSuperAdmin(ctx.Actor.ActorGlobalRoles) {
 		return nil
 	}
 

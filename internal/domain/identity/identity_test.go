@@ -1,6 +1,9 @@
 package identity
 
-import "testing"
+import (
+	"errors"
+	"testing"
+)
 
 func TestHasRole(t *testing.T) {
 	tests := []struct {
@@ -9,10 +12,10 @@ func TestHasRole(t *testing.T) {
 		role     string
 		expected bool
 	}{
-		{"has role", []string{"HUMAN", "PLAYER"}, "PLAYER", true},
-		{"does not have role", []string{"HUMAN"}, "PLAYER", false},
+		{"has role", []string{"USER", "PLAYER"}, "PLAYER", true},
+		{"does not have role", []string{"USER"}, "PLAYER", false},
 		{"empty roles", []string{}, "PLAYER", false},
-		{"empty role to find", []string{"HUMAN"}, "", false},
+		{"empty role to find", []string{"USER"}, "", false},
 	}
 
 	for _, tt := range tests {
@@ -24,23 +27,23 @@ func TestHasRole(t *testing.T) {
 	}
 }
 
-func TestIsIluvatarOrAinur(t *testing.T) {
+func TestIsStaffOrSuperAdmin(t *testing.T) {
 	tests := []struct {
 		name     string
 		roles    []string
 		expected bool
 	}{
-		{"iluvatar", []string{"ILUVATAR"}, true},
-		{"ainur", []string{"AINUR"}, true},
-		{"human", []string{"HUMAN"}, false},
-		{"iluvatar with others", []string{"ILUVATAR", "HUMAN"}, true},
+		{"super admin", []string{"SUPER_ADMIN"}, true},
+		{"staff", []string{"STAFF"}, true},
+		{"user", []string{"USER"}, false},
+		{"super admin with others", []string{"SUPER_ADMIN", "USER"}, true},
 		{"empty", []string{}, false},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := IsIluvatarOrAinur(tt.roles); got != tt.expected {
-				t.Errorf("IsIluvatarOrAinur(%v) = %v, want %v", tt.roles, got, tt.expected)
+			if got := IsStaffOrSuperAdmin(tt.roles); got != tt.expected {
+				t.Errorf("IsStaffOrSuperAdmin(%v) = %v, want %v", tt.roles, got, tt.expected)
 			}
 		})
 	}
@@ -52,8 +55,8 @@ func TestCanInteractWithTeams(t *testing.T) {
 		roles   []string
 		wantErr bool
 	}{
-		{"human can interact", []string{"HUMAN"}, false},
-		{"orc cannot interact", []string{"ORC"}, true},
+		{"user can interact", []string{"USER"}, false},
+		{"banned cannot interact", []string{"BANNED"}, true},
 		{"empty roles can interact", []string{}, false},
 	}
 
@@ -64,5 +67,35 @@ func TestCanInteractWithTeams(t *testing.T) {
 				t.Errorf("CanInteractWithTeams(%v) error = %v, wantErr %v", tt.roles, err, tt.wantErr)
 			}
 		})
+	}
+}
+
+func TestCanInteractWithOrganizations(t *testing.T) {
+	tests := []struct {
+		name    string
+		roles   []string
+		wantErr bool
+	}{
+		{"user can interact", []string{"USER"}, false},
+		{"banned cannot interact", []string{"BANNED"}, true},
+		{"banned among other roles cannot interact", []string{"USER", "BANNED"}, true},
+		{"empty roles can interact", []string{}, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := CanInteractWithOrganizations(tt.roles)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("CanInteractWithOrganizations(%v) error = %v, wantErr %v", tt.roles, err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestCanInteractWithOrganizations_ReturnsSentinelError(t *testing.T) {
+	err := CanInteractWithOrganizations([]string{"BANNED"})
+
+	if !errors.Is(err, ErrBannedFromOrganizations) {
+		t.Errorf("CanInteractWithOrganizations([BANNED]) error = %v, want %v", err, ErrBannedFromOrganizations)
 	}
 }

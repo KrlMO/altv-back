@@ -39,8 +39,13 @@ func main() {
 	defer db.Close()
 
 	adminCfg := seeder.LoadAdminConfig()
-	if err := seeder.SeedAdmin(db, adminCfg); err != nil {
+	adminID, err := seeder.SeedAdmin(db, adminCfg)
+	if err != nil {
 		log.Fatal("Failed to seed admin user:", err)
+	}
+
+	if err := seeder.SeedCatalog(db, adminID); err != nil {
+		log.Fatal("Failed to seed catalog:", err)
 	}
 
 	r := router.SetupRouter(db, cfg)

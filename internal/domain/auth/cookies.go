@@ -19,7 +19,7 @@ func setRefreshCookie(c *gin.Context, token string) {
 		Secure:   isProduction(),
 		SameSite: http.SameSiteLaxMode,
 		Path:     "/",
-		MaxAge:   7 * 24 * 60 * 60, // 7 días
+		MaxAge:   7 * 24 * 60 * 60,
 	})
 }
 

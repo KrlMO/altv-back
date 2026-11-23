@@ -374,6 +374,192 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/matches/{id}/result": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Sets the score and winner of a match. In single elimination brackets the winner propagates to the next round slot. Allowed: organization OWNER/ADMIN, tournament TOURNAMENT_OWNER/TOURNAMENT_ADMIN/MATCH_ADMIN/REFEREE, or global staff.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TournamentMatches"
+                ],
+                "summary": "Report a match result",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Match ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Result payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_domain_tournament_matches.SetMatchResultRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseOk-bool"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/matches/{id}/teams": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Fills the team slots of a match. Omitted slots are untouched. PENDING matches accept any slot change; IN_PROGRESS matches only accept filling empty slots; COMPLETED/WALKOVER matches are frozen. A team cannot play twice in the same round.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TournamentMatches"
+                ],
+                "summary": "Assign teams to a match manually",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Match ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Team slots",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_domain_tournament_matches.SetMatchTeamsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseOk-bool"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/organizations/my": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieves every organization the authenticated user belongs to, grouped by the organization role the user holds in each one. Each organization also reports the permission codes granted by its currently valid plans. BANNED users are rejected.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Organizations"
+                ],
+                "summary": "List the organizations of the authenticated user",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseOk-array_internal_domain_organizations_OrganizationRoleGroupDto"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/regions": {
             "get": {
                 "description": "Retrieves a list of all registered regions",
@@ -396,6 +582,629 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/registrations/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Cancels a registration. Allowed: the user who registered it, the roster's team owner/manager, or global staff. The registration is deleted and its roster is freed.",
+                "tags": [
+                    "TournamentRegistrations"
+                ],
+                "summary": "Cancel a registration",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Registration ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseOk-bool"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/registrations/{id}/review": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Reviews a pending registration. Allowed: organization OWNER/ADMIN, tournament TOURNAMENT_OWNER/TOURNAMENT_ADMIN, or global staff. Rejecting deletes the registration and frees its roster players.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TournamentRegistrations"
+                ],
+                "summary": "Accept or reject a registration",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Registration ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Review decision (ACCEPT | REJECT)",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_domain_tournament_registrations.ReviewRegistrationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseOk-bool"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/registrations/{id}/roster": {
+            "get": {
+                "description": "Returns the players competing through a registration (starters first).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TournamentRegistrations"
+                ],
+                "summary": "List the roster of a registration",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Registration ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseOk-array_internal_domain_tournament_registrations_RosterMemberResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Adds a member of the roster to the registration's tournament roster. A user can only be in one roster per tournament.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TournamentRegistrations"
+                ],
+                "summary": "Add a player to a registration's roster",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Registration ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Roster member payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_domain_tournament_registrations.AddRosterMemberRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseOk-bool"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/registrations/{id}/roster/{userId}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Removes a player from the registration's tournament roster.",
+                "tags": [
+                    "TournamentRegistrations"
+                ],
+                "summary": "Remove a player from a registration's roster",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Registration ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "userId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseOk-bool"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/stages/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Soft-deletes a stage. Only allowed while the stage is PENDING.",
+                "tags": [
+                    "TournamentStages"
+                ],
+                "summary": "Delete a pending stage",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Stage ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseOk-bool"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Patches the name, order or config of a stage. Only allowed while the stage is PENDING. Config must remain valid for the stage's format.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TournamentStages"
+                ],
+                "summary": "Update a pending stage",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Stage ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Stage patch",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_domain_tournament_stages.UpdateStageRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseOk-bool"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/stages/{id}/generate": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Seeds the stage with matches according to its format (single elimination builds the whole bracket; swiss builds round 1). Only allowed while the stage is IN_PROGRESS and it has no matches yet.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TournamentMatches"
+                ],
+                "summary": "Generate the matches of a stage",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Stage ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Seeding options",
+                        "name": "body",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/internal_domain_tournament_matches.GenerateMatchesRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseOk-bool"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/stages/{id}/matches": {
+            "get": {
+                "description": "Returns the matches of a stage ordered by round and match number. Public endpoint for visualization.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TournamentMatches"
+                ],
+                "summary": "List the matches of a stage",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Stage ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseOk-array_internal_domain_tournament_matches_MatchResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/stages/{id}/next-round": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Pairs the active participants by record for the next swiss round, avoiding rematches when possible. The previous round must be fully played.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TournamentMatches"
+                ],
+                "summary": "Generate the next swiss round",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Stage ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseOk-bool"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/stages/{id}/standings": {
+            "get": {
+                "description": "Returns the win/loss record of every accepted participant of the stage, with active flags per the swiss qualification/elimination config.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TournamentMatches"
+                ],
+                "summary": "Swiss standings of a stage",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Stage ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseOk-array_internal_domain_tournament_matches_StandingsRow"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/stages/{id}/status": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Transitions a stage's status (PENDING -\u003e IN_PROGRESS -\u003e COMPLETED). A stage cannot start while earlier stages are not completed.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TournamentStages"
+                ],
+                "summary": "Advance a stage's status",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Stage ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "New status",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_domain_tournament_stages.UpdateStageStatusRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseOk-bool"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
                         "schema": {
                             "$ref": "#/definitions/arena_pkg_response.ResponseError"
                         }
@@ -469,6 +1278,104 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/team-games/{id}/activate": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Sets the active flag of a team game to true",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Team Games"
+                ],
+                "summary": "Activate Team Game",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Team Game ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseOk-map_string_string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/team-games/{id}/deactivate": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Sets the active flag of a team game to false",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Team Games"
+                ],
+                "summary": "Deactivate Team Game",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Team Game ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseOk-map_string_string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/arena_pkg_response.ResponseError"
                         }
@@ -705,6 +1612,106 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/team-games/{id}/members/jersey": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Upload the jersey photo for a team game member (multipart form: user_id + file)",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Team Games"
+                ],
+                "summary": "Upload a member jersey image",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Team Game ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Member User ID",
+                        "name": "user_id",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "file",
+                        "description": "Jersey image file",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseOk-map_string_string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/team-games/{id}/members/manage": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get all members of a team game with roles and jersey info for management",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Team Games"
+                ],
+                "summary": "List Team Game Manage Members",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Team Game ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseOk-array_internal_domain_team_games_TeamGameManageMemberResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/team-games/{id}/members/roles": {
             "post": {
                 "security": [
@@ -904,7 +1911,7 @@ const docTemplate = `{
                 ],
                 "description": "Create a new team",
                 "consumes": [
-                    "application/json"
+                    "multipart/form-data"
                 ],
                 "produces": [
                     "application/json"
@@ -915,23 +1922,50 @@ const docTemplate = `{
                 "summary": "Create a new team",
                 "parameters": [
                     {
-                        "description": "Team info",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/internal_domain_teams.RegisterTeamRequest"
-                        }
+                        "type": "string",
+                        "description": "Team name",
+                        "name": "name",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Team tag",
+                        "name": "tag",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Team description",
+                        "name": "description",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Country ID",
+                        "name": "country_id",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "file",
+                        "description": "Team logo image",
+                        "name": "logo",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "Team banner image",
+                        "name": "banner",
+                        "in": "formData"
                     }
                 ],
                 "responses": {
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/arena_pkg_response.ResponseOk-internal_domain_teams_TeamResponse"
                         }
                     },
                     "400": {
@@ -988,7 +2022,7 @@ const docTemplate = `{
                 ],
                 "description": "Updates the details of an existing team",
                 "consumes": [
-                    "application/json"
+                    "multipart/form-data"
                 ],
                 "produces": [
                     "application/json"
@@ -1006,13 +2040,40 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Updated team info",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/internal_domain_teams.PatchUpdateTeamRequest"
-                        }
+                        "type": "string",
+                        "description": "Team name",
+                        "name": "name",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Team tag",
+                        "name": "tag",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Team description",
+                        "name": "description",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Country ID",
+                        "name": "country_id",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "Team logo image",
+                        "name": "logo",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "Team banner image",
+                        "name": "banner",
+                        "in": "formData"
                     }
                 ],
                 "responses": {
@@ -1267,6 +2328,413 @@ const docTemplate = `{
                             "additionalProperties": {
                                 "type": "string"
                             }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/teams/{id}/team-games": {
+            "get": {
+                "description": "Get the list of team games belonging to a team",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Team Games"
+                ],
+                "summary": "List Team Games by Team",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Team ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseOk-array_internal_domain_team_games_TeamGameListItemResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Creates a team game for a team and adds all its members with their roles in one request.\nMultipart form: game_slug (text), members (JSON text: [{\"user_id\":1,\"role\":\"PLAYER\"}]) and one jersey file per member named \"jersey_\u003cuser_id\u003e\".",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Team Games"
+                ],
+                "summary": "Create a team game (roster) with members and jerseys",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Team ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Game slug",
+                        "name": "game_slug",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Members JSON: [{\\",
+                        "name": "members",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "file",
+                        "description": "Jersey image for user 1",
+                        "name": "jersey_1",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseOk-map_string_string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/tournament-types": {
+            "get": {
+                "description": "Get the list of active tournament types",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Tournament Types"
+                ],
+                "summary": "List Tournament Types",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseOk-array_internal_domain_tournament_types_TournamentTypeListItemResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/tournaments": {
+            "get": {
+                "description": "Get a paginated list of tournaments with optional filters",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Tournaments"
+                ],
+                "summary": "List Tournaments",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter by tournament name",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Filter by region ID",
+                        "name": "region_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Filter by country ID",
+                        "name": "country_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Filter by game ID",
+                        "name": "game_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by organizer type: OFFICIAL, COMMUNITY, INDEPENDENT",
+                        "name": "organizer_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Filter by tournament type ID",
+                        "name": "type_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by time window: active, upcoming, finished",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Sort order: start_date_asc, start_date_desc, name_asc, name_desc, newest",
+                        "name": "sort_by",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_domain_tournaments.TournamentListSuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/tournaments/{id}/registrations": {
+            "get": {
+                "description": "Lists the registrations of a tournament. Anonymous and non-privileged users only see ACCEPTED registrations; organizers and staff see all of them.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TournamentRegistrations"
+                ],
+                "summary": "List the registrations of a tournament",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Tournament ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseOk-array_internal_domain_tournament_registrations_RegistrationResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Registers a team_game (roster) to a tournament. Only the team owner/manager of the roster's team can register it. The roster's game must match the tournament's game.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TournamentRegistrations"
+                ],
+                "summary": "Register a roster to a tournament",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Tournament ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Registration payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_domain_tournament_registrations.CreateRegistrationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseOk-internal_domain_tournament_registrations_RegistrationResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/tournaments/{id}/stages": {
+            "get": {
+                "description": "Returns the stages of a tournament ordered by stage_order. Public endpoint for visualization.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TournamentStages"
+                ],
+                "summary": "List the stages of a tournament",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Tournament ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseOk-array_internal_domain_tournament_stages_StageResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Creates a stage for a tournament. Allowed: organization OWNER/ADMIN, tournament TOURNAMENT_OWNER/TOURNAMENT_ADMIN, or global staff. The config is validated against the stage format.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TournamentStages"
+                ],
+                "summary": "Create a tournament stage",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Tournament ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Stage payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_domain_tournament_stages.CreateStageRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseOk-internal_domain_tournament_stages_StageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
                         }
                     }
                 }
@@ -1600,7 +3068,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Soft-deletes a user by ID. Only ILUVATAR or AINUR roles allowed.",
+                "description": "Soft-deletes a user by ID. Only SUPER_ADMIN or STAFF roles allowed.",
                 "tags": [
                     "Users"
                 ],
@@ -1652,7 +3120,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Activates a deactivated user by ID. Only ILUVATAR or AINUR roles allowed.",
+                "description": "Activates a deactivated user by ID. Only SUPER_ADMIN or STAFF roles allowed.",
                 "tags": [
                     "Users"
                 ],
@@ -1698,7 +3166,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Deactivates a user by ID. Only ILUVATAR or AINUR roles allowed.",
+                "description": "Deactivates a user by ID. Only SUPER_ADMIN or STAFF roles allowed.",
                 "tags": [
                     "Users"
                 ],
@@ -1822,6 +3290,20 @@ const docTemplate = `{
                 }
             }
         },
+        "arena_pkg_dto.PaginatedResponse-internal_domain_tournaments_TournamentListItemResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_domain_tournaments.TournamentListItemResponse"
+                    }
+                },
+                "meta": {
+                    "$ref": "#/definitions/arena_pkg_dto.PaginationMeta"
+                }
+            }
+        },
         "arena_pkg_dto.PaginationMeta": {
             "type": "object",
             "properties": {
@@ -1870,6 +3352,20 @@ const docTemplate = `{
                 }
             }
         },
+        "arena_pkg_response.ResponseOk-array_internal_domain_organizations_OrganizationRoleGroupDto": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_domain_organizations.OrganizationRoleGroupDto"
+                    }
+                },
+                "msg": {
+                    "type": "string"
+                }
+            }
+        },
         "arena_pkg_response.ResponseOk-array_internal_domain_regions_RegionResponse": {
             "type": "object",
             "properties": {
@@ -1877,6 +3373,118 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/internal_domain_regions.RegionResponse"
+                    }
+                },
+                "msg": {
+                    "type": "string"
+                }
+            }
+        },
+        "arena_pkg_response.ResponseOk-array_internal_domain_team_games_TeamGameListItemResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_domain_team_games.TeamGameListItemResponse"
+                    }
+                },
+                "msg": {
+                    "type": "string"
+                }
+            }
+        },
+        "arena_pkg_response.ResponseOk-array_internal_domain_team_games_TeamGameManageMemberResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_domain_team_games.TeamGameManageMemberResponse"
+                    }
+                },
+                "msg": {
+                    "type": "string"
+                }
+            }
+        },
+        "arena_pkg_response.ResponseOk-array_internal_domain_tournament_matches_MatchResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_domain_tournament_matches.MatchResponse"
+                    }
+                },
+                "msg": {
+                    "type": "string"
+                }
+            }
+        },
+        "arena_pkg_response.ResponseOk-array_internal_domain_tournament_matches_StandingsRow": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_domain_tournament_matches.StandingsRow"
+                    }
+                },
+                "msg": {
+                    "type": "string"
+                }
+            }
+        },
+        "arena_pkg_response.ResponseOk-array_internal_domain_tournament_registrations_RegistrationResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_domain_tournament_registrations.RegistrationResponse"
+                    }
+                },
+                "msg": {
+                    "type": "string"
+                }
+            }
+        },
+        "arena_pkg_response.ResponseOk-array_internal_domain_tournament_registrations_RosterMemberResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_domain_tournament_registrations.RosterMemberResponse"
+                    }
+                },
+                "msg": {
+                    "type": "string"
+                }
+            }
+        },
+        "arena_pkg_response.ResponseOk-array_internal_domain_tournament_stages_StageResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_domain_tournament_stages.StageResponse"
+                    }
+                },
+                "msg": {
+                    "type": "string"
+                }
+            }
+        },
+        "arena_pkg_response.ResponseOk-array_internal_domain_tournament_types_TournamentTypeListItemResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_domain_tournament_types.TournamentTypeListItemResponse"
                     }
                 },
                 "msg": {
@@ -1892,6 +3500,17 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/internal_domain_users.UserSearchResult"
                     }
+                },
+                "msg": {
+                    "type": "string"
+                }
+            }
+        },
+        "arena_pkg_response.ResponseOk-bool": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "boolean"
                 },
                 "msg": {
                     "type": "string"
@@ -1914,6 +3533,50 @@ const docTemplate = `{
             "properties": {
                 "data": {
                     "$ref": "#/definitions/internal_domain_auth.VerifyEmailVerificationResponse"
+                },
+                "msg": {
+                    "type": "string"
+                }
+            }
+        },
+        "arena_pkg_response.ResponseOk-internal_domain_teams_TeamResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/internal_domain_teams.TeamResponse"
+                },
+                "msg": {
+                    "type": "string"
+                }
+            }
+        },
+        "arena_pkg_response.ResponseOk-internal_domain_tournament_registrations_RegistrationResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/internal_domain_tournament_registrations.RegistrationResponse"
+                },
+                "msg": {
+                    "type": "string"
+                }
+            }
+        },
+        "arena_pkg_response.ResponseOk-internal_domain_tournament_stages_StageResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/internal_domain_tournament_stages.StageResponse"
+                },
+                "msg": {
+                    "type": "string"
+                }
+            }
+        },
+        "arena_pkg_response.ResponseOk-map_string_string": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/map_string_string"
                 },
                 "msg": {
                     "type": "string"
@@ -2016,6 +3679,65 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                },
+                "slug": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_domain_organizations.MyOrganizationDto": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "banner": {
+                    "type": "string",
+                    "x-nullable": true
+                },
+                "description": {
+                    "type": "string",
+                    "example": "The Acmes competitive division"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "logo": {
+                    "type": "string",
+                    "x-nullable": true
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Acme Esports"
+                },
+                "permissions": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "roles": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "internal_domain_organizations.OrganizationRoleGroupDto": {
+            "type": "object",
+            "properties": {
+                "organizations": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_domain_organizations.MyOrganizationDto"
+                    }
+                },
+                "role": {
+                    "type": "string",
+                    "example": "OWNER"
                 }
             }
         },
@@ -2036,6 +3758,21 @@ const docTemplate = `{
                 }
             }
         },
+        "internal_domain_team_games.AddTeamGameMemberRequestItem": {
+            "type": "object",
+            "required": [
+                "role",
+                "user_id"
+            ],
+            "properties": {
+                "role": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
         "internal_domain_team_games.AddTeamGameMembersRequest": {
             "type": "object",
             "required": [
@@ -2051,7 +3788,7 @@ const docTemplate = `{
                     "maxItems": 50,
                     "minItems": 1,
                     "items": {
-                        "$ref": "#/definitions/internal_domain_team_games.ReqTeamGameMember"
+                        "$ref": "#/definitions/internal_domain_team_games.AddTeamGameMemberRequestItem"
                     }
                 }
             }
@@ -2104,27 +3841,20 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_domain_team_games.ReqTeamGameMember": {
-            "type": "object",
-            "properties": {
-                "teamGameRoleID": {
-                    "type": "integer",
-                    "format": "int32"
-                },
-                "userID": {
-                    "type": "integer",
-                    "format": "int64"
-                }
-            }
-        },
         "internal_domain_team_games.TeamGameListItemResponse": {
             "type": "object",
             "properties": {
+                "active": {
+                    "type": "boolean"
+                },
                 "country_name": {
                     "type": "string"
                 },
                 "created_at": {
                     "type": "string"
+                },
+                "game_id": {
+                    "type": "integer"
                 },
                 "game_name": {
                     "type": "string"
@@ -2132,7 +3862,7 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
-                "logo_path": {
+                "logo": {
                     "type": "string"
                 },
                 "region_iso": {
@@ -2157,6 +3887,41 @@ const docTemplate = `{
                 }
             }
         },
+        "internal_domain_team_games.TeamGameManageMemberResponse": {
+            "type": "object",
+            "properties": {
+                "avatar": {
+                    "type": "string"
+                },
+                "birth_date": {
+                    "type": "string"
+                },
+                "country": {
+                    "$ref": "#/definitions/arena_pkg_dto.CountryResponse"
+                },
+                "country_code": {
+                    "type": "string"
+                },
+                "first_name": {
+                    "type": "string"
+                },
+                "jersey_photo": {
+                    "type": "string"
+                },
+                "last_name": {
+                    "type": "string"
+                },
+                "team_role": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
         "internal_domain_team_games.TeamGameMemberDto": {
             "type": "object",
             "properties": {
@@ -2166,9 +3931,8 @@ const docTemplate = `{
                         "$ref": "#/definitions/internal_domain_team_games.TeamGameRoleDto"
                     }
                 },
-                "userID": {
-                    "type": "integer",
-                    "format": "int64"
+                "user_id": {
+                    "type": "integer"
                 }
             }
         },
@@ -2176,8 +3940,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "id": {
-                    "type": "integer",
-                    "format": "int32"
+                    "type": "integer"
                 },
                 "name": {
                     "type": "string"
@@ -2202,45 +3965,39 @@ const docTemplate = `{
         "internal_domain_teams.CreateTeamGameRequest": {
             "type": "object",
             "required": [
-                "game_slug",
-                "name"
+                "game_slug"
             ],
             "properties": {
                 "active": {
                     "type": "boolean"
                 },
-                "banner_path": {
-                    "type": "string"
-                },
                 "game_slug": {
                     "type": "string"
-                },
-                "logo_path": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string",
-                    "maxLength": 150,
-                    "minLength": 3
                 }
             }
         },
-        "internal_domain_teams.PatchUpdateTeamRequest": {
+        "internal_domain_teams.TeamResponse": {
             "type": "object",
             "properties": {
-                "banner_path": {
+                "active": {
+                    "type": "boolean"
+                },
+                "banner": {
                     "type": "string"
                 },
-                "country_id": {
-                    "type": "integer"
+                "country": {
+                    "$ref": "#/definitions/arena_pkg_dto.CountryResponse"
                 },
                 "description": {
                     "type": "string"
+                },
+                "id": {
+                    "type": "integer"
                 },
                 "is_virtual": {
                     "type": "boolean"
                 },
-                "logo_path": {
+                "logo": {
                     "type": "string"
                 },
                 "name": {
@@ -2248,39 +4005,6 @@ const docTemplate = `{
                 },
                 "tag": {
                     "type": "string"
-                }
-            }
-        },
-        "internal_domain_teams.RegisterTeamRequest": {
-            "type": "object",
-            "required": [
-                "country_id",
-                "name",
-                "tag"
-            ],
-            "properties": {
-                "banner_path": {
-                    "type": "string"
-                },
-                "country_id": {
-                    "type": "integer"
-                },
-                "description": {
-                    "type": "string",
-                    "maxLength": 500
-                },
-                "logo_path": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string",
-                    "maxLength": 50,
-                    "minLength": 3
-                },
-                "tag": {
-                    "type": "string",
-                    "maxLength": 15,
-                    "minLength": 2
                 }
             }
         },
@@ -2291,6 +4015,398 @@ const docTemplate = `{
             ],
             "properties": {
                 "role": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_domain_tournament_matches.GenerateMatchesRequest": {
+            "type": "object",
+            "properties": {
+                "manual_order": {
+                    "description": "ManualOrder is the explicit participant order (seed 1 first). Required\nwhen seeding = \"manual\".",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "seeding": {
+                    "description": "Seeding strategy: \"registration_order\" (default). Future: \"random\",\n\"manual\", \"stats\".",
+                    "type": "string",
+                    "enum": [
+                        "registration_order",
+                        "manual"
+                    ]
+                }
+            }
+        },
+        "internal_domain_tournament_matches.MatchResponse": {
+            "type": "object",
+            "properties": {
+                "best_of": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "match_number": {
+                    "type": "integer"
+                },
+                "round_number": {
+                    "type": "integer"
+                },
+                "scheduled_at": {
+                    "type": "string"
+                },
+                "score_a": {
+                    "type": "integer"
+                },
+                "score_b": {
+                    "type": "integer"
+                },
+                "stage_id": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "team_a": {
+                    "$ref": "#/definitions/internal_domain_tournament_matches.TeamInfo"
+                },
+                "team_b": {
+                    "$ref": "#/definitions/internal_domain_tournament_matches.TeamInfo"
+                },
+                "tournament_id": {
+                    "type": "integer"
+                },
+                "winner": {
+                    "$ref": "#/definitions/internal_domain_tournament_matches.TeamInfo"
+                }
+            }
+        },
+        "internal_domain_tournament_matches.SetMatchResultRequest": {
+            "type": "object",
+            "properties": {
+                "score_a": {
+                    "type": "integer",
+                    "minimum": 0
+                },
+                "score_b": {
+                    "type": "integer",
+                    "minimum": 0
+                }
+            }
+        },
+        "internal_domain_tournament_matches.SetMatchTeamsRequest": {
+            "type": "object",
+            "properties": {
+                "team_a_registration_id": {
+                    "type": "integer"
+                },
+                "team_b_registration_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "internal_domain_tournament_matches.StandingsRow": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "description": "still playing (not qualified/eliminated)",
+                    "type": "boolean"
+                },
+                "losses": {
+                    "type": "integer"
+                },
+                "registration_id": {
+                    "type": "integer"
+                },
+                "team_name": {
+                    "type": "string"
+                },
+                "wins": {
+                    "type": "integer"
+                }
+            }
+        },
+        "internal_domain_tournament_matches.TeamInfo": {
+            "type": "object",
+            "properties": {
+                "registration_id": {
+                    "type": "integer"
+                },
+                "team_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_domain_tournament_registrations.AddRosterMemberRequest": {
+            "type": "object",
+            "required": [
+                "user_id"
+            ],
+            "properties": {
+                "is_starter": {
+                    "type": "boolean"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "internal_domain_tournament_registrations.CreateRegistrationRequest": {
+            "type": "object",
+            "required": [
+                "team_game_id"
+            ],
+            "properties": {
+                "team_game_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "internal_domain_tournament_registrations.RegistrationResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "game_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "registered_by": {
+                    "type": "integer"
+                },
+                "reviewed_at": {
+                    "type": "string"
+                },
+                "reviewed_by": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "team_game_id": {
+                    "type": "integer"
+                },
+                "team_name": {
+                    "type": "string"
+                },
+                "tournament_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "internal_domain_tournament_registrations.ReviewRegistrationRequest": {
+            "type": "object",
+            "required": [
+                "decision"
+            ],
+            "properties": {
+                "decision": {
+                    "type": "string",
+                    "enum": [
+                        "ACCEPT",
+                        "REJECT"
+                    ]
+                }
+            }
+        },
+        "internal_domain_tournament_registrations.RosterMemberResponse": {
+            "type": "object",
+            "properties": {
+                "added_at": {
+                    "type": "string"
+                },
+                "first_name": {
+                    "type": "string"
+                },
+                "is_starter": {
+                    "type": "boolean"
+                },
+                "jersey_photo": {
+                    "type": "string"
+                },
+                "last_name": {
+                    "type": "string"
+                },
+                "nickname": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "internal_domain_tournament_stages.CreateStageRequest": {
+            "type": "object",
+            "required": [
+                "format_code",
+                "name",
+                "stage_order"
+            ],
+            "properties": {
+                "config": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "format_code": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 150
+                },
+                "stage_order": {
+                    "type": "integer",
+                    "minimum": 1
+                }
+            }
+        },
+        "internal_domain_tournament_stages.StageResponse": {
+            "type": "object",
+            "properties": {
+                "config": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "format_code": {
+                    "type": "string"
+                },
+                "format_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "stage_order": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "tournament_id": {
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_domain_tournament_stages.UpdateStageRequest": {
+            "type": "object",
+            "properties": {
+                "config": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 150
+                },
+                "stage_order": {
+                    "type": "integer",
+                    "minimum": 1
+                }
+            }
+        },
+        "internal_domain_tournament_stages.UpdateStageStatusRequest": {
+            "type": "object",
+            "required": [
+                "status"
+            ],
+            "properties": {
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "IN_PROGRESS",
+                        "COMPLETED"
+                    ]
+                }
+            }
+        },
+        "internal_domain_tournament_types.TournamentTypeListItemResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_domain_tournaments.TournamentListItemResponse": {
+            "type": "object",
+            "properties": {
+                "country_name": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "end_at": {
+                    "type": "string"
+                },
+                "game_id": {
+                    "type": "integer"
+                },
+                "game_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "logo": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "organization": {
+                    "type": "string"
+                },
+                "organization_id": {
+                    "type": "integer"
+                },
+                "organizer_type": {
+                    "type": "string"
+                },
+                "region_iso": {
+                    "type": "string"
+                },
+                "region_name": {
+                    "type": "string"
+                },
+                "start_at": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "type_id": {
+                    "type": "integer"
+                },
+                "type_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_domain_tournaments.TournamentListSuccessResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/arena_pkg_dto.PaginatedResponse-internal_domain_tournaments_TournamentListItemResponse"
+                },
+                "msg": {
                     "type": "string"
                 }
             }
@@ -2481,6 +4597,12 @@ const docTemplate = `{
                 "profile_photo": {
                     "type": "string"
                 }
+            }
+        },
+        "map_string_string": {
+            "type": "object",
+            "additionalProperties": {
+                "type": "string"
             }
         }
     },

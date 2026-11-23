@@ -8,6 +8,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"log"
 	"time"
 )
 
@@ -234,7 +235,11 @@ func (s *Service) InitiateEmailVerification(ctx context.Context, email string) e
 		return err
 	}
 
-	go s.mailer.SendVerificationEmail(email, rawToken)
+	go func() {
+		if err := s.mailer.SendVerificationEmail(email, rawToken); err != nil {
+			log.Printf("failed to send verification email to %s: %v", email, err)
+		}
+	}()
 	return nil
 }
 

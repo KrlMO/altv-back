@@ -7,8 +7,8 @@ type Team struct {
 	Name        string    `db:"name"`
 	Tag         string    `db:"tag"`
 	Description string    `db:"description"`
-	LogoPath    string    `db:"logo_path"`
-	BannerPath  string    `db:"banner_path"`
+	LogoKey     string    `db:"logo_key"`
+	BannerKey   string    `db:"banner_key"`
 	CountryId   int32     `db:"country_id"`
 	Active      bool      `db:"active"`
 	CreatedAt   time.Time `db:"created_at"`
@@ -21,6 +21,6 @@ type MyTeamListItem struct {
 	ID         int64   `db:"id"`
 	Name       string  `db:"name"`
 	Tag        string  `db:"tag"`
-	LogoPath   *string `db:"logo_path"`
+	LogoKey    *string `db:"logo_key"`
 	MemberRole string  `db:"member_role"`
 }

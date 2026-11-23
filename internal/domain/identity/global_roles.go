@@ -9,30 +9,22 @@ func HasRole(roles []string, role string) bool {
 	return false
 }
 
-func IsIluvatar(roles []string) bool {
-	return HasRole(roles, RoleIluvatar)
+func IsSuperAdmin(roles []string) bool {
+	return HasRole(roles, RoleSuperAdmin)
 }
 
-func IsAinur(roles []string) bool {
-	return HasRole(roles, RoleAinur)
+func IsStaff(roles []string) bool {
+	return HasRole(roles, RoleStaff)
 }
 
-func IsMaiar(roles []string) bool {
-	return HasRole(roles, RoleMaiar)
+func IsUser(roles []string) bool {
+	return HasRole(roles, RoleUser)
 }
 
-func IsElf(roles []string) bool {
-	return HasRole(roles, RoleElf)
+func IsStaffOrSuperAdmin(roles []string) bool {
+	return IsStaff(roles) || IsSuperAdmin(roles)
 }
 
-func IsHuman(roles []string) bool {
-	return HasRole(roles, RoleHuman)
-}
-
-func IsIluvatarOrAinur(roles []string) bool {
-	return IsIluvatar(roles) || IsAinur(roles)
-}
-
-func IsOrc(roles []string) bool {
-	return HasRole(roles, RoleOrc)
+func IsBanned(roles []string) bool {
+	return HasRole(roles, RoleBanned)
 }

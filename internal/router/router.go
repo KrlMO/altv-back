@@ -5,13 +5,20 @@ import (
 	"arena/internal/domain/auth"
 	"arena/internal/domain/countries"
 	"arena/internal/domain/games"
+	"arena/internal/domain/organizations"
 	"arena/internal/domain/regions"
 	teamgames "arena/internal/domain/team_games"
 	"arena/internal/domain/teams"
+	tournamentregistrations "arena/internal/domain/tournament_registrations"
+	tournamentstages "arena/internal/domain/tournament_stages"
+	tournamentmatches "arena/internal/domain/tournament_matches"
+	tournamenttypes "arena/internal/domain/tournament_types"
+	"arena/internal/domain/tournaments"
 	"arena/internal/domain/users"
 	"arena/internal/infrastructure/mail"
 	"arena/internal/shared"
 	"arena/pkg/middleware"
+	"arena/pkg/storage"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -36,6 +43,11 @@ func SetupRouter(db *pgxpool.Pool, cfg *config.Config) *gin.Engine {
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
+	// LOCAL MEDIA
+	if cfg.StorageDriver == storage.DriverLocal && cfg.MediaRoot != "" {
+		r.Static("/media", cfg.MediaRoot)
+	}
+
 	// SHARED
 	sharedRepo := shared.NewSharedRepository(db)
 
@@ -47,13 +59,23 @@ func SetupRouter(db *pgxpool.Pool, cfg *config.Config) *gin.Engine {
 
 	//TEAMS
 	teamsRepo := teams.NewRepository(db)
-	teamsService := teams.NewService(teamsRepo, sharedRepo)
+	mediaStorage, err := storage.New(cfg.StorageDriver, cfg.MediaURL, cfg.MediaRoot)
+	if err != nil {
+		panic("invalid storage configuration: " + err.Error())
+	}
+	teamsService := teams.NewService(teamsRepo, sharedRepo, mediaStorage)
 	teamsModule := teams.NewModule(teamsService)
 	teamsModule.RegisterRoutes(r, cfg.JWTSecret)
 
+	// ORGANIZATIONS
+	organizationsRepo := organizations.NewRepository(db)
+	organizationsService := organizations.NewService(organizationsRepo, mediaStorage)
+	organizationsModule := organizations.NewModule(organizationsService)
+	organizationsModule.RegisterRoutes(r, cfg.JWTSecret)
+
 	//TEAM GAMES
 	teamGamesRepo := teamgames.NewRepository(db, sharedRepo)
-	teamGamesService := teamgames.NewService(teamGamesRepo)
+	teamGamesService := teamgames.NewService(teamGamesRepo, mediaStorage)
 	teamGamesModule := teamgames.NewModule(teamGamesService)
 	teamGamesModule.RegisterRoutes(r, cfg.JWTSecret)
 
@@ -74,6 +96,36 @@ func SetupRouter(db *pgxpool.Pool, cfg *config.Config) *gin.Engine {
 	regionsService := regions.NewService(regionsRepo)
 	regionsModule := regions.NewModule(regionsService)
 	regionsModule.RegisterRoutes(r)
+
+	// TOURNAMENT TYPES
+	tournamentTypesRepo := tournamenttypes.NewRepository(db)
+	tournamentTypesService := tournamenttypes.NewService(tournamentTypesRepo)
+	tournamentTypesModule := tournamenttypes.NewModule(tournamentTypesService)
+	tournamentTypesModule.RegisterRoutes(r)
+
+	// TOURNAMENTS
+	tournamentsRepo := tournaments.NewRepository(db)
+	tournamentsService := tournaments.NewService(tournamentsRepo)
+	tournamentsModule := tournaments.NewModule(tournamentsService)
+	tournamentsModule.RegisterRoutes(r)
+
+	// TOURNAMENT REGISTRATIONS
+	registrationsRepo := tournamentregistrations.NewRepository(db, sharedRepo)
+	registrationsService := tournamentregistrations.NewService(registrationsRepo, mediaStorage)
+	registrationsModule := tournamentregistrations.NewModule(registrationsService)
+	registrationsModule.RegisterRoutes(r, cfg.JWTSecret)
+
+	// TOURNAMENT STAGES
+	stagesRepo := tournamentstages.NewRepository(db)
+	stagesService := tournamentstages.NewService(stagesRepo)
+	stagesModule := tournamentstages.NewModule(stagesService)
+	stagesModule.RegisterRoutes(r, cfg.JWTSecret)
+
+	// TOURNAMENT MATCHES
+	matchesRepo := tournamentmatches.NewRepository(db)
+	matchesService := tournamentmatches.NewService(matchesRepo)
+	matchesModule := tournamentmatches.NewModule(matchesService)
+	matchesModule.RegisterRoutes(r, cfg.JWTSecret)
 
 	mailer := mail.NewSMTPMailer(
 		cfg.SMTPHost,
