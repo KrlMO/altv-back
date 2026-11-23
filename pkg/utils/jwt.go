@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -17,37 +18,54 @@ func GenerateJWT(userID int64, roles []string, secret string, duration time.Dura
 		"user_id": userID,
 		"roles":   roles,
 		"exp":     time.Now().Add(duration).Unix(),
+		"iat":     time.Now().Unix(),
 	}
-	toke := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return toke.SignedString([]byte(secret))
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString([]byte(secret))
 }
 
 func ValidateJWT(tokenString string, secret string) (*Claims, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method")
 		}
-
 		return []byte(secret), nil
-	})
+	}, jwt.WithValidMethods([]string{"HS256"}))
 
 	if err != nil || !token.Valid {
 		return nil, err
 	}
 
-	claimsMap := token.Claims.(jwt.MapClaims)
+	claimsMap, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return nil, errors.New("invalid token claims")
+	}
 
-	userID := int64(claimsMap["user_id"].(float64))
-	rolesInterface := claimsMap["roles"].([]interface{})
+	// exp is mandatory: a token without expiration must never be accepted.
+	expRaw, ok := claimsMap["exp"].(float64)
+	if !ok {
+		return nil, errors.New("token missing expiration")
+	}
+	if time.Now().Unix() >= int64(expRaw) {
+		return nil, errors.New("token expired")
+	}
 
-	roles := make([]string, len(rolesInterface))
-	for i, v := range rolesInterface {
-		roles[i] = v.(string)
+	userID, ok := claimsMap["user_id"].(float64)
+	if !ok {
+		return nil, errors.New("token missing user_id")
+	}
+
+	roles := []string{}
+	if rolesInterface, ok := claimsMap["roles"].([]interface{}); ok {
+		for _, v := range rolesInterface {
+			if role, ok := v.(string); ok {
+				roles = append(roles, role)
+			}
+		}
 	}
 
 	return &Claims{
-		UserID: userID,
+		UserID: int64(userID),
 		Roles:  roles,
 	}, nil
 }
