@@ -370,6 +370,76 @@
                 }
             }
         },
+        "/api/v1/matches/{id}/result": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Sets the score and winner of a match. In single elimination brackets the winner propagates to the next round slot. Allowed: organization OWNER/ADMIN, tournament TOURNAMENT_OWNER/TOURNAMENT_ADMIN/MATCH_ADMIN/REFEREE, or global staff.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TournamentMatches"
+                ],
+                "summary": "Report a match result",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Match ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Result payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_domain_tournament_matches.SetMatchResultRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseOk-bool"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/organizations/my": {
             "get": {
                 "security": [
@@ -805,6 +875,194 @@
                         "description": "Conflict",
                         "schema": {
                             "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/stages/{id}/generate": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Seeds the stage with matches according to its format (single elimination builds the whole bracket; swiss builds round 1). Only allowed while the stage is IN_PROGRESS and it has no matches yet.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TournamentMatches"
+                ],
+                "summary": "Generate the matches of a stage",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Stage ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Seeding options",
+                        "name": "body",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/internal_domain_tournament_matches.GenerateMatchesRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseOk-bool"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/stages/{id}/matches": {
+            "get": {
+                "description": "Returns the matches of a stage ordered by round and match number. Public endpoint for visualization.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TournamentMatches"
+                ],
+                "summary": "List the matches of a stage",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Stage ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseOk-array_internal_domain_tournament_matches_MatchResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/stages/{id}/next-round": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Pairs the active participants by record for the next swiss round, avoiding rematches when possible. The previous round must be fully played.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TournamentMatches"
+                ],
+                "summary": "Generate the next swiss round",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Stage ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseOk-bool"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/stages/{id}/standings": {
+            "get": {
+                "description": "Returns the win/loss record of every accepted participant of the stage, with active flags per the swiss qualification/elimination config.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TournamentMatches"
+                ],
+                "summary": "Swiss standings of a stage",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Stage ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/arena_pkg_response.ResponseOk-array_internal_domain_tournament_matches_StandingsRow"
                         }
                     }
                 }
@@ -3076,6 +3334,34 @@
                 }
             }
         },
+        "arena_pkg_response.ResponseOk-array_internal_domain_tournament_matches_MatchResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_domain_tournament_matches.MatchResponse"
+                    }
+                },
+                "msg": {
+                    "type": "string"
+                }
+            }
+        },
+        "arena_pkg_response.ResponseOk-array_internal_domain_tournament_matches_StandingsRow": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_domain_tournament_matches.StandingsRow"
+                    }
+                },
+                "msg": {
+                    "type": "string"
+                }
+            }
+        },
         "arena_pkg_response.ResponseOk-array_internal_domain_tournament_registrations_RegistrationResponse": {
             "type": "object",
             "properties": {
@@ -3655,6 +3941,115 @@
             ],
             "properties": {
                 "role": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_domain_tournament_matches.GenerateMatchesRequest": {
+            "type": "object",
+            "properties": {
+                "manual_order": {
+                    "description": "ManualOrder is the explicit participant order (seed 1 first). Required\nwhen seeding = \"manual\".",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "seeding": {
+                    "description": "Seeding strategy: \"registration_order\" (default). Future: \"random\",\n\"manual\", \"stats\".",
+                    "type": "string",
+                    "enum": [
+                        "registration_order",
+                        "manual"
+                    ]
+                }
+            }
+        },
+        "internal_domain_tournament_matches.MatchResponse": {
+            "type": "object",
+            "properties": {
+                "best_of": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "match_number": {
+                    "type": "integer"
+                },
+                "round_number": {
+                    "type": "integer"
+                },
+                "scheduled_at": {
+                    "type": "string"
+                },
+                "score_a": {
+                    "type": "integer"
+                },
+                "score_b": {
+                    "type": "integer"
+                },
+                "stage_id": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "team_a": {
+                    "$ref": "#/definitions/internal_domain_tournament_matches.TeamInfo"
+                },
+                "team_b": {
+                    "$ref": "#/definitions/internal_domain_tournament_matches.TeamInfo"
+                },
+                "tournament_id": {
+                    "type": "integer"
+                },
+                "winner": {
+                    "$ref": "#/definitions/internal_domain_tournament_matches.TeamInfo"
+                }
+            }
+        },
+        "internal_domain_tournament_matches.SetMatchResultRequest": {
+            "type": "object",
+            "properties": {
+                "score_a": {
+                    "type": "integer",
+                    "minimum": 0
+                },
+                "score_b": {
+                    "type": "integer",
+                    "minimum": 0
+                }
+            }
+        },
+        "internal_domain_tournament_matches.StandingsRow": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "description": "still playing (not qualified/eliminated)",
+                    "type": "boolean"
+                },
+                "losses": {
+                    "type": "integer"
+                },
+                "registration_id": {
+                    "type": "integer"
+                },
+                "team_name": {
+                    "type": "string"
+                },
+                "wins": {
+                    "type": "integer"
+                }
+            }
+        },
+        "internal_domain_tournament_matches.TeamInfo": {
+            "type": "object",
+            "properties": {
+                "registration_id": {
+                    "type": "integer"
+                },
+                "team_name": {
                     "type": "string"
                 }
             }

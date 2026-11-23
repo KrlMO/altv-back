@@ -132,6 +132,24 @@ definitions:
       msg:
         type: string
     type: object
+  arena_pkg_response.ResponseOk-array_internal_domain_tournament_matches_MatchResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/internal_domain_tournament_matches.MatchResponse'
+        type: array
+      msg:
+        type: string
+    type: object
+  arena_pkg_response.ResponseOk-array_internal_domain_tournament_matches_StandingsRow:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/internal_domain_tournament_matches.StandingsRow'
+        type: array
+      msg:
+        type: string
+    type: object
   arena_pkg_response.ResponseOk-array_internal_domain_tournament_registrations_RegistrationResponse:
     properties:
       data:
@@ -514,6 +532,83 @@ definitions:
         type: string
     required:
     - role
+    type: object
+  internal_domain_tournament_matches.GenerateMatchesRequest:
+    properties:
+      manual_order:
+        description: |-
+          ManualOrder is the explicit participant order (seed 1 first). Required
+          when seeding = "manual".
+        items:
+          type: integer
+        type: array
+      seeding:
+        description: |-
+          Seeding strategy: "registration_order" (default). Future: "random",
+          "manual", "stats".
+        enum:
+        - registration_order
+        - manual
+        type: string
+    type: object
+  internal_domain_tournament_matches.MatchResponse:
+    properties:
+      best_of:
+        type: integer
+      id:
+        type: integer
+      match_number:
+        type: integer
+      round_number:
+        type: integer
+      scheduled_at:
+        type: string
+      score_a:
+        type: integer
+      score_b:
+        type: integer
+      stage_id:
+        type: integer
+      status:
+        type: string
+      team_a:
+        $ref: '#/definitions/internal_domain_tournament_matches.TeamInfo'
+      team_b:
+        $ref: '#/definitions/internal_domain_tournament_matches.TeamInfo'
+      tournament_id:
+        type: integer
+      winner:
+        $ref: '#/definitions/internal_domain_tournament_matches.TeamInfo'
+    type: object
+  internal_domain_tournament_matches.SetMatchResultRequest:
+    properties:
+      score_a:
+        minimum: 0
+        type: integer
+      score_b:
+        minimum: 0
+        type: integer
+    type: object
+  internal_domain_tournament_matches.StandingsRow:
+    properties:
+      active:
+        description: still playing (not qualified/eliminated)
+        type: boolean
+      losses:
+        type: integer
+      registration_id:
+        type: integer
+      team_name:
+        type: string
+      wins:
+        type: integer
+    type: object
+  internal_domain_tournament_matches.TeamInfo:
+    properties:
+      registration_id:
+        type: integer
+      team_name:
+        type: string
     type: object
   internal_domain_tournament_registrations.AddRosterMemberRequest:
     properties:
@@ -1068,6 +1163,54 @@ paths:
       summary: List Games
       tags:
       - Games
+  /api/v1/matches/{id}/result:
+    patch:
+      consumes:
+      - application/json
+      description: 'Sets the score and winner of a match. In single elimination brackets
+        the winner propagates to the next round slot. Allowed: organization OWNER/ADMIN,
+        tournament TOURNAMENT_OWNER/TOURNAMENT_ADMIN/MATCH_ADMIN/REFEREE, or global
+        staff.'
+      parameters:
+      - description: Match ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Result payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_domain_tournament_matches.SetMatchResultRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseOk-bool'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+      security:
+      - BearerAuth: []
+      summary: Report a match result
+      tags:
+      - TournamentMatches
   /api/v1/organizations/my:
     get:
       consumes:
@@ -1360,6 +1503,132 @@ paths:
       summary: Update a pending stage
       tags:
       - TournamentStages
+  /api/v1/stages/{id}/generate:
+    post:
+      consumes:
+      - application/json
+      description: Seeds the stage with matches according to its format (single elimination
+        builds the whole bracket; swiss builds round 1). Only allowed while the stage
+        is IN_PROGRESS and it has no matches yet.
+      parameters:
+      - description: Stage ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Seeding options
+        in: body
+        name: body
+        schema:
+          $ref: '#/definitions/internal_domain_tournament_matches.GenerateMatchesRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseOk-bool'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+      security:
+      - BearerAuth: []
+      summary: Generate the matches of a stage
+      tags:
+      - TournamentMatches
+  /api/v1/stages/{id}/matches:
+    get:
+      description: Returns the matches of a stage ordered by round and match number.
+        Public endpoint for visualization.
+      parameters:
+      - description: Stage ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseOk-array_internal_domain_tournament_matches_MatchResponse'
+      summary: List the matches of a stage
+      tags:
+      - TournamentMatches
+  /api/v1/stages/{id}/next-round:
+    post:
+      consumes:
+      - application/json
+      description: Pairs the active participants by record for the next swiss round,
+        avoiding rematches when possible. The previous round must be fully played.
+      parameters:
+      - description: Stage ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseOk-bool'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+      security:
+      - BearerAuth: []
+      summary: Generate the next swiss round
+      tags:
+      - TournamentMatches
+  /api/v1/stages/{id}/standings:
+    get:
+      description: Returns the win/loss record of every accepted participant of the
+        stage, with active flags per the swiss qualification/elimination config.
+      parameters:
+      - description: Stage ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseOk-array_internal_domain_tournament_matches_StandingsRow'
+      summary: Swiss standings of a stage
+      tags:
+      - TournamentMatches
   /api/v1/stages/{id}/status:
     patch:
       consumes:
