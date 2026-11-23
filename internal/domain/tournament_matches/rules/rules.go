@@ -20,6 +20,11 @@ var (
 	ErrBadWinner          = errors.New("the winner must be one of the two teams")
 	ErrBadScore           = errors.New("the score is inconsistent with best_of")
 	ErrNoNextRound        = errors.New("there are no pending matches of the current round or the stage is finished")
+	ErrMatchNotEditable   = errors.New("the match teams can no longer be edited")
+	ErrTeamDuplicated     = errors.New("a team cannot appear twice in the match")
+	ErrTeamBusyInRound    = errors.New("the team already plays in this round")
+	ErrNoSlotsToUpdate    = errors.New("no team slots provided")
+	ErrBadSlot            = errors.New("invalid slot; must be a or b")
 )
 
 // CanManageMatches decides whether the actor may generate rounds and set
@@ -51,6 +56,39 @@ func CanReportResult(actorOrgRoles, actorTournamentRoles, actorGlobalRoles []str
 		return nil
 	}
 	return ErrNoPermission
+}
+
+// CanEditTeams validates slot updates for a match.
+//   - COMPLETED/WALKOVER matches are frozen forever.
+//   - PENDING matches: any slot can be set.
+//   - IN_PROGRESS matches: only empty slots can be filled (e.g. completing
+//     a bracket TBD while the round plays).
+func CanEditTeams(status string, teamA, teamB int64, newA, newB int64) error {
+	if status == "COMPLETED" || status == "WALKOVER" {
+		return ErrMatchNotEditable
+	}
+	if newA == 0 && newB == 0 {
+		return ErrNoSlotsToUpdate
+	}
+	if newA != 0 && newA == newB {
+		return ErrTeamDuplicated
+	}
+	if newA != 0 && teamB != 0 && newA == teamB {
+		return ErrTeamDuplicated
+	}
+	if newB != 0 && teamA != 0 && newB == teamA {
+		return ErrTeamDuplicated
+	}
+	if status == "IN_PROGRESS" {
+		// Only filling empty slots is allowed while the match is live.
+		if newA != 0 && teamA != 0 && newA != teamA {
+			return ErrMatchNotEditable
+		}
+		if newB != 0 && teamB != 0 && newB != teamB {
+			return ErrMatchNotEditable
+		}
+	}
+	return nil
 }
 
 // ValidateResult checks a reported result against the match state.

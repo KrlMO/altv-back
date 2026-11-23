@@ -1,5 +1,12 @@
 package matches
 
+// SetMatchTeamsRequest fills the team slots of a match. Zero/omitted slots
+// are left untouched.
+type SetMatchTeamsRequest struct {
+	TeamARegistrationID int64 `json:"team_a_registration_id"`
+	TeamBRegistrationID int64 `json:"team_b_registration_id"`
+}
+
 // GenerateMatchesRequest seeds a stage's matches.
 type GenerateMatchesRequest struct {
 	// Seeding strategy: "registration_order" (default). Future: "random",

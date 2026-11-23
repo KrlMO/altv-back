@@ -34,6 +34,7 @@ func (m *Module) RegisterRoutes(r *gin.Engine, jwtSecret string) {
 		auth := matchesGroup.Group("", middleware.Auth(jwtSecret))
 		{
 			auth.PATCH("/:id/result", m.SetMatchResult)
+			auth.PATCH("/:id/teams", m.SetMatchTeams)
 		}
 	}
 }
@@ -48,12 +49,17 @@ func mapError(c *gin.Context, err error) {
 		errors.Is(err, rules.ErrBadManualOrder),
 		errors.Is(err, rules.ErrBadScore),
 		errors.Is(err, rules.ErrBadWinner),
-		errors.Is(err, rules.ErrNoNextRound):
+		errors.Is(err, rules.ErrNoNextRound),
+		errors.Is(err, rules.ErrNoSlotsToUpdate),
+		errors.Is(err, rules.ErrBadSlot):
 		c.JSON(http.StatusBadRequest, response.ResponseError{Error: err.Error()})
 	case errors.Is(err, rules.ErrStageNotInProgress),
 		errors.Is(err, rules.ErrMatchesExist),
 		errors.Is(err, rules.ErrMatchNotPlayable),
-		errors.Is(err, rules.ErrNoParticipants):
+		errors.Is(err, rules.ErrNoParticipants),
+		errors.Is(err, rules.ErrMatchNotEditable),
+		errors.Is(err, rules.ErrTeamDuplicated),
+		errors.Is(err, rules.ErrTeamBusyInRound):
 		c.JSON(http.StatusConflict, response.ResponseError{Error: err.Error()})
 	case errors.Is(err, rules.ErrNoPermission):
 		c.JSON(http.StatusForbidden, response.ResponseError{Error: err.Error()})
@@ -218,6 +224,45 @@ func (m *Module) SetMatchResult(c *gin.Context) {
 	}
 
 	if err := m.service.SetMatchResult(c.Request.Context(), userID, globalRoles, matchID, req); err != nil {
+		mapError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, response.ResponseOk[bool]{Data: true})
+}
+
+// SetMatchTeams godoc
+// @Summary Assign teams to a match manually
+// @Description Fills the team slots of a match. Omitted slots are untouched. PENDING matches accept any slot change; IN_PROGRESS matches only accept filling empty slots; COMPLETED/WALKOVER matches are frozen. A team cannot play twice in the same round.
+// @Tags TournamentMatches
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "Match ID"
+// @Param body body SetMatchTeamsRequest true "Team slots"
+// @Success 200 {object} response.ResponseOk[bool]
+// @Failure 400 {object} response.ResponseError
+// @Failure 401 {object} response.ResponseError
+// @Failure 403 {object} response.ResponseError
+// @Failure 409 {object} response.ResponseError
+// @Router /api/v1/matches/{id}/teams [patch]
+func (m *Module) SetMatchTeams(c *gin.Context) {
+	userID := c.GetInt64(middleware.ContextUserID)
+	globalRoles := getStringSlice(c, middleware.ContextRoles)
+
+	matchID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, response.ResponseError{Error: "invalid match id"})
+		return
+	}
+
+	var req SetMatchTeamsRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, response.ResponseError{Error: "invalid request: " + err.Error()})
+		return
+	}
+
+	if err := m.service.SetMatchTeams(c.Request.Context(), userID, globalRoles, matchID, req); err != nil {
 		mapError(c, err)
 		return
 	}

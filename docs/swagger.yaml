@@ -589,6 +589,13 @@ definitions:
         minimum: 0
         type: integer
     type: object
+  internal_domain_tournament_matches.SetMatchTeamsRequest:
+    properties:
+      team_a_registration_id:
+        type: integer
+      team_b_registration_id:
+        type: integer
+    type: object
   internal_domain_tournament_matches.StandingsRow:
     properties:
       active:
@@ -1209,6 +1216,54 @@ paths:
       security:
       - BearerAuth: []
       summary: Report a match result
+      tags:
+      - TournamentMatches
+  /api/v1/matches/{id}/teams:
+    patch:
+      consumes:
+      - application/json
+      description: Fills the team slots of a match. Omitted slots are untouched. PENDING
+        matches accept any slot change; IN_PROGRESS matches only accept filling empty
+        slots; COMPLETED/WALKOVER matches are frozen. A team cannot play twice in
+        the same round.
+      parameters:
+      - description: Match ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Team slots
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_domain_tournament_matches.SetMatchTeamsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseOk-bool'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/arena_pkg_response.ResponseError'
+      security:
+      - BearerAuth: []
+      summary: Assign teams to a match manually
       tags:
       - TournamentMatches
   /api/v1/organizations/my:
